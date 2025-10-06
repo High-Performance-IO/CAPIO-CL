@@ -2,13 +2,13 @@
 
 # CAPIO-CL — Cross-Application Programmable I/O Coordination Language
 
-[![DOI](https://img.shields.io/badge/DOI-10.1007%2Fs10766--025--00789--0-darkgreen?logo=doi&logoColor=white)](https://doi.org/10.1007/s10766-025-00789-0)
-
-
+[![CI](https://github.com/High-Performance-IO/CAPIO-CL/actions/workflows/ci-test.yml/badge.svg)](https://github.com/High-Performance-IO/CAPIO-CL/actions/workflows/ci-test.yml)
 
 ![CMake](https://img.shields.io/badge/CMake-%E2%89%A53.15-blue?logo=cmake&logoColor=white) 
 ![C++](https://img.shields.io/badge/C%2B%2B-%E2%89%A517-blueviolet?logo=c%2B%2B&logoColor=white)
-[![CI](https://github.com/High-Performance-IO/CAPIO-CL/actions/workflows/ci-test.yml/badge.svg)](https://github.com/High-Performance-IO/CAPIO-CL/actions/workflows/ci-test.yml)
+![Python Bindings](https://img.shields.io/badge/Python_Bindings-3.8–3.14-darkgreen?style=flat&logo=python&logoColor=white&labelColor=gray)
+
+[![DOI](https://img.shields.io/badge/DOI-10.1007%2Fs10766--025--00789--0-%23cc5500?logo=doi&logoColor=white&labelColor=2b2b2b)](https://doi.org/10.1007/s10766-025-00789-0)
 
 **CAPIO-CL** is a novel I/O coordination language that enables users to annotate file-based workflow data dependencies 
 with **synchronization semantics** for files and directories.
@@ -29,20 +29,6 @@ The **CAPIO Coordination Language (CAPIO-CL)** allows applications to declare:
 
 At runtime, CAPIO-CL’s parser and engine components analyze, track, and manage these declared relationships, enabling **transparent data sharing** and **cross-application optimizations**.
 
----
-
-## 🧩 Project Structure
-```yaml
-CAPIO-CL/
-├── capiocl.hpp # Main public API header
-├── src/ 
-│ ├── Engine.cpp # Coordination engine logic
-│ └── Parser.cpp # Language parser logic
-├── tests/ # Unit tests (GoogleTest-based)
-│ └── main.cpp
-├── CMakeLists.txt
-└── README.md
-```
 
 ---
 
@@ -70,6 +56,7 @@ make
 By default, this will:
 - Build the **"libcapio_cl"** static library
 - Build the **"CAPIO_CL_tests"** executable (GoogleTest-based)
+- Build the **"py_capio_cl"** python bindings (pybind11)
 
 ---
 
@@ -95,6 +82,22 @@ When included this way, tests are **not built**, keeping integration clean for e
 
 ---
 
+## 🐍 Python Bindings
+
+CAPIO-CL now provides native **Python bindings** built using [pybind11](https://github.com/pybind/pybind11).  
+These bindings expose the core C++ APIs—such as `Engine`, `Parser`, directly 
+to Python, allowing the CAPIO-CL logic to be used within python projects.
+
+### 🔧 Building the Bindings
+To include Python support when building CAPIO-CL:
+
+```bash
+cmake -DBUILD_PYTHON_BINDINGS=ON ..
+cmake --build . --target py_capio_cl
+```
+
+---
+
 ## 🧩 API Snapshot
 
 A simplified example of CAPIO-CL usage in C++:
@@ -108,4 +111,14 @@ int main() {
     engine.print();
     return 0;
 }
+```
+
+
+The `py_capio_cl` module provides access to CAPIO-CL’s core functionality through a high-level Python interface.
+```python
+from py_capio_cl import Engine
+
+engine = Engine()
+engine.newFile("Hello_World.txt")
+engine.print()
 ```

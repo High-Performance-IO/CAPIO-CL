@@ -16,6 +16,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 # Compiler flags
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -pedantic -O0")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 include(FetchContent)
 
@@ -23,13 +24,14 @@ include(FetchContent)
 # Options
 #####################################
 option(CAPIO_CL_BUILD_TESTS "Build CAPIO-CL test suite" ON)
+option(BUILD_PYTHON_BINDINGS "Build python bindings for CAPIO-CL" ON)
 option(ENABLE_COVERAGE "Enable code coverage collection" FALSE)
 
 # Disable tests when included as a subproject
 if (NOT PROJECT_IS_TOP_LEVEL)
     set(CAPIO_CL_BUILD_TESTS OFF)
     message(STATUS "CAPIO-CL included as subproject → tests disabled")
-endif()
+endif ()
 
 #####################################
 # External projects
@@ -40,8 +42,14 @@ FetchContent_Declare(
         GIT_REPOSITORY https://github.com/simdjson/simdjson.git
         GIT_TAG v3.3.0
 )
+FetchContent_Declare(
+        pybind11
+        GIT_REPOSITORY https://github.com/pybind/pybind11.git
+        GIT_TAG v3.0.1
+)
+
 set(SIMDJSON_IMPLEMENTATION fallback CACHE STRING "" FORCE)
-FetchContent_MakeAvailable(simdjson)
+FetchContent_MakeAvailable(simdjson pybind11)
 
 #####################################
 # Sources and headers
@@ -66,6 +74,32 @@ target_link_libraries(libcapio_cl PUBLIC simdjson)
 install(TARGETS ${TARGET_NAME}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
+
+
+#####################################
+# Python bindings
+#####################################
+if (BUILD_PYTHON_BINDINGS)
+
+    set(PYTHON_BIND_NAME py_capio_cl)
+
+    pybind11_add_module(${PYTHON_BIND_NAME}
+            bindings/python_bindings.cpp
+    )
+
+
+    # Make sure the binding sees the CAPIO CL headers & links against the core lib
+    target_link_libraries(${PYTHON_BIND_NAME}
+            PRIVATE libcapio_cl
+    )
+
+    target_include_directories(${PYTHON_BIND_NAME}
+            PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+
+endif ()
+
 
 #####################################
 # Tests (only when built standalone)
@@ -104,4 +138,4 @@ if (CAPIO_CL_BUILD_TESTS)
     install(TARGETS CAPIO_CL_tests
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     )
-endif()
+endif ()

@@ -25,6 +25,7 @@ jobs:
         path:
           - "src"
           - "tests"
+          - "bindings"
           - "capiocl.hpp"
     steps:
       - uses: actions/checkout@v4
