@@ -1,6 +1,8 @@
-# 🧠 CAPIO-CL — Cross-Application Programmable I/O Coordination Language
+![CAPIO-CL Logo](media/capiocl.png)
 
-[![DOI](https://img.shields.io/badge/DOI-10.1007%2Fs10766--025--00789--0-blue?logo=doi&logoColor=white)](https://doi.org/10.1007/s10766-025-00789-0)
+# CAPIO-CL — Cross-Application Programmable I/O Coordination Language
+
+[![DOI](https://img.shields.io/badge/DOI-10.1007%2Fs10766--025--00789--0-darkgreen?logo=doi&logoColor=white)](https://doi.org/10.1007/s10766-025-00789-0)
 
 
 
