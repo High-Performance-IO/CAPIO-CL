@@ -6,6 +6,7 @@
 
 ![CMake](https://img.shields.io/badge/CMake-%E2%89%A53.15-blue?logo=cmake&logoColor=white) 
 ![C++](https://img.shields.io/badge/C%2B%2B-%E2%89%A517-blueviolet?logo=c%2B%2B&logoColor=white)
+[![CI](https://github.com/High-Performance-IO/CAPIO-CL/actions/workflows/ci-test.yml/badge.svg)](https://github.com/High-Performance-IO/CAPIO-CL/actions/workflows/ci-test.yml)
 
 **CAPIO-CL** is a novel I/O coordination language that enables users to annotate file-based workflow data dependencies 
 with **synchronization semantics** for files and directories.
