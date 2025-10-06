@@ -23,10 +23,10 @@ namespace capiocl {
 
 constexpr char CAPIO_CL_DEFAULT_WF_NAME[] = "CAPIO_CL";
 
-constexpr char CLI_LEVEL_INFO[]    = "[\033[1;32mSERVER\033[0m";
-constexpr char CLI_LEVEL_WARNING[] = "[\033[1;33mSERVER\033[0m";
-constexpr char CLI_LEVEL_ERROR[]   = "[\033[1;31mSERVER\033[0m";
-constexpr char CLI_LEVEL_JSON[]    = "[\033[1;34mSERVER\033[0m";
+constexpr char CLI_LEVEL_INFO[]    = "[\033[1;32mCAPIO-CL\033[0m";
+constexpr char CLI_LEVEL_WARNING[] = "[\033[1;33mCAPIO-CL\033[0m";
+constexpr char CLI_LEVEL_ERROR[]   = "[\033[1;31mCAPIO-CL\033[0m";
+constexpr char CLI_LEVEL_JSON[]    = "[\033[1;34mCAPIO-CL\033[0m";
 
 // CAPIO streaming semantics
 constexpr char MODE_NO_UPDATE[]           = "no_update";
@@ -46,16 +46,16 @@ inline void print_message(const std::string &message_type = "",
     static std::string node_name;
     if (node_name.empty()) {
         node_name.reserve(HOST_NAME_MAX);
-        gethostname(node_name.data(), node_name.size());
+        gethostname(node_name.data(), HOST_NAME_MAX);
     }
-
     if (message_type.empty()) {
         std::cout << std::endl;
     } else {
-        std::cout << message_type << " " << node_name << "] " << message_line << std::endl
+        std::cout << message_type << " " << node_name.c_str() << "] " << message_line << std::endl
                   << std::flush;
     }
 }
+
 /**
  * @brief Engine for managing CAPIO-CL configuration entries.
  *
@@ -141,6 +141,9 @@ class Engine {
      */
     bool contains(const std::filesystem::path &file);
 
+    /// @brief return the number of entries in the current configuration
+    size_t size() const;
+
     /**
      * @brief Add a new CAPIO-CL configuration entry.
      *
@@ -173,6 +176,14 @@ class Engine {
      * @param consumer Application name of the consumer.
      */
     void addConsumer(const std::string &path, std::string &consumer);
+
+    /**
+     * @brief Add a new file dependency, when rule is commit_on_file
+     *
+     * @param path
+     * @param file_dependency
+     */
+    void addFileDependency(const std::string &path, std::string &file_dependency);
 
     /**
      * @brief Create a new CAPIO file entry.
@@ -315,14 +326,20 @@ class Engine {
     /**
      * @brief Check if a process is a producer for a file.
      *
-     * TODO: The app_name parameter will be removed when client_manager is available.
-     *
      * @param path File path.
-     * @param pid Process ID.
-     * @param app_name Application name (default "none").
+     * @param app_name Application name.
      * @return true if the process is a producer, false otherwise.
      */
-    bool isProducer(const std::string &path, pid_t pid, const std::string &app_name = "none");
+    bool isProducer(const std::string &path, const std::string &app_name);
+
+    /**
+     * @brief Check if a process is a consumer for a file.
+     *
+     * @param path File path.
+     * @param app_name Application name.
+     * @return true if the process is a consumer, false otherwise.
+     */
+    bool isConsumer(const std::string &path, const std::string &app_name);
 
     /**
      * @brief Check if a file is firable.
@@ -338,7 +355,7 @@ class Engine {
      * @param path File path.
      * @return true if the path is a file, false otherwise.
      */
-    bool isFile(const std::string &path) const;
+    bool isFile(const std::string &path);
 
     /**
      * @brief Check if a path is excluded.
@@ -354,7 +371,7 @@ class Engine {
      * @param path Directory path.
      * @return true if directory, false otherwise.
      */
-    bool isDirectory(const std::string &path) const;
+    bool isDirectory(const std::string &path);
 
     /**
      * @brief Check if a file is stored in memory.
@@ -363,6 +380,14 @@ class Engine {
      * @return true if stored in memory, false otherwise.
      */
     bool isStoredInMemory(const std::filesystem::path &path);
+
+    /**
+     * @brief Check if file should remain on file system after workflow terminates
+     *
+     * @param path
+     * @return
+     */
+    bool isPermanent(const std::string &path);
 };
 
 /**

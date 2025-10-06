@@ -133,6 +133,7 @@ bool capiocl::Engine::contains(const std::filesystem::path &file) {
     }
     return false;
 }
+size_t capiocl::Engine::size() const { return this->_locations.size(); }
 
 void capiocl::Engine::add(std::string &path, std::vector<std::string> &producers,
                           std::vector<std::string> &consumers, const std::string &commit_rule,
@@ -142,9 +143,8 @@ void capiocl::Engine::add(std::string &path, std::vector<std::string> &producers
               commit_rule.c_str(), fire_rule.c_str(), permanent ? "YES" : "NO",
               exclude ? "YES" : "NO");
 
-    _locations.emplace(path,
-                       std::make_tuple(producers, consumers, commit_rule, fire_rule, permanent,
-                                       exclude, true, -1, -1, dependencies, false));
+    _locations.emplace(path, std::make_tuple(producers, consumers, commit_rule, fire_rule,
+                                             permanent, exclude, true, 0, 0, dependencies, false));
 }
 
 void capiocl::Engine::newFile(const std::string &path) {
@@ -157,22 +157,43 @@ void capiocl::Engine::newFile(const std::string &path) {
          * Inherit commit and fire rules from LPM (Longest Prefix Match) directory
          * matchSize is used to compute LPM
          */
+        std::string matchKey;
         size_t matchSize = 0;
         for (const auto &[filename, data] : _locations) {
             if (fnmatch(filename.c_str(), path.c_str(), FNM_PATHNAME) == 0 &&
                 filename.length() > matchSize) {
                 LOG("Found match with %s", filename.c_str());
                 matchSize = filename.length();
-                commit    = std::get<2>(data);
-                fire      = std::get<3>(data);
+                matchKey  = filename;
             }
         }
-        LOG("Adding file %s to _locations with commit=%s, and fire=%s", path.c_str(),
-            commit.c_str(), fire.c_str());
-        _locations.emplace(path,
-                           std::make_tuple(std::vector<std::string>(), std::vector<std::string>(),
-                                           commit, fire, false, false, true, -1, -1,
-                                           std::vector<std::string>(), false));
+
+        if (matchSize > 0) {
+            LOG("Adding file %s to _locations with commit=%s, and fire=%s", path.c_str(),
+                commit.c_str(), fire.c_str());
+            const auto data                    = _locations.at(matchKey);
+            std::vector<std::string> prod      = std::get<0>(data);
+            std::vector<std::string> cons      = std::get<1>(data);
+            commit                             = std::get<2>(data);
+            fire                               = std::get<3>(data);
+            bool is_permanent                  = std::get<4>(data);
+            bool is_excluded                   = std::get<5>(data);
+            bool is_file                       = std::get<6>(data);
+            long committed_on_close_count      = std::get<7>(data);
+            long expected_directory_file_count = std::get<8>(data);
+            std::vector<std::string> file_deps = std::get<9>(data);
+            bool store_in_fs                   = std::get<10>(data);
+            _locations.emplace(path, std::make_tuple(prod, cons, commit, fire, is_permanent,
+                                                     is_excluded, is_file, committed_on_close_count,
+                                                     expected_directory_file_count, file_deps,
+                                                     store_in_fs));
+
+        } else {
+            _locations.emplace(
+                path, std::make_tuple(std::vector<std::string>(), std::vector<std::string>(),
+                                      COMMITTED_ON_TERMINATION, MODE_UPDATE, false, false, true, 0,
+                                      0, std::vector<std::string>(), false));
+        }
     }
 }
 
@@ -180,7 +201,9 @@ long capiocl::Engine::getDirectoryFileCount(const std::string &path) {
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
         return std::get<8>(itm->second);
     }
-    return 0;
+    this->newFile(path);
+
+    return getDirectoryFileCount(path);
 }
 
 void capiocl::Engine::addProducer(const std::string &path, std::string &producer) {
@@ -199,6 +222,14 @@ void capiocl::Engine::addConsumer(const std::string &path, std::string &consumer
         std::get<1>(itm->second).emplace_back(consumer);
     }
 }
+void capiocl::Engine::addFileDependency(const std::string &path, std::string &file_dependency) {
+    START_LOG(gettid(), "call(path=%s, consumer=%s)", path.c_str(), consumer.c_str());
+    file_dependency.erase(remove_if(file_dependency.begin(), file_dependency.end(), isspace),
+                          file_dependency.end());
+    if (const auto itm = _locations.find(path); itm != _locations.end()) {
+        std::get<9>(itm->second).emplace_back(file_dependency);
+    }
+}
 
 void capiocl::Engine::setCommitRule(const std::string &path, const std::string &commit_rule) {
     START_LOG(gettid(), "call(path=%s, commit_rule=%s)", path.c_str(), commit_rule.c_str());
@@ -215,9 +246,9 @@ std::string capiocl::Engine::getCommitRule(const std::string &path) {
     }
 
     LOG("No entry found on map. checking globs. Creating new file from globs for cache purpose");
-    this->newFile((path));
+    this->newFile(path);
     LOG("Returning commit rule for file %s (update)", path.c_str());
-    return std::get<2>(_locations.at((path)));
+    return getCommitRule(path);
 }
 
 std::string capiocl::Engine::getFireRule(const std::string &path) {
@@ -230,7 +261,7 @@ std::string capiocl::Engine::getFireRule(const std::string &path) {
     LOG("No entry found on map. checking globs. Creating new file from globs for cache purpose");
     this->newFile(path);
     LOG("Returning Fire rule for file %s (update)", path.c_str());
-    return std::get<3>(_locations.at((path)));
+    return getFireRule(path);
 }
 
 void capiocl::Engine::setFireRule(const std::string &path, const std::string &fire_rule) {
@@ -260,6 +291,16 @@ void capiocl::Engine::setPermanent(const std::string &path, bool value) {
     }
 }
 
+bool capiocl::Engine::isPermanent(const std::string &path) {
+    START_LOG(gettid(), "call(path=%s, value=%s)", path.c_str(), value ? "true" : "false");
+    if (const auto itm = _locations.find(path); itm != _locations.end()) {
+        return std::get<4>(itm->second);
+    }
+
+    this->newFile(path);
+    return isPermanent(path);
+}
+
 void capiocl::Engine::setExclude(const std::string &path, const bool value) {
     START_LOG(gettid(), "call(path=%s, value=%s)", path.c_str(), value ? "true" : "false");
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
@@ -281,14 +322,15 @@ void capiocl::Engine::setFile(const std::string &path) {
     }
 }
 
-bool capiocl::Engine::isFile(const std::string &path) const {
+bool capiocl::Engine::isFile(const std::string &path) {
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
         return std::get<6>(itm->second);
     }
-    return false;
+    this->newFile(path);
+    return isPermanent(path);
 }
 
-bool capiocl::Engine::isDirectory(const std::string &path) const {
+bool capiocl::Engine::isDirectory(const std::string &path) {
     START_LOG(gettid(), "call(path=%s)", path.c_str());
     return !isFile(path);
 }
@@ -312,14 +354,6 @@ void capiocl::Engine::remove(const std::string &path) {
     _locations.erase(path);
 }
 
-std::vector<std::string> capiocl::Engine::getProducers(const std::string &path) {
-    START_LOG(gettid(), "call(path=%s)", path.c_str());
-    if (const auto itm = _locations.find(path); itm != _locations.end()) {
-        return std::get<0>(itm->second);
-    }
-    return {};
-}
-
 std::vector<std::string> capiocl::Engine::getConsumers(const std::string &path) {
     START_LOG(gettid(), "call(path=%s)", path.c_str());
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
@@ -328,13 +362,53 @@ std::vector<std::string> capiocl::Engine::getConsumers(const std::string &path) 
     return {};
 }
 
-bool capiocl::Engine::isProducer(const std::string &path, const pid_t pid,
-                                 const std::string &app_name) {
+bool capiocl::Engine::isConsumer(const std::string &path, const std::string &app_name) {
     START_LOG(gettid(), "call(path=%s, pid=%ld", path.c_str(), pid);
 
-    // TODO: use this when client_manager is ported to current implementation
-    //       const auto app_name = client_manager->get_app_name(pid);
-    LOG("App name for tid %d is %s", pid, app_name.c_str());
+    LOG("App name is %s", app_name.c_str());
+
+    // check for exact entry
+    if (const auto itm = _locations.find(path); itm != _locations.end()) {
+        LOG("Found exact match for path");
+        std::vector<std::string> producers = std::get<1>(itm->second);
+        DBG(gettid(), [&](const std::vector<std::string> &arr) {
+            for (auto elem : arr) {
+                LOG("producer: %s", elem.c_str());
+            }
+        }(producers));
+        return std::find(producers.begin(), producers.end(), app_name) != producers.end();
+    }
+    LOG("No exact match found in locations. checking for globs");
+
+    // check for glob. Here we do not use the LMP check
+    for (const auto &[k, entry] : _locations) {
+        if (fnmatch(k.c_str(), path.c_str(), FNM_PATHNAME) == 0) {
+            LOG("Found possible glob match");
+            std::vector<std::string> producers = std::get<1>(entry);
+            DBG(gettid(), [&](const std::vector<std::string> &arr) {
+                for (auto itm : arr) {
+                    LOG("producer: %s", itm.c_str());
+                }
+            }(producers));
+            return std::find(producers.begin(), producers.end(), app_name) != producers.end();
+        }
+    }
+    LOG("No match has been found");
+    return false;
+}
+
+std::vector<std::string> capiocl::Engine::getProducers(const std::string &path) {
+    START_LOG(gettid(), "call(path=%s)", path.c_str());
+    if (const auto itm = _locations.find(path); itm != _locations.end()) {
+        return std::get<0>(itm->second);
+    }
+    return {};
+}
+
+bool capiocl::Engine::isProducer(const std::string &path, const std::string &app_name) {
+    START_LOG(gettid(), "call(path=%s, pid=%ld", path.c_str(), pid);
+
+    LOG("App name is %s", app_name.c_str());
 
     // check for exact entry
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
