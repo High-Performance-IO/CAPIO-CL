@@ -1,0 +1,9 @@
+AlignConsecutiveAssignments:
+  Enabled: true
+  AcrossComments: true
+BasedOnStyle: LLVM
+ColumnLimit: 100
+IndentWidth: 4
+InsertBraces: true
+Language: Cpp
+SpaceAfterCStyleCast: true
