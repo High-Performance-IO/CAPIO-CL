@@ -102,9 +102,7 @@ A simplified example of CAPIO-CL usage in C++:
 
 int main() {
     capiocl::Engine engine;
-    std::string path = "input.txt";
-    std::vector<std::string> producers, consumers, others;
-    engine.add(path, producers, consumers, capiocl::COMMITTED_ON_TERMINATION, capiocl::MODE_UPDATE, false, false, others);
+    engine.newFile("Hello_World.txt")
     engine.print();
     return 0;
 }
