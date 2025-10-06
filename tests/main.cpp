@@ -154,7 +154,6 @@ TEST(testCapioClEngine, testAddFileManuallyGlobExplcit) {
     EXPECT_NE(engine.getDirectoryFileCount("test.3"), 10);
 }
 
-
 TEST(testCapioClEngine, testProducerConsumersFileDependencies) {
     capiocl::Engine engine;
     EXPECT_EQ(engine.size(), 0);

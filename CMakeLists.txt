@@ -61,6 +61,13 @@ target_include_directories(libcapio_cl PUBLIC
 target_link_libraries(libcapio_cl PUBLIC simdjson)
 
 #####################################
+# Install rules
+#####################################
+install(TARGETS ${TARGET_NAME}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+
+#####################################
 # Tests (only when built standalone)
 #####################################
 if (CAPIO_CL_BUILD_TESTS)
@@ -89,4 +96,12 @@ if (CAPIO_CL_BUILD_TESTS)
 
     include(GoogleTest)
     gtest_discover_tests(CAPIO_CL_tests)
+
+    #####################################
+    # Install rules
+    #####################################
+    # Optionally install tests
+    install(TARGETS CAPIO_CL_tests
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
 endif()

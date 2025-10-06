@@ -37,7 +37,7 @@ constexpr char COMMITTED_N_FILES[]        = "n_files";
 constexpr char COMMITTED_ON_TERMINATION[] = "on_termination";
 
 /**
- * Print a message to standard out. Used to log messages releated to the CAPIO-CL engine
+ * Print a message to standard out. Used to log messages related to the CAPIO-CL engine
  * @param message_type Type of message to print.
  * @param message_line
  */
