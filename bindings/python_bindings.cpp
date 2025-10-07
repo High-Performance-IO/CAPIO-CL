@@ -48,6 +48,7 @@ PYBIND11_MODULE(py_capio_cl, m) {
         .def("isDirectory", &capiocl::Engine::isDirectory)
         .def("isStoredInMemory", &capiocl::Engine::isStoredInMemory)
         .def("isPermanent", &capiocl::Engine::isPermanent)
+        .def("setAllStoreInMemory", &capiocl::Engine::setAllStoreInMemory)
         .def("__str__", &capiocl::Engine::print)
         .def("__repr__", [](const capiocl::Engine &e) {
             return "<Engine repr at " + std::to_string(reinterpret_cast<uintptr_t>(&e)) + ">";
