@@ -160,7 +160,7 @@ capiocl::Parser::parse(const std::filesystem::path &source,
                 std::vector<std::filesystem::path> streaming_names;
                 std::vector<std::string> file_deps;
                 long int n_close = -1;
-                long n_files     = -1;
+                int64_t n_files  = -1;
                 bool is_file     = true;
 
                 simdjson::ondemand::array name;

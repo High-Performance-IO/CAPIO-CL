@@ -9,6 +9,10 @@
 #include <unordered_map>
 #include <vector>
 
+#ifndef HOST_NAME_MAX
+#define HOST_NAME_MAX 1024
+#endif
+
 /**
  * Compatibility layer for CAPIO logger.
  */

@@ -41,7 +41,7 @@ endif ()
 FetchContent_Declare(
         simdjson
         GIT_REPOSITORY https://github.com/simdjson/simdjson.git
-        GIT_TAG v3.3.0
+        GIT_TAG v4.0.7
 )
 FetchContent_Declare(
         pybind11
