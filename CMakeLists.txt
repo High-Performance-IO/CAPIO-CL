@@ -9,10 +9,6 @@ project(CAPIO-CL
         VERSION 1.0.0
 )
 
-# Used to infer release when building pyhton bindings
-file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/VERSION.txt" "${PROJECT_VERSION}")
-
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)

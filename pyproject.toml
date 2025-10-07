@@ -1,24 +1,28 @@
 [build-system]
 requires = [
-    "scikit-build-core[pyproject]",
-    "pybind11",
-    "setuptools",
-    "wheel"
+    "scikit-build-core[pyproject]==0.11.6",
+    "pybind11==3.0.1",
+    "setuptools==80.9.0",
+    "wheel==0.45.1"
 ]
 build-backend = "scikit_build_core.build"
 
 [project]
 name = "py_capio_cl"
 dynamic = ["version"]
-description = "High-performance collective I/O bindings for CAPIO (pybind11)"
+description = "Python bindings for the CAPIO-CL coordination language"
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.10"
 authors = [
     { name = "Marco Edoardo Santimaria", email = "marcoedoardo.santimaria@unito.it" }
 ]
-urls = { Homepage = "https://github.com/High-Performance-IO/CAPIO-CL" }
-dependencies = []
+
+[project.urls]
+Homepage = "https://capio.hpc4ai.it"
+Documentation = "https://capio.hpc4ai.it/docs/coord-language/"
+Repository = "https://github.com/High-Performance-IO/CAPIO-CL"
+Issues = "https://github.com/High-Performance-IO/CAPIO-CL/issues"
 
 
 [tool.scikit-build.metadata.version]
