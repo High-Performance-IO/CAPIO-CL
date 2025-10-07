@@ -1,4 +1,4 @@
-name: "CI Tests"
+name: "C++ Unit Tests"
 on:
   push:
     branches:
@@ -7,7 +7,7 @@ on:
     branches:
       - main
 concurrency:
-  group: build-${{ github.event.pull_request.number || github.ref }}
+  group: build-unit-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
   codespell-check:
@@ -122,6 +122,7 @@ jobs:
           path: ./coverage.xml
           retention-days: 1
           if-no-files-found: error
+
 #  upload-to-codecov:
 #    name: "Codecov report upload"
 #    needs: [ "unit-tests" , "codespell-check" , "format-check" ]

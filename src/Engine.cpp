@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <fnmatch.h>
 #include <iostream>
+#include <sstream>
 
 void capiocl::Engine::print() const {
     // First message
