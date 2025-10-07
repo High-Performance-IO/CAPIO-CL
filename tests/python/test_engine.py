@@ -1,24 +1,9 @@
-'''
-TEST(testpy_capio_clEngine, testAddFileDefault) {
-    py_capio_cl::Engine engine;
-EXPECT_EQ(engine.size(), 0);
-engine.newFile("test.dat");
-EXPECT_EQ(engine.size(), 1);
-EXPECT_EQ(engine.getCommitRule("test.dat"), py_capio_cl::COMMITTED_ON_TERMINATION);
-EXPECT_EQ(engine.getFireRule("test.dat"), py_capio_cl::MODE_UPDATE);
-EXPECT_TRUE(engine.getConsumers("test.dat").empty());
-EXPECT_TRUE(engine.getProducers("test.dat").empty());
-EXPECT_FALSE(engine.isPermanent("test.dat"));
-EXPECT_FALSE(engine.isExcluded("test.dat"));
-EXPECT_TRUE(engine.isFile("test.dat"));
-EXPECT_FALSE(engine.isDirectory("test.dat"));
-EXPECT_EQ(engine.getDirectoryFileCount("test.dat"), 0);
-EXPECT_FALSE(engine.isStoredInMemory("test.dat"));
-}
-'''
-
 import os
 import importlib.util
+from pathlib import PosixPath
+
+if not os.path.exists(os.getenv("CAPIO_CL_PY_BINDING_PATH")):
+     raise FileNotFoundError(os.getenv("CAPIO_CL_PY_BINDING_PATH"))
 
 spec = importlib.util.spec_from_file_location("py_capio_cl", os.getenv("CAPIO_CL_PY_BINDING_PATH"))
 py_capio_cl = importlib.util.module_from_spec(spec)
@@ -211,10 +196,10 @@ def test_producers_consumers_file_dependencies():
      assert engine.getCommitOnFileDependencies("test.dat") == []
      engine.addFileDependency("test.dat", file_dependencies[0])
      assert len(engine.getCommitOnFileDependencies("test.dat")) == 1
-     assert engine.getCommitOnFileDependencies("test.dat")[0] == file_dependencies[0]
+     assert engine.getCommitOnFileDependencies("test.dat")[0] == PosixPath(file_dependencies[0])
      engine.addFileDependency("test.dat", file_dependencies[1])
      assert len(engine.getCommitOnFileDependencies("test.dat")) == 2
-     assert engine.getCommitOnFileDependencies("test.dat")[1] == file_dependencies[1]
+     assert engine.getCommitOnFileDependencies("test.dat")[1] == PosixPath(file_dependencies[1])
 
 
 def test_producers_consumers_file_dependencies_glob():
@@ -245,7 +230,7 @@ def test_producers_consumers_file_dependencies_glob():
      assert engine.getCommitOnFileDependencies("test.dat") == []
      engine.addFileDependency("test.dat", file_dependencies[0])
      assert len(engine.getCommitOnFileDependencies("test.dat")) == 1
-     assert engine.getCommitOnFileDependencies("test.dat")[0] == file_dependencies[0]
+     assert engine.getCommitOnFileDependencies("test.dat")[0] == PosixPath(file_dependencies[0])
      engine.addFileDependency("test.dat", file_dependencies[1])
      assert len(engine.getCommitOnFileDependencies("test.dat")) == 2
-     assert engine.getCommitOnFileDependencies("test.dat")[1] == file_dependencies[1]
+     assert engine.getCommitOnFileDependencies("test.dat")[1] == PosixPath(file_dependencies[1])

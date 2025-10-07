@@ -87,21 +87,35 @@ if (BUILD_PYTHON_BINDINGS)
     )
 
 
-    # Make sure the binding sees the CAPIO CL headers & links against the core lib
-    target_link_libraries(${PYTHON_BIND_NAME}
-            PRIVATE libcapio_cl
-    )
+    if (WIN32)
+        target_link_libraries(${PYTHON_BIND_NAME}
+                PRIVATE libcapio_cl ws2_32 shlwapi
+        )
+    else()
+        target_link_libraries(${PYTHON_BIND_NAME}
+                PRIVATE libcapio_cl
+        )
+    endif ()
+
 
     target_include_directories(${PYTHON_BIND_NAME}
             PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}
     )
 
-    install(TARGETS ${PYTHON_BIND_NAME}
-            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/python
-            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/python
-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    )
+    if (WIN32)
+        install(TARGETS ${PYTHON_BIND_NAME}
+                LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}\\python
+                ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}\\python
+                RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}\\python
+        )
+    else ()
+        install(TARGETS ${PYTHON_BIND_NAME}
+                LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/python
+                ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/python
+                RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        )
+    endif ()
 
 endif ()
 
@@ -127,6 +141,10 @@ if (CAPIO_CL_BUILD_TESTS)
             libcapio_cl
             GTest::gtest_main
     )
+
+    if (WIN32)
+        target_link_libraries(CAPIO_CL_tests PRIVATE ws2_32 shlwapi)
+    endif ()
 
     target_include_directories(CAPIO_CL_tests PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}

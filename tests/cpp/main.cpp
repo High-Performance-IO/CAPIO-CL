@@ -60,8 +60,9 @@ TEST(testCapioClEngine, testAddFileDefaultGlobQuestion) {
 TEST(testCapioClEngine, testAddFileManually) {
     capiocl::Engine engine;
     EXPECT_EQ(engine.size(), 0);
-    std::string path = "test.dat";
-    std::vector<std::string> producers, consumers, file_dependencies;
+    std::filesystem::path path = "test.dat";
+    std::vector<std::string> producers, consumers;
+    std::vector<std::filesystem::path> file_dependencies;
 
     engine.add(path, producers, consumers, capiocl::COMMITTED_ON_TERMINATION, capiocl::MODE_UPDATE,
                false, false, file_dependencies);
@@ -81,8 +82,9 @@ TEST(testCapioClEngine, testAddFileManually) {
 TEST(testCapioClEngine, testAddFileManuallyGlob) {
     capiocl::Engine engine;
     EXPECT_EQ(engine.size(), 0);
-    std::string path = "test.*";
-    std::vector<std::string> producers, consumers, file_dependencies;
+    std::filesystem::path path = "test.*";
+    std::vector<std::string> producers, consumers;
+    std::vector<std::filesystem::path> file_dependencies;
 
     engine.add(path, producers, consumers, capiocl::COMMITTED_ON_TERMINATION, capiocl::MODE_UPDATE,
                false, false, file_dependencies);
@@ -102,8 +104,9 @@ TEST(testCapioClEngine, testAddFileManuallyGlob) {
 TEST(testCapioClEngine, testAddFileManuallyQuestion) {
     capiocl::Engine engine;
     EXPECT_EQ(engine.size(), 0);
-    std::string path = "test.?";
-    std::vector<std::string> producers, consumers, file_dependencies;
+    std::filesystem::path path = "test.?";
+    std::vector<std::string> producers, consumers;
+    std::vector<std::filesystem::path> file_dependencies;
 
     engine.add(path, producers, consumers, capiocl::COMMITTED_ON_CLOSE, capiocl::MODE_NO_UPDATE,
                false, false, file_dependencies);
@@ -133,8 +136,9 @@ TEST(testCapioClEngine, testAddFileManuallyQuestion) {
 TEST(testCapioClEngine, testAddFileManuallyGlobExplcit) {
     capiocl::Engine engine;
     EXPECT_EQ(engine.size(), 0);
-    std::string path = "test.[abc][abc][abc]";
-    std::vector<std::string> producers, consumers, file_dependencies;
+    std::filesystem::path path = "test.[abc][abc][abc]";
+    std::vector<std::string> producers, consumers;
+    std::vector<std::filesystem::path> file_dependencies;
 
     engine.add(path, producers, consumers, capiocl::COMMITTED_ON_CLOSE, capiocl::MODE_NO_UPDATE,
                false, false, file_dependencies);

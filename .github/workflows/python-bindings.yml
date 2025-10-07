@@ -14,18 +14,19 @@ jobs:
     name: "Test python bindings"
     strategy:
       matrix:
-        on: [ 'ubuntu-24.04', 'macos-15-intel' , 'macos-26' ]
+        on: [ 'ubuntu-24.04', 'macos-15-intel', 'macos-26', 'windows-2022', 'windows-2025' ]
         python: [ '3.10', '3.11', '3.12', '3.13' ]
 
     runs-on: ${{matrix.on}}
     env:
-      INSTALL_PREFIX: "/usr/local"
+      INSTALL_PREFIX: ${{ startsWith(matrix.on, 'windows-') && format('{0}\install', github.workspace) || '/usr/local' }}
 
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v6
         with:
           python-version: ${{matrix.python}}
+
       - name: "Install packages ubuntu"
         if: ${{ startsWith(matrix.on, 'ubuntu-') }}
         run: sudo apt install -y ninja-build g++
@@ -38,7 +39,13 @@ jobs:
         if: ${{ startsWith(matrix.on, 'macos-') }}
         run: brew install ninja gcc cmake
 
-      - name: "Run CMake"
+      - name: "Install Windows packages"
+        if: ${{ startsWith(matrix.on, 'windows-') }}
+        shell: pwsh
+        run: choco install cmake ninja --yes --installargs 'ADD_CMAKE_TO_PATH=System'
+
+      - name: "Run CMake (UNIX)"
+        if: ${{ !startsWith(matrix.on, 'windows-') }}
         run: |
           cmake -DCMAKE_BUILD_TYPE=Release \
                 -G Ninja \
@@ -47,11 +54,33 @@ jobs:
           cmake --build ../build -j $(nproc)
           sudo cmake --install ../build --prefix $INSTALL_PREFIX
 
-      - name: "Install python test environment"
-        run: python -m pip install -r ${GITHUB_WORKSPACE}/test-requirement.txt
+      - name: "Run CMake (Windows)"
+        if: ${{ startsWith(matrix.on, 'windows-') }}
+        shell: pwsh
+        run: |
+          cmake -G "Ninja" `
+               -DCMAKE_BUILD_TYPE=Release `
+               -B ../build `
+               -S $env:GITHUB_WORKSPACE
+          cmake --build ../build --parallel
+          cmake --install ../build --prefix $env:INSTALL_PREFIX
 
-      - name: "Run python tests"
+      - name: "Install python test environment"
+        run: python -m pip install -r test-requirement.txt
+
+      - name: "Run Python tests (WINDOWS)"
+        if: ${{ startsWith(matrix.on, 'windows-') }}
+        shell: bash
+        run: |
+          PYBIND_FILE=$INSTALL_PREFIX\\lib\\python\\$(dir $INSTALL_PREFIX\\lib\\python | head -n 1)
+          export CAPIO_CL_PY_BINDING_PATH=$(cygpath -m "$PYBIND_FILE")
+          echo "Python module path: $CAPIO_CL_PY_BINDING_PATH"
+          pytest tests/python/test_*
+
+      - name: "Run Python tests (UNIX)"
+        if: ${{ !startsWith(matrix.on, 'windows-') }}
+        shell: bash
         run: |
           export CAPIO_CL_PY_BINDING_PATH=$(realpath $INSTALL_PREFIX/lib/python/py_capio_cl*)
-          echo "Python module path: $CAPIO_CL_PY_BINDING_PATH" 
+          echo "Python module path: $CAPIO_CL_PY_BINDING_PATH"
           pytest ${GITHUB_WORKSPACE}/tests/python/test_*

@@ -94,7 +94,7 @@ capiocl::Parser::parse(const std::filesystem::path &source,
                               "Path : " + file_path.string() + " IS RELATIVE! resolving...");
                 file_path = resolve_prefix / file_path;
             }
-            locations->newFile(file_path.c_str());
+            locations->newFile(file_path);
             locations->addConsumer(file_path, app_name);
         }
 
@@ -121,7 +121,7 @@ capiocl::Parser::parse(const std::filesystem::path &source,
             for (const auto &stream_item : app["streaming"]) {
                 bool is_file = true;
                 std::vector<std::filesystem::path> streaming_names;
-                std::vector<std::string> file_deps;
+                std::vector<std::filesystem::path> file_deps;
                 std::string commit_rule = COMMITTED_ON_TERMINATION, mode = MODE_UPDATE;
                 long int n_close = -1;
                 int64_t n_files  = -1;
