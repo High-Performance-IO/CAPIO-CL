@@ -1,28 +1,4 @@
-'''
-TEST(testpy_capio_clEngine, testAddFileDefault) {
-    py_capio_cl::Engine engine;
-EXPECT_EQ(engine.size(), 0);
-engine.newFile("test.dat");
-EXPECT_EQ(engine.size(), 1);
-EXPECT_EQ(engine.getCommitRule("test.dat"), py_capio_cl::COMMITTED_ON_TERMINATION);
-EXPECT_EQ(engine.getFireRule("test.dat"), py_capio_cl::MODE_UPDATE);
-EXPECT_TRUE(engine.getConsumers("test.dat").empty());
-EXPECT_TRUE(engine.getProducers("test.dat").empty());
-EXPECT_FALSE(engine.isPermanent("test.dat"));
-EXPECT_FALSE(engine.isExcluded("test.dat"));
-EXPECT_TRUE(engine.isFile("test.dat"));
-EXPECT_FALSE(engine.isDirectory("test.dat"));
-EXPECT_EQ(engine.getDirectoryFileCount("test.dat"), 0);
-EXPECT_FALSE(engine.isStoredInMemory("test.dat"));
-}
-'''
-
-import os
-import importlib.util
-
-spec = importlib.util.spec_from_file_location("py_capio_cl", os.getenv("CAPIO_CL_PY_BINDING_PATH"))
-py_capio_cl = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(py_capio_cl)
+import py_capio_cl
 
 
 def test_instantiation():

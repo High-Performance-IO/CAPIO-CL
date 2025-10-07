@@ -1,0 +1,32 @@
+[build-system]
+requires = [
+    "scikit-build-core[pyproject]",
+    "pybind11",
+    "setuptools",
+    "wheel"
+]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "py_capio_cl"
+dynamic = ["version"]
+description = "High-performance collective I/O bindings for CAPIO (pybind11)"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+authors = [
+    { name = "Marco Edoardo Santimaria", email = "marcoedoardo.santimaria@unito.it" }
+]
+urls = { Homepage = "https://github.com/High-Performance-IO/CAPIO-CL" }
+dependencies = []
+
+
+[tool.scikit-build.metadata.version]
+provider = "scikit_build_core.metadata.regex"
+input = "CMakeLists.txt"
+regex = "(?m)VERSION\\s+(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)"
+result = "{major}.{minor}.{patch}"
+
+[tool.scikit-build]
+cmake.version = ">=3.18"
+ninja.version = ">=1.10"
