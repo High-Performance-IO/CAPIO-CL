@@ -93,12 +93,15 @@ These bindings expose the core C++ APIs—such as `Engine`, `Parser`, directly
 to Python, allowing the CAPIO-CL logic to be used within python projects.
 
 ### 🔧 Building the Bindings
-To include Python support when building CAPIO-CL:
+You can build and install the Python bindings directly from the CAPIO-CL source tree using:
 
 ```bash
-cmake -DBUILD_PYTHON_BINDINGS=ON ..
-cmake --build . --target py_capio_cl
+pip install --upgrade pip
+pip install -r build-requirements.txt
+python -m build
+pip install dst/*.whl
 ```
+Now you will be able to directly import the package **py_capio_cl** in your project!
 
 ---
 

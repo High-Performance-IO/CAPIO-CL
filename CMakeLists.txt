@@ -80,7 +80,7 @@ install(TARGETS ${TARGET_NAME}
 #####################################
 if (BUILD_PYTHON_BINDINGS)
 
-    set(PYTHON_BIND_NAME py_capio_cl)
+    set(PYTHON_BIND_NAME _py_capio_cl)
 
     pybind11_add_module(${PYTHON_BIND_NAME}
             bindings/python_bindings.cpp
@@ -97,11 +97,7 @@ if (BUILD_PYTHON_BINDINGS)
             ${CMAKE_CURRENT_SOURCE_DIR}
     )
 
-    install(TARGETS ${PYTHON_BIND_NAME}
-            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/python
-            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/python
-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    )
+    install(TARGETS _py_capio_cl DESTINATION py_capio_cl)
 
 endif ()
 

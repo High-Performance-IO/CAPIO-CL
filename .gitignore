@@ -4,6 +4,7 @@ cmake-build-*/**
 .venv/**
 __pycache__/
 *.pyc
+dist/**
 
 # Prerequisites
 *.d
