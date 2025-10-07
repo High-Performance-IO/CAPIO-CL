@@ -479,6 +479,11 @@ void capiocl::Engine::setStoreFileInMemory(const std::filesystem::path &path) {
     this->newFile(path);
     std::get<10>(_locations.at(path)) = true;
 }
+void capiocl::Engine::setAllStoreInMemory() {
+    for (const auto &[fst, snd] : _locations) {
+        this->setStoreFileInMemory(fst);
+    }
+}
 
 void capiocl::Engine::setStoreFileInFileSystem(const std::filesystem::path &path) {
     this->newFile(path);

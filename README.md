@@ -41,7 +41,7 @@ At runtime, CAPIO-CL’s parser and engine components analyze, track, and manage
 ### Requirements & dependencies
 - C++17 or greater
 - Cmake 3.15 or newer
-- [simdjson](https://github.com/simdjson/simdjson) to parse JSON config files
+- [nlohmann/json](https://github.com/nlohmann/json) to parse JSON config files
 - [GoogleTest](https://github.com/google/googletest) for automated testing
 
 All dependencies are fetched automatically by CMake — no manual setup required.

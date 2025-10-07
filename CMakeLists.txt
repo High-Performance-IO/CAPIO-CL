@@ -39,9 +39,9 @@ endif ()
 #####################################
 # simdjson
 FetchContent_Declare(
-        simdjson
-        GIT_REPOSITORY https://github.com/simdjson/simdjson.git
-        GIT_TAG v4.0.7
+        nlohmann_json
+        GIT_REPOSITORY https://github.com/nlohmann/json.git
+        GIT_TAG v3.12.0
 )
 FetchContent_Declare(
         pybind11
@@ -49,8 +49,7 @@ FetchContent_Declare(
         GIT_TAG v3.0.1
 )
 
-set(SIMDJSON_IMPLEMENTATION fallback CACHE STRING "" FORCE)
-FetchContent_MakeAvailable(simdjson pybind11)
+FetchContent_MakeAvailable(nlohmann_json pybind11)
 
 #####################################
 # Sources and headers
@@ -64,10 +63,9 @@ add_library(libcapio_cl STATIC ${CAPIO_SRC} ${CAPIO_CL_HEADERS})
 target_include_directories(libcapio_cl PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${simdjson_SOURCE_DIR}
+        ${nlohmann_json_SOURCE_DIR}/include
 )
 
-target_link_libraries(libcapio_cl PUBLIC simdjson)
 
 #####################################
 # Install rules

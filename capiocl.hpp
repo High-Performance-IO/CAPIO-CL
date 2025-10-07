@@ -288,6 +288,9 @@ class Engine {
      */
     void setStoreFileInMemory(const std::filesystem::path &path);
 
+    /// @brief set all files to be stored in memory
+    void setAllStoreInMemory();
+
     /**
      * @brief Store the file on the file system.
      *
@@ -430,7 +433,7 @@ class Parser {
      * the config file
      */
     static std::tuple<std::string, Engine *> parse(const std::filesystem::path &source,
-                                                   const std::filesystem::path &resolve_prexix,
+                                                   const std::filesystem::path &resolve_prexix = "",
                                                    bool store_only_in_memory = false);
 };
 } // namespace capiocl
