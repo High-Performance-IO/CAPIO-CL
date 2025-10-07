@@ -1,0 +1,57 @@
+name: "Python Bindings Unit Tests"
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+concurrency:
+  group: build-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  python-tests:
+    name: "Test python bindings"
+    strategy:
+      matrix:
+        on: [ 'ubuntu-24.04', 'macos-15-intel' , 'macos-26' ]
+        python: [ '3.10', '3.11', '3.12', '3.13' ]
+
+    runs-on: ${{matrix.on}}
+    env:
+      INSTALL_PREFIX: "/usr/local"
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{matrix.python}}
+      - name: "Install packages ubuntu"
+        if: ${{ startsWith(matrix.on, 'ubuntu-') }}
+        run: sudo apt install -y ninja-build g++
+
+      - name: "Setup macos runner"
+        if: ${{ startsWith(matrix.on, 'macos-') }}
+        uses: Homebrew/actions/setup-homebrew@main
+
+      - name: "Install macos packages"
+        if: ${{ startsWith(matrix.on, 'macos-') }}
+        run: brew install ninja gcc cmake
+
+      - name: "Run CMake"
+        run: |
+          cmake -DCMAKE_BUILD_TYPE=Release \
+                -G Ninja \
+                -B ../build \
+                -S ${GITHUB_WORKSPACE}
+          cmake --build ../build -j $(nproc)
+          sudo cmake --install ../build --prefix $INSTALL_PREFIX
+
+      - name: "Install python test environment"
+        run: python -m pip install -r ${GITHUB_WORKSPACE}/test-requirement.txt
+
+      - name: "Run python tests"
+        run: |
+          export CAPIO_CL_PY_BINDING_PATH=$(realpath $INSTALL_PREFIX/lib/python/py_capio_cl*)
+          echo "Python module path: $CAPIO_CL_PY_BINDING_PATH" 
+          pytest ${GITHUB_WORKSPACE}/tests/python/test_*
