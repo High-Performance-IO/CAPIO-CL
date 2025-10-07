@@ -19,6 +19,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 include(FetchContent)
+include(GNUInstallDirs)
 
 #####################################
 # Options
@@ -98,6 +99,12 @@ if (BUILD_PYTHON_BINDINGS)
             ${CMAKE_CURRENT_SOURCE_DIR}
     )
 
+    install(TARGETS ${PYTHON_BIND_NAME}
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/python
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/python
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
+
 endif ()
 
 
@@ -116,7 +123,7 @@ if (CAPIO_CL_BUILD_TESTS)
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(googletest)
 
-    add_executable(CAPIO_CL_tests tests/main.cpp)
+    add_executable(CAPIO_CL_tests tests/cpp/main.cpp)
 
     target_link_libraries(CAPIO_CL_tests PRIVATE
             libcapio_cl

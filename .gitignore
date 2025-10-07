@@ -1,6 +1,9 @@
 # IntelliJ
 .idea/**
 cmake-build-*/**
+.venv/**
+__pycache__/
+*.pyc
 
 # Prerequisites
 *.d

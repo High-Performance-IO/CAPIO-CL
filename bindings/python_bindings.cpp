@@ -31,7 +31,7 @@ PYBIND11_MODULE(py_capio_cl, m) {
         .def("setFileDeps", &capiocl::Engine::setFileDeps)
         .def("setStoreFileInMemory", &capiocl::Engine::setStoreFileInMemory)
         .def("setStoreFileInFileSystem", &capiocl::Engine::setStoreFileInFileSystem)
-        .def("getDirectoryFileCount", &capiocl::Engine::setDirectoryFileCount)
+        .def("getDirectoryFileCount", &capiocl::Engine::getDirectoryFileCount)
         .def("getCommitRule", &capiocl::Engine::getCommitRule)
         .def("getFireRule", &capiocl::Engine::getFireRule)
         .def("getProducers", &capiocl::Engine::getProducers)
@@ -52,6 +52,13 @@ PYBIND11_MODULE(py_capio_cl, m) {
         .def("__repr__", [](const capiocl::Engine &e) {
             return "<Engine repr at " + std::to_string(reinterpret_cast<uintptr_t>(&e)) + ">";
         });
+
+    m.attr("MODE_UPDATE")              = py::str(capiocl::MODE_UPDATE);
+    m.attr("MODE_NO_UPDATE")           = py::str(capiocl::MODE_NO_UPDATE);
+    m.attr("COMMITTED_ON_CLOSE")       = py::str(capiocl::COMMITTED_ON_CLOSE);
+    m.attr("COMMITTED_ON_FILE")        = py::str(capiocl::COMMITTED_ON_FILE);
+    m.attr("COMMITTED_N_FILES")        = py::str(capiocl::COMMITTED_N_FILES);
+    m.attr("COMMITTED_ON_TERMINATION") = py::str(capiocl::COMMITTED_ON_TERMINATION);
 
     py::class_<capiocl::Parser>(m, "Parser", "The CAPIO-CL Parser component.")
         .def("parse", &capiocl::Parser::parse)
