@@ -24,6 +24,7 @@
 #endif
 
 namespace capiocl {
+class Serializer;
 
 constexpr char CAPIO_CL_DEFAULT_WF_NAME[] = "CAPIO_CL";
 
@@ -78,7 +79,7 @@ inline void print_message(const std::string &message_type = "",
  * - Storage policy (in-memory or on filesystem)
  */
 class Engine {
-
+    friend class capiocl::Serializer;
     std::string node_name;
 
     /**
@@ -433,8 +434,21 @@ class Parser {
      * the config file
      */
     static std::tuple<std::string, Engine *> parse(const std::filesystem::path &source,
-                                                   const std::filesystem::path &resolve_prexix = "",
+                                                   std::filesystem::path &resolve_prexix,
                                                    bool store_only_in_memory = false);
+};
+
+class Serializer {
+  public:
+    /**
+     * Dump the current configuration loaded into the Engine to a CAPIO-CL configuration file.
+     *
+     * @param engine instance of @class capiocl::Engine to dump
+     * @param workflow_name Name of the current workflow
+     * @param filename path of output file @param filename
+     */
+    static void dump(const Engine &engine, const std::string workflow_name,
+                     const std::filesystem::path &filename);
 };
 } // namespace capiocl
 

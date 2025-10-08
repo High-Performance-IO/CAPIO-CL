@@ -8,6 +8,14 @@ namespace py = pybind11;
 PYBIND11_MODULE(_py_capio_cl, m) {
     m.doc() =
         "CAPIO-CL: Cross Application Programmable I/O - Coordination Language python bindings.";
+
+    m.attr("MODE_UPDATE")              = py::str(capiocl::MODE_UPDATE);
+    m.attr("MODE_NO_UPDATE")           = py::str(capiocl::MODE_NO_UPDATE);
+    m.attr("COMMITTED_ON_CLOSE")       = py::str(capiocl::COMMITTED_ON_CLOSE);
+    m.attr("COMMITTED_ON_FILE")        = py::str(capiocl::COMMITTED_ON_FILE);
+    m.attr("COMMITTED_N_FILES")        = py::str(capiocl::COMMITTED_N_FILES);
+    m.attr("COMMITTED_ON_TERMINATION") = py::str(capiocl::COMMITTED_ON_TERMINATION);
+
     py::class_<capiocl::Engine>(
         m, "Engine", "The main CAPIO-CL engine for managing data communication and I/O operations.")
         .def(py::init<>())
@@ -54,20 +62,25 @@ PYBIND11_MODULE(_py_capio_cl, m) {
             return "<Engine repr at " + std::to_string(reinterpret_cast<uintptr_t>(&e)) + ">";
         });
 
-    m.attr("MODE_UPDATE")              = py::str(capiocl::MODE_UPDATE);
-    m.attr("MODE_NO_UPDATE")           = py::str(capiocl::MODE_NO_UPDATE);
-    m.attr("COMMITTED_ON_CLOSE")       = py::str(capiocl::COMMITTED_ON_CLOSE);
-    m.attr("COMMITTED_ON_FILE")        = py::str(capiocl::COMMITTED_ON_FILE);
-    m.attr("COMMITTED_N_FILES")        = py::str(capiocl::COMMITTED_N_FILES);
-    m.attr("COMMITTED_ON_TERMINATION") = py::str(capiocl::COMMITTED_ON_TERMINATION);
-
     py::class_<capiocl::Parser>(m, "Parser", "The CAPIO-CL Parser component.")
         .def("parse", &capiocl::Parser::parse)
         .def("__str__",
              [](const capiocl::Parser &e) {
                  return "<Parser repr at " + std::to_string(reinterpret_cast<uintptr_t>(&e)) + ">";
              })
-        .def("__repr__", [](const capiocl::Engine &e) {
+        .def("__repr__", [](const capiocl::Parser &e) {
             return "<Parser repr at " + std::to_string(reinterpret_cast<uintptr_t>(&e)) + ">";
+        });
+
+    py::class_<capiocl::Serializer>(m, "Serializer", "The CAPIO-CL Serializer component.")
+        .def(py::init<>())
+        .def("dump", &capiocl::Serializer::dump)
+        .def("__str__",
+             [](const capiocl::Serializer &e) {
+                 return "<Serializer repr at " + std::to_string(reinterpret_cast<uintptr_t>(&e)) +
+                        ">";
+             })
+        .def("__repr__", [](const capiocl::Serializer &e) {
+            return "<Serializer repr at " + std::to_string(reinterpret_cast<uintptr_t>(&e)) + ">";
         });
 }
