@@ -128,7 +128,7 @@ void capiocl::Engine::print() const {
 bool capiocl::Engine::contains(const std::filesystem::path &file) {
     START_LOG(gettid(), "call(file=%s)", file.c_str());
     for (auto &[fst, snd] : _locations) {
-        if (fnmatch(file.c_str(), fst.c_str(), FNM_PATHNAME) == 0) {
+        if (fnmatch(fst.c_str(), file.c_str(), FNM_PATHNAME) == 0) {
             return true;
         }
     }

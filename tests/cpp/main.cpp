@@ -277,6 +277,7 @@ TEST(testCapioClEngine, testAddRemoveFile) {
     capiocl::Engine engine;
     engine.newFile("test.*");
     EXPECT_TRUE(engine.contains("test.*"));
+    EXPECT_TRUE(engine.contains("test.txt"));
     engine.remove("test.*");
     EXPECT_FALSE(engine.contains("test.*"));
     engine.remove("data");
@@ -372,6 +373,9 @@ TEST(testCapioClEngine, testStorageOptions) {
     EXPECT_FALSE(engine.isStoredInMemory("B"));
     EXPECT_FALSE(engine.isStoredInMemory("C"));
     EXPECT_FALSE(engine.isStoredInMemory("D"));
+
+    engine.setStoreFileInFileSystem("F");
+    EXPECT_FALSE(engine.isStoredInMemory("F"));
 }
 
 TEST(testCapioClEngine, testHomeNode) {
@@ -394,3 +398,44 @@ TEST(testCapioClEngine, testInsertFileDependencies) {
     EXPECT_TRUE(engine.getCommitOnFileDependencies("test.txt")[1] == "b");
     EXPECT_TRUE(engine.getCommitOnFileDependencies("test.txt")[2] == "c");
 }
+
+/*
+TEST(testCapioSerializerParser, testSerializeParse) {
+    const std::filesystem::path path("./config.json");
+    const std::string workflow_name = "demo";
+    const std::string file_1_name = "file1.txt", file_2_name = "file2.txt",
+                      file_3_name = "my_command_history.txt";
+    std::string producer_name = "_first", consumer_name = "_last", intermediate_name = "_middle";
+
+    capiocl::Engine engine;
+    engine.addProducer(file_1_name, producer_name);
+    engine.addConsumer(file_1_name, intermediate_name);
+    engine.addProducer(file_2_name, intermediate_name);
+    engine.addConsumer(file_2_name, consumer_name);
+    engine.addConsumer(file_1_name, consumer_name);
+
+    engine.setStoreFileInMemory(file_1_name);
+    engine.setCommitRule(file_1_name, capiocl::COMMITTED_ON_CLOSE);
+    engine.setCommitedCloseNumber(file_1_name, 3);
+    engine.setFireRule(file_1_name, capiocl::MODE_UPDATE);
+    engine.setPermanent(file_1_name, true);
+
+    engine.setStoreFileInFileSystem(file_2_name);
+    engine.setCommitRule(file_2_name, capiocl::COMMITTED_ON_TERMINATION);
+    engine.setFireRule(file_1_name, capiocl::MODE_NO_UPDATE);
+
+    engine.addProducer(file_3_name, producer_name);
+    engine.addProducer(file_3_name, consumer_name);
+    engine.addProducer(file_3_name, intermediate_name);
+    engine.setExclude(file_3_name, true);
+    engine.print();
+
+    capiocl::Serializer::dump(engine, workflow_name, path);
+
+    std::filesystem::path resolve = "";
+    auto [wf_name, new_engine] = capiocl::Parser::parse(path, resolve);
+
+    EXPECT_TRUE(wf_name == workflow_name);
+    EXPECT_TRUE(engine == *new_engine);
+}
+*/
