@@ -24,7 +24,6 @@ Documentation = "https://capio.hpc4ai.it/docs/coord-language/"
 Repository = "https://github.com/High-Performance-IO/CAPIO-CL"
 Issues = "https://github.com/High-Performance-IO/CAPIO-CL/issues"
 
-
 [tool.scikit-build.metadata.version]
 provider = "scikit_build_core.metadata.regex"
 input = "CMakeLists.txt"

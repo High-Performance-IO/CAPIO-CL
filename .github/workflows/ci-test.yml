@@ -36,6 +36,7 @@ jobs:
           check-path: "${{ matrix.path }}"
   unit-tests:
     name: "Build ${{ matrix.build_type }} with ${{ matrix.cxx }}"
+    needs: [ "codespell-check" , "format-check" ]
     runs-on: ubuntu-22.04
     strategy:
       matrix:
@@ -126,7 +127,7 @@ jobs:
 
   upload-to-codecov:
     name: "Codecov report upload"
-    needs: [ "unit-tests" , "codespell-check" , "format-check" ]
+    needs: [ "unit-tests" ]
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
