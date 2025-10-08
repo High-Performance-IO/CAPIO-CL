@@ -34,6 +34,16 @@ if (NOT PROJECT_IS_TOP_LEVEL)
     message(STATUS "CAPIO-CL included as subproject → tests disabled")
 endif ()
 
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_compile_options(-O0 -g)
+endif()
+
+if(ENABLE_COVERAGE)
+    message(STATUS "Building with code coverage instrumentation")
+    add_compile_options(--coverage -O0 -g)
+    add_link_options(--coverage)
+endif()
+
 #####################################
 # External projects
 #####################################
