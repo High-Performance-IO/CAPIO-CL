@@ -269,7 +269,10 @@ void capiocl::Engine::setFireRule(const std::string &path, const std::string &fi
     START_LOG(gettid(), "call(path=%s, fire_rule=%s)", path.c_str(), fire_rule.c_str());
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
         std::get<3>(itm->second) = fire_rule;
+        return;
     }
+    this->newFile(path);
+    setFireRule(path, fire_rule);
 }
 
 bool capiocl::Engine::isFirable(const std::string &path) {
@@ -289,7 +292,10 @@ void capiocl::Engine::setPermanent(const std::string &path, bool value) {
     START_LOG(gettid(), "call(path=%s, value=%s)", path.c_str(), value ? "true" : "false");
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
         std::get<4>(itm->second) = value;
+        return;
     }
+    this->newFile(path);
+    setPermanent(path, value);
 }
 
 bool capiocl::Engine::isPermanent(const std::string &path) {

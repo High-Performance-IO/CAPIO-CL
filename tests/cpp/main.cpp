@@ -219,3 +219,41 @@ TEST(testCapioClEngine, testProducerConsumersFileDependenciesGlob) {
     EXPECT_EQ(engine.getCommitOnFileDependencies("test.dat").size(), 2);
     EXPECT_TRUE(engine.getCommitOnFileDependencies("test.dat")[1] == file_dependencies[1]);
 }
+
+TEST(testCapioClEngine, testCommitFirePermanentExcludeOnGlobs) {
+    capiocl::Engine engine;
+    engine.newFile("test.*");
+    engine.setFireRule("test.*", capiocl::MODE_NO_UPDATE);
+
+    EXPECT_TRUE(engine.isFirable("test.a"));
+    EXPECT_FALSE(engine.isFirable("testb"));
+
+    engine.setCommitRule("testb", capiocl::COMMITTED_ON_FILE);
+    engine.setFileDeps("testb", {"test.a"});
+
+    engine.setPermanent("myFile", true);
+    EXPECT_TRUE(engine.isPermanent("myFile"));
+    EXPECT_FALSE(engine.isFirable("myFile"));
+
+    EXPECT_FALSE(engine.isExcluded("testb"));
+    engine.setExclude("testb", true);
+    EXPECT_TRUE(engine.isExcluded("testb"));
+}
+
+TEST(testCapioClEngine, testIsFileIsDirectoryGlob) {
+    capiocl::Engine engine;
+    engine.newFile("test.*");
+    engine.setDirectory("test.d/");
+    engine.setDirectory("test.d/bin/lib");
+    EXPECT_TRUE(engine.isDirectory("test.d/bin/lib"));
+    EXPECT_TRUE(engine.isDirectory("test.d/"));
+    EXPECT_FALSE(engine.isDirectory("test.*"));
+}
+
+TEST(testCapioClEngine, testAddRemoveFile) {
+    capiocl::Engine engine;
+    engine.newFile("test.*");
+    EXPECT_TRUE(engine.contains("test.*"));
+    engine.remove("test.*");
+    EXPECT_FALSE(engine.contains("test.*"));
+}

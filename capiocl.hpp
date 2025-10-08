@@ -350,7 +350,7 @@ class Engine {
     bool isConsumer(const std::string &path, const std::string &app_name);
 
     /**
-     * @brief Check if a file is firable.
+     * @brief Check if a file is firable, that is fire rule is no_update.
      *
      * @param path File path.
      * @return true if the file is firable, false otherwise.
