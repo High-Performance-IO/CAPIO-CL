@@ -193,6 +193,11 @@ TEST(testCapioClEngine, testProducerConsumersFileDependencies) {
     EXPECT_TRUE(engine.getCommitOnFileDependencies("test.dat")[1] == file_dependencies[1]);
 
     EXPECT_TRUE(engine.getCommitOnFileDependencies("myNewFile").empty());
+
+    engine.addFileDependency("myFile.txt", file_dependencies[0]);
+    EXPECT_TRUE(engine.getCommitRule("myFile.txt") == capiocl::COMMITTED_ON_FILE);
+    EXPECT_EQ(engine.getCommitOnFileDependencies("myFile.txt").size(), 1);
+    EXPECT_TRUE(engine.getCommitOnFileDependencies("myFile.txt")[0] == file_dependencies[0]);
 }
 
 TEST(testCapioClEngine, testProducerConsumersFileDependenciesGlob) {
@@ -377,4 +382,15 @@ TEST(testCapioClEngine, testHomeNode) {
     capiocl::Engine engine;
     engine.newFile("A");
     EXPECT_TRUE(engine.getHomeNode("A") == nodename);
+}
+
+TEST(testCapioClEngine, testInsertFileDependencies) {
+    capiocl::Engine engine;
+
+    engine.setFileDeps("myFile.txt", {});
+    engine.setFileDeps("test.txt", {"a", "b", "c"});
+    EXPECT_EQ(engine.getCommitOnFileDependencies("test.txt").size(), 3);
+    EXPECT_TRUE(engine.getCommitOnFileDependencies("test.txt")[0] == "a");
+    EXPECT_TRUE(engine.getCommitOnFileDependencies("test.txt")[1] == "b");
+    EXPECT_TRUE(engine.getCommitOnFileDependencies("test.txt")[2] == "c");
 }

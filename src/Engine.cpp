@@ -244,6 +244,7 @@ void capiocl::Engine::addFileDependency(const std::string &path, std::string &fi
         return;
     }
     this->newFile(path);
+    this->setCommitRule(path, capiocl::COMMITTED_ON_FILE);
     this->addFileDependency(path, file_dependency);
 }
 
@@ -465,14 +466,18 @@ void capiocl::Engine::setFileDeps(const std::filesystem::path &path,
     if (dependencies.empty()) {
         return;
     }
-    if (_locations.find(path) == _locations.end()) {
-        this->newFile(path);
-    }
-    std::get<9>(_locations.at(path)) = dependencies;
+
     for (const auto &itm : dependencies) {
-        LOG("Creating new fie (if it exists) for path %s", itm.c_str());
+        LOG("Creating new file for path %s", itm.c_str());
         newFile(itm);
     }
+
+    if (_locations.find(path) != _locations.end()) {
+        std::get<9>(_locations.at(path)) = dependencies;
+        return;
+    }
+    this->newFile(path);
+    setFileDeps(path, dependencies);
 }
 
 long capiocl::Engine::getCommitCloseCount(std::filesystem::path::iterator::reference path) {
