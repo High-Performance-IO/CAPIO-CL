@@ -4,6 +4,7 @@
 TEST(testCapioClEngine, testInstantiation) {
     capiocl::Engine engine;
     EXPECT_EQ(engine.size(), 0);
+    engine.print();
 }
 
 TEST(testCapioClEngine, testAddFileDefault) {
@@ -238,6 +239,9 @@ TEST(testCapioClEngine, testCommitFirePermanentExcludeOnGlobs) {
     EXPECT_FALSE(engine.isExcluded("testb"));
     engine.setExclude("testb", true);
     EXPECT_TRUE(engine.isExcluded("testb"));
+
+    engine.setFireRule("test.c", capiocl::MODE_NO_UPDATE);
+    EXPECT_TRUE(engine.isFirable("test.c"));
 }
 
 TEST(testCapioClEngine, testIsFileIsDirectoryGlob) {
