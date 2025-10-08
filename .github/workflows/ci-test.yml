@@ -87,6 +87,7 @@ jobs:
         run: |
           cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
                 -DENABLE_COVERAGE=${{ matrix.build_type == 'Debug' && 'ON' || 'OFF' }} \
+                -DBUILD_PYTHON_BINDINGS=OFF \
                 -G Ninja \
                 -B ../build \
                 -S ${GITHUB_WORKSPACE}
@@ -123,16 +124,16 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
-#  upload-to-codecov:
-#    name: "Codecov report upload"
-#    needs: [ "unit-tests" , "codespell-check" , "format-check" ]
-#    runs-on: ubuntu-22.04
-#    steps:
-#      - uses: actions/checkout@v4
-#      - name: "Download artifacts"
-#        uses: actions/download-artifact@v4
-#      - name: "Upload coverage to Codecov"
-#        uses: codecov/codecov-action@v4
-#        with:
-#          fail_ci_if_error: true
-#          token: ${{ secrets.CODECOV_TOKEN }}
+  upload-to-codecov:
+    name: "Codecov report upload"
+    needs: [ "unit-tests" , "codespell-check" , "format-check" ]
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Download artifacts"
+        uses: actions/download-artifact@v4
+      - name: "Upload coverage to Codecov"
+        uses: codecov/codecov-action@v4
+        with:
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
