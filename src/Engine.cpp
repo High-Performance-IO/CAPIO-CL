@@ -110,7 +110,7 @@ void capiocl::Engine::print() const {
             } else {
                 line << std::setfill(' ') << std::setw(20) << "|" << std::setfill(' ')
                      << std::setw(13) << "|" << std::setfill(' ') << std::setw(12) << "|"
-                     << std::setfill(' ') << std::setw(10) << "|" << std::setw(10) << "|";
+                     << std::setfill(' ') << std::setw(10) << "|" << std::setw(11) << "|";
             }
 
             print_message(CLI_LEVEL_JSON, line.str());

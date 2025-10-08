@@ -21,12 +21,16 @@ bool capiocl::Parser::firstIsSubpathOfSecond(const std::filesystem::path &path,
 }
 
 std::tuple<std::string, capiocl::Engine *>
-capiocl::Parser::parse(const std::filesystem::path &source,
-                       const std::filesystem::path &resolve_prefix, bool store_only_in_memory) {
+capiocl::Parser::parse(const std::filesystem::path &source, std::filesystem::path &resolve_prefix,
+                       bool store_only_in_memory) {
 
     std::string workflow_name = CAPIO_CL_DEFAULT_WF_NAME;
     auto locations            = new Engine();
     START_LOG(gettid(), "call(config_file='%s')", source.c_str());
+
+    if (resolve_prefix.empty()) {
+        resolve_prefix = ".";
+    }
 
     locations->newFile("*");
     locations->setDirectory("*");
@@ -73,6 +77,7 @@ capiocl::Parser::parse(const std::filesystem::path &source,
 
     for (const auto &app : doc["IO_Graph"]) {
         if (!app.contains("name") || !app["name"].is_string()) {
+            print_message(CLI_LEVEL_ERROR, "Missing IO_Graph name or name is not a valid string!");
             ERR_EXIT("Error: app name is mandatory");
         }
 
@@ -87,6 +92,7 @@ capiocl::Parser::parse(const std::filesystem::path &source,
             ERR_EXIT(msg.c_str());
         }
 
+        print_message(CLI_LEVEL_JSON, "Parsing input_stream for app " + app_name);
         for (const auto &itm : app["input_stream"]) {
             std::filesystem::path file_path(itm.get<std::string>());
             if (file_path.is_relative()) {
@@ -94,7 +100,7 @@ capiocl::Parser::parse(const std::filesystem::path &source,
                               "Path : " + file_path.string() + " IS RELATIVE! resolving...");
                 file_path = resolve_prefix / file_path;
             }
-            locations->newFile(file_path.c_str());
+            locations->newFile(file_path);
             locations->addConsumer(file_path, app_name);
         }
 
@@ -104,7 +110,7 @@ capiocl::Parser::parse(const std::filesystem::path &source,
             print_message(CLI_LEVEL_ERROR, msg);
             ERR_EXIT(msg.c_str());
         }
-
+        print_message(CLI_LEVEL_JSON, "Parsing output_stream for app " + app_name);
         for (const auto &itm : app["output_stream"]) {
             std::filesystem::path file_path(itm.get<std::string>());
             if (file_path.is_relative()) {
@@ -118,6 +124,7 @@ capiocl::Parser::parse(const std::filesystem::path &source,
 
         // ---- streaming ----
         if (app.contains("streaming") && app["streaming"].is_array()) {
+            print_message(CLI_LEVEL_JSON, "Parsing streaming for app " + app_name);
             for (const auto &stream_item : app["streaming"]) {
                 bool is_file = true;
                 std::vector<std::filesystem::path> streaming_names;
@@ -145,51 +152,79 @@ capiocl::Parser::parse(const std::filesystem::path &source,
                         streaming_names.push_back(p);
                     }
                 } else {
+                    print_message(
+                        CLI_LEVEL_ERROR,
+                        "Missing streaming name/dirname, or name/dirname is not an array for app " +
+                            app_name);
                     ERR_EXIT("error: either name or dirname in streaming section is required");
                 }
 
-                // committed
-                if (!stream_item.contains("committed") || !stream_item["committed"].is_string()) {
-                    ERR_EXIT("commit rule is mandatory in streaming section");
-                }
+                // Commit rule. Optional in nature, hence no check required!
+                if (stream_item.contains("committed")) {
+                    if (!stream_item["committed"].is_string()) {
+                        print_message(CLI_LEVEL_ERROR, "Error: invalid type for commit rule!");
+                        ERR_EXIT("Error: invalid type for commit rule!");
+                    }
 
-                std::string committed = stream_item["committed"].get<std::string>();
-                auto pos              = committed.find(':');
-                if (pos != std::string::npos) {
-                    commit_rule           = committed.substr(0, pos);
-                    std::string count_str = committed.substr(pos + 1);
-                    if (!isInteger(count_str)) {
-                        ERR_EXIT("invalid number in commit rule");
-                    }
-                    if (commit_rule == COMMITTED_ON_CLOSE) {
-                        n_close = std::stol(count_str);
-                    } else if (commit_rule == COMMITTED_N_FILES) {
-                        n_files = std::stol(count_str);
-                    } else {
-                        ERR_EXIT("invalid commit rule type");
-                    }
-                } else {
-                    commit_rule = committed;
-                }
-
-                // file_deps
-                if (commit_rule == COMMITTED_ON_FILE) {
-                    if (!stream_item.contains("file_deps") ||
-                        !stream_item["file_deps"].is_array()) {
-                        ERR_EXIT("commit rule is on_file but no file_deps section found");
-                    }
-                    for (const auto &dep : stream_item["file_deps"]) {
-                        std::filesystem::path p(dep.get<std::string>());
-                        if (p.is_relative()) {
-                            p = resolve_prefix / p;
+                    std::string committed = stream_item["committed"].get<std::string>();
+                    auto pos              = committed.find(':');
+                    if (pos != std::string::npos) {
+                        commit_rule           = committed.substr(0, pos);
+                        std::string count_str = committed.substr(pos + 1);
+                        if (!isInteger(count_str)) {
+                            ERR_EXIT("invalid number in commit rule");
                         }
-                        file_deps.push_back(p);
+                        if (commit_rule == COMMITTED_ON_CLOSE) {
+                            n_close = std::stol(count_str);
+                        } else if (commit_rule == COMMITTED_N_FILES) {
+                            n_files = std::stol(count_str);
+                        } else {
+                            ERR_EXIT("invalid commit rule type");
+                        }
+                    } else {
+                        commit_rule = committed;
+                    }
+
+                    // file_deps
+                    if (commit_rule == COMMITTED_ON_FILE) {
+                        if (!stream_item.contains("file_deps") ||
+                            !stream_item["file_deps"].is_array()) {
+                            ERR_EXIT("commit rule is on_file but no file_deps section found");
+                        }
+                        for (const auto &dep : stream_item["file_deps"]) {
+                            std::filesystem::path p(dep.get<std::string>());
+                            if (p.is_relative()) {
+                                p = resolve_prefix / p;
+                            }
+                            file_deps.push_back(p);
+                        }
+                    }
+
+                    // check commit rule is one of the available
+                    if (commit_rule != capiocl::COMMITTED_N_FILES &&
+                        commit_rule != capiocl::COMMITTED_ON_CLOSE &&
+                        commit_rule != capiocl::COMMITTED_ON_FILE &&
+                        commit_rule != capiocl::COMMITTED_ON_TERMINATION) {
+                        print_message(CLI_LEVEL_ERROR, "Error: commit rule " + commit_rule +
+                                                           " is not one of the allowed one!");
+                        ERR_EXIT("Unknown commit rule %s", commit_rule.c_str());
                     }
                 }
 
-                // mode
-                if (stream_item.contains("mode") && stream_item["mode"].is_string()) {
+                // Firing rule. Optional in nature, hence no check required!
+                if (stream_item.contains("mode")) {
+                    if (!stream_item["mode"].is_string()) {
+                        print_message(CLI_LEVEL_ERROR, "Error: invalid type for mode");
+                        ERR_EXIT("Error: invalid type for mode");
+                    }
                     mode = stream_item["mode"].get<std::string>();
+
+                    if (mode != capiocl::MODE_UPDATE && mode != capiocl::MODE_NO_UPDATE) {
+                        print_message(CLI_LEVEL_ERROR,
+                                      "Error: invalid firing rule provided for app: " + app_name);
+                        ERR_EXIT("Error: invalid firing rule provided for app: %s",
+                                 app_name.c_str());
+                    }
                 }
 
                 // n_files (optional)
@@ -206,6 +241,14 @@ capiocl::Parser::parse(const std::filesystem::path &source,
                     } else {
                         locations->setDirectory(path);
                     }
+
+                    print_message(CLI_LEVEL_INFO,
+                                  "App: " + app_name + " - " + "path: " + path.string() + " - " +
+                                      "committed: " + commit_rule + " - " + "mode: " + mode +
+                                      " - " + "n_files: " + std::to_string(n_files) + " - " +
+                                      "n_close: " + std::to_string(n_close));
+                    print_message(CLI_LEVEL_INFO, "");
+
                     locations->setCommitRule(path, commit_rule);
                     locations->setFireRule(path, mode);
                     locations->setCommitedCloseNumber(path, n_close);
