@@ -209,9 +209,12 @@ long capiocl::Engine::getDirectoryFileCount(const std::string &path) {
 void capiocl::Engine::addProducer(const std::string &path, std::string &producer) {
     START_LOG(gettid(), "call(path=%s, producer=%s)", path.c_str(), producer.c_str());
     producer.erase(remove_if(producer.begin(), producer.end(), isspace), producer.end());
-    newFile(path);
+
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
-        std::get<0>(itm->second).emplace_back(producer);
+        if (auto vec = std::get<0>(itm->second);
+            std::find(vec.begin(), vec.end(), producer) == vec.end()) {
+            std::get<0>(itm->second).emplace_back(producer);
+        }
         return;
     }
     this->newFile(path);
@@ -222,7 +225,10 @@ void capiocl::Engine::addConsumer(const std::string &path, std::string &consumer
     START_LOG(gettid(), "call(path=%s, consumer=%s)", path.c_str(), consumer.c_str());
     consumer.erase(remove_if(consumer.begin(), consumer.end(), isspace), consumer.end());
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
-        std::get<1>(itm->second).emplace_back(consumer);
+        if (auto vec = std::get<1>(itm->second);
+            std::find(vec.begin(), vec.end(), consumer) == vec.end()) {
+            std::get<1>(itm->second).emplace_back(consumer);
+        }
         return;
     }
     this->newFile(path);
@@ -324,7 +330,10 @@ void capiocl::Engine::setExclude(const std::string &path, const bool value) {
     START_LOG(gettid(), "call(path=%s, value=%s)", path.c_str(), value ? "true" : "false");
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
         std::get<5>(itm->second) = value;
+        return;
     }
+    this->newFile(path);
+    setExclude(path, value);
 }
 
 void capiocl::Engine::setDirectory(const std::string &path) {
@@ -415,21 +424,8 @@ bool capiocl::Engine::isConsumer(const std::string &path, const std::string &app
     }
     LOG("No exact match found in locations. checking for globs");
 
-    // check for glob. Here we do not use the LMP check
-    for (const auto &[k, entry] : _locations) {
-        if (fnmatch(k.c_str(), path.c_str(), FNM_PATHNAME) == 0) {
-            LOG("Found possible glob match");
-            std::vector<std::string> producers = std::get<1>(entry);
-            DBG(gettid(), [&](const std::vector<std::string> &arr) {
-                for (auto itm : arr) {
-                    LOG("producer: %s", itm.c_str());
-                }
-            }(producers));
-            return std::find(producers.begin(), producers.end(), app_name) != producers.end();
-        }
-    }
-    LOG("No match has been found");
-    return false;
+    this->newFile(path);
+    return isConsumer(path, app_name);
 }
 
 std::vector<std::string> capiocl::Engine::getProducers(const std::string &path) {
@@ -437,7 +433,8 @@ std::vector<std::string> capiocl::Engine::getProducers(const std::string &path) 
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
         return std::get<0>(itm->second);
     }
-    return {};
+    this->newFile(path);
+    return getProducers(path);
 }
 
 bool capiocl::Engine::isProducer(const std::string &path, const std::string &app_name) {
@@ -458,21 +455,8 @@ bool capiocl::Engine::isProducer(const std::string &path, const std::string &app
     }
     LOG("No exact match found in locations. checking for globs");
 
-    // check for glob. Here we do not use the LMP check
-    for (const auto &[k, entry] : _locations) {
-        if (fnmatch(k.c_str(), path.c_str(), FNM_PATHNAME) == 0) {
-            LOG("Found possible glob match");
-            std::vector<std::string> producers = std::get<0>(entry);
-            DBG(gettid(), [&](const std::vector<std::string> &arr) {
-                for (auto itm : arr) {
-                    LOG("producer: %s", itm.c_str());
-                }
-            }(producers));
-            return std::find(producers.begin(), producers.end(), app_name) != producers.end();
-        }
-    }
-    LOG("No match has been found");
-    return false;
+    this->newFile(path);
+    return isProducer(path, app_name);
 }
 
 void capiocl::Engine::setFileDeps(const std::filesystem::path &path,
@@ -570,25 +554,13 @@ std::string capiocl::Engine::getHomeNode(const std::string &path) {
     return node_name;
 }
 
-bool capiocl::Engine::isExcluded(const std::string &path) const {
+bool capiocl::Engine::isExcluded(const std::string &path) {
 
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
         return std::get<5>(itm->second);
     }
     LOG("Checking against GLOB");
 
-    size_t lpm_match_size = -1;
-    bool lpm_match        = false;
-    for (const auto &[glob_path, entry] : _locations) {
-        if (fnmatch(glob_path.c_str(), path.c_str(), FNM_PATHNAME) == 0) {
-            LOG("Found match with %s", glob_path.c_str());
-            if (glob_path.length() > lpm_match_size) {
-                lpm_match_size = glob_path.length();
-                lpm_match      = std::get<5>(entry);
-                LOG("Match is longer than previous match. storing value = %s",
-                    lpm_match ? "true" : "false");
-            }
-        }
-    }
-    return lpm_match;
+    this->newFile(path);
+    return isExcluded(path);
 }

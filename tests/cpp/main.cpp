@@ -131,6 +131,9 @@ TEST(testCapioClEngine, testAddFileManuallyQuestion) {
     EXPECT_TRUE(engine.isDirectory("test.9"));
     EXPECT_EQ(engine.getDirectoryFileCount("test.a"), 10);
     EXPECT_FALSE(engine.isStoredInMemory("test.b"));
+
+    engine.setDirectoryFileCount("myDir", 10);
+    EXPECT_EQ(engine.getDirectoryFileCount("myDir"), 10);
 }
 
 TEST(testCapioClEngine, testAddFileManuallyGlobExplcit) {
@@ -188,6 +191,8 @@ TEST(testCapioClEngine, testProducerConsumersFileDependencies) {
     engine.addFileDependency("test.dat", file_dependencies[1]);
     EXPECT_EQ(engine.getCommitOnFileDependencies("test.dat").size(), 2);
     EXPECT_TRUE(engine.getCommitOnFileDependencies("test.dat")[1] == file_dependencies[1]);
+
+    EXPECT_TRUE(engine.getCommitOnFileDependencies("myNewFile").empty());
 }
 
 TEST(testCapioClEngine, testProducerConsumersFileDependenciesGlob) {
@@ -241,6 +246,11 @@ TEST(testCapioClEngine, testCommitFirePermanentExcludeOnGlobs) {
     EXPECT_FALSE(engine.isExcluded("testb"));
     engine.setExclude("testb", true);
     EXPECT_TRUE(engine.isExcluded("testb"));
+    engine.setExclude("testb", true);
+    EXPECT_TRUE(engine.isExcluded("testb"));
+    engine.setExclude("myFile.*", true);
+    EXPECT_TRUE(engine.isExcluded("myFile.txt"));
+    EXPECT_TRUE(engine.isExcluded("myFile.dat"));
 
     engine.setFireRule("test.c", capiocl::MODE_NO_UPDATE);
     EXPECT_TRUE(engine.isFirable("test.c"));
@@ -291,6 +301,19 @@ TEST(testCapioClEngine, testProducersConsumers) {
     EXPECT_FALSE(engine.isProducer("test.*", consumer));
     EXPECT_TRUE(engine.isConsumer("test.*", consumer));
     EXPECT_FALSE(engine.isConsumer("test.*", producer));
+
+    engine.addProducer("test.k", producer);
+    engine.addConsumer("test.k", consumer);
+    EXPECT_TRUE(engine.isProducer("test.k", producer));
+    EXPECT_TRUE(engine.isConsumer("test.k", consumer));
+
+    EXPECT_TRUE(engine.isConsumer("test.txt.2", consumer));
+    EXPECT_FALSE(engine.isProducer("test.txt.3", consumer));
+    EXPECT_FALSE(engine.isConsumer("test.txt.4", producer));
+    EXPECT_TRUE(engine.isProducer("test.txt.4", producer));
+
+    EXPECT_EQ(engine.getProducers("myNewFile").size(), 0);
+    EXPECT_EQ(engine.getProducers("test.k").size(), 1);
 }
 
 TEST(testCapioClEngine, testCommitCloseCount) {
@@ -304,6 +327,9 @@ TEST(testCapioClEngine, testCommitCloseCount) {
 
     engine.setCommitedCloseNumber("test.*", 30);
     EXPECT_EQ(engine.getCommitCloseCount("test.f"), 30);
+
+    engine.setCommitRule("myFile", capiocl::COMMITTED_ON_FILE);
+    EXPECT_TRUE(engine.getCommitRule("myFile") == capiocl::COMMITTED_ON_FILE);
 }
 
 TEST(testCapioClEngine, testStorageOptions) {
@@ -332,6 +358,15 @@ TEST(testCapioClEngine, testStorageOptions) {
     EXPECT_TRUE(engine.isStoredInMemory("D"));
 
     EXPECT_EQ(engine.getFileToStoreInMemory().size(), 4);
+
+    engine.setStoreFileInFileSystem("A");
+    engine.setStoreFileInFileSystem("B");
+    engine.setStoreFileInFileSystem("C");
+    engine.setStoreFileInFileSystem("D");
+    EXPECT_FALSE(engine.isStoredInMemory("A"));
+    EXPECT_FALSE(engine.isStoredInMemory("B"));
+    EXPECT_FALSE(engine.isStoredInMemory("C"));
+    EXPECT_FALSE(engine.isStoredInMemory("D"));
 }
 
 TEST(testCapioClEngine, testHomeNode) {

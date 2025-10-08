@@ -371,7 +371,7 @@ class Engine {
      * @param path File path.
      * @return true if excluded, false otherwise.
      */
-    bool isExcluded(const std::string &path) const;
+    bool isExcluded(const std::string &path);
 
     /**
      * @brief Check if a path is a directory.
