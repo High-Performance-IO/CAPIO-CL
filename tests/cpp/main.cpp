@@ -303,7 +303,7 @@ TEST(testCapioClEngine, testCommitCloseCount) {
     EXPECT_EQ(engine.getCommitCloseCount("test.d"), 0);
 
     engine.setCommitedCloseNumber("test.*", 30);
-    EXPECT_EQ(engine.getCommitCloseCount("test.e"), 30);
+    EXPECT_EQ(engine.getCommitCloseCount("test.f"), 30);
 }
 
 TEST(testCapioClEngine, testStorageOptions) {
