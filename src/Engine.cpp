@@ -203,7 +203,6 @@ long capiocl::Engine::getDirectoryFileCount(const std::string &path) {
         return std::get<8>(itm->second);
     }
     this->newFile(path);
-
     return getDirectoryFileCount(path);
 }
 
@@ -213,7 +212,10 @@ void capiocl::Engine::addProducer(const std::string &path, std::string &producer
     newFile(path);
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
         std::get<0>(itm->second).emplace_back(producer);
+        return;
     }
+    this->newFile(path);
+    this->addProducer(path, producer);
 }
 
 void capiocl::Engine::addConsumer(const std::string &path, std::string &consumer) {
@@ -221,22 +223,32 @@ void capiocl::Engine::addConsumer(const std::string &path, std::string &consumer
     consumer.erase(remove_if(consumer.begin(), consumer.end(), isspace), consumer.end());
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
         std::get<1>(itm->second).emplace_back(consumer);
+        return;
     }
+    this->newFile(path);
+    this->addConsumer(path, consumer);
 }
+
 void capiocl::Engine::addFileDependency(const std::string &path, std::string &file_dependency) {
     START_LOG(gettid(), "call(path=%s, consumer=%s)", path.c_str(), consumer.c_str());
     file_dependency.erase(remove_if(file_dependency.begin(), file_dependency.end(), isspace),
                           file_dependency.end());
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
         std::get<9>(itm->second).emplace_back(file_dependency);
+        return;
     }
+    this->newFile(path);
+    this->addFileDependency(path, file_dependency);
 }
 
 void capiocl::Engine::setCommitRule(const std::string &path, const std::string &commit_rule) {
     START_LOG(gettid(), "call(path=%s, commit_rule=%s)", path.c_str(), commit_rule.c_str());
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
         std::get<2>(itm->second) = commit_rule;
+        return;
     }
+    this->newFile(path);
+    this->setCommitRule(path, commit_rule);
 }
 
 std::string capiocl::Engine::getCommitRule(const std::string &path) {
@@ -319,14 +331,20 @@ void capiocl::Engine::setDirectory(const std::string &path) {
     START_LOG(gettid(), "call(path=%s)", path.c_str());
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
         std::get<6>(itm->second) = false;
+        return;
     }
+    this->newFile(path);
+    setDirectory(path);
 }
 
 void capiocl::Engine::setFile(const std::string &path) {
     START_LOG(gettid(), "call(path=%s)", path.c_str());
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
         std::get<6>(itm->second) = true;
+        return;
     }
+    this->newFile(path);
+    setFile(path);
 }
 
 bool capiocl::Engine::isFile(const std::string &path) {
@@ -346,18 +364,28 @@ void capiocl::Engine::setCommitedCloseNumber(const std::string &path, const long
     START_LOG(gettid(), "call(path=%s, num=%ld)", path.c_str(), num);
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
         std::get<7>(itm->second) = num;
+        return;
     }
+    this->newFile(path);
+    setCommitedCloseNumber(path, num);
 }
 
 void capiocl::Engine::setDirectoryFileCount(const std::string &path, long num) {
     START_LOG(gettid(), "call(path=%s, num=%ld)", path.c_str(), num);
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
         std::get<8>(itm->second) = num;
+        return;
     }
+    this->newFile(path);
+    this->setDirectory(path);
+    this->setDirectoryFileCount(path, num);
 }
 
 void capiocl::Engine::remove(const std::string &path) {
     START_LOG(gettid(), "call(path=%s)", path.c_str());
+    if (const auto itm = _locations.find(path); itm == _locations.end()) {
+        return;
+    }
     _locations.erase(path);
 }
 
@@ -463,14 +491,17 @@ void capiocl::Engine::setFileDeps(const std::filesystem::path &path,
     }
 }
 
-long capiocl::Engine::getCommitCloseCount(std::filesystem::path::iterator::reference path) const {
+long capiocl::Engine::getCommitCloseCount(std::filesystem::path::iterator::reference path) {
     START_LOG(gettid(), "call(path=%s)", path.c_str());
-    long count = 0;
+
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
-        count = std::get<7>(itm->second);
+        auto count = std::get<7>(itm->second);
+        LOG("Expected number on close to commit file: %d", count);
+        return count;
     }
-    LOG("Expected number on close to commit file: %d", count);
-    return count;
+
+    this->newFile(path);
+    return getCommitCloseCount(path);
 };
 
 std::vector<std::string>
@@ -482,9 +513,14 @@ capiocl::Engine::getCommitOnFileDependencies(const std::filesystem::path &path) 
 }
 
 void capiocl::Engine::setStoreFileInMemory(const std::filesystem::path &path) {
+    if (const auto itm = _locations.find(path); itm != _locations.end()) {
+        std::get<10>(_locations.at(path)) = true;
+        return;
+    }
     this->newFile(path);
-    std::get<10>(_locations.at(path)) = true;
+    setStoreFileInMemory(path);
 }
+
 void capiocl::Engine::setAllStoreInMemory() {
     for (const auto &[fst, snd] : _locations) {
         this->setStoreFileInMemory(fst);
@@ -492,15 +528,20 @@ void capiocl::Engine::setAllStoreInMemory() {
 }
 
 void capiocl::Engine::setStoreFileInFileSystem(const std::filesystem::path &path) {
+    if (const auto itm = _locations.find(path); itm != _locations.end()) {
+        std::get<10>(_locations.at(path)) = false;
+        return;
+    }
     this->newFile(path);
-    std::get<10>(_locations.at(path)) = false;
+    setStoreFileInFileSystem(path);
 }
 
 bool capiocl::Engine::isStoredInMemory(const std::filesystem::path &path) {
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
         return std::get<10>(itm->second);
     }
-    return false;
+    this->newFile(path);
+    return isStoredInMemory(path);
 }
 
 std::vector<std::string> capiocl::Engine::getFileToStoreInMemory() {

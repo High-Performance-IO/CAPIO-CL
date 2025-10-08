@@ -320,7 +320,7 @@ class Engine {
     std::vector<std::string> getConsumers(const std::string &path);
 
     /// @brief Get the commit-on-close counter for a file.
-    long getCommitCloseCount(std::filesystem::path::iterator::reference path) const;
+    long getCommitCloseCount(std::filesystem::path::iterator::reference path);
 
     /// @brief Get file dependencies.
     std::vector<std::string> getCommitOnFileDependencies(const std::filesystem::path &path);

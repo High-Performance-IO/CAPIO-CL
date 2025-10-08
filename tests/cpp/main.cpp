@@ -77,6 +77,8 @@ TEST(testCapioClEngine, testAddFileManually) {
     EXPECT_FALSE(engine.isDirectory("test.dat"));
     EXPECT_EQ(engine.getDirectoryFileCount("test.dat"), 0);
     EXPECT_FALSE(engine.isStoredInMemory("test.dat"));
+
+    engine.setFile("test.txt");
 }
 
 TEST(testCapioClEngine, testAddFileManuallyGlob) {
@@ -242,6 +244,8 @@ TEST(testCapioClEngine, testCommitFirePermanentExcludeOnGlobs) {
 
     engine.setFireRule("test.c", capiocl::MODE_NO_UPDATE);
     EXPECT_TRUE(engine.isFirable("test.c"));
+
+    engine.setCommitedCloseNumber("test.e", 100);
 }
 
 TEST(testCapioClEngine, testIsFileIsDirectoryGlob) {
@@ -260,4 +264,82 @@ TEST(testCapioClEngine, testAddRemoveFile) {
     EXPECT_TRUE(engine.contains("test.*"));
     engine.remove("test.*");
     EXPECT_FALSE(engine.contains("test.*"));
+    engine.remove("data");
+    EXPECT_FALSE(engine.contains("data"));
+}
+
+TEST(testCapioClEngine, testProducersConsumers) {
+    capiocl::Engine engine;
+    engine.newFile("test.*");
+
+    std::string consumer = "consumer";
+    std::string producer = "producer";
+
+    engine.addConsumer("test.txt", consumer);
+    engine.addProducer("test.txt.1", producer);
+
+    EXPECT_TRUE(engine.isProducer("test.txt.1", producer));
+    EXPECT_FALSE(engine.isProducer("test.txt.1", consumer));
+
+    EXPECT_FALSE(engine.isConsumer("test.txt", producer));
+    EXPECT_TRUE(engine.isConsumer("test.txt", consumer));
+
+    engine.addConsumer("test.*", consumer);
+    engine.addProducer("test.*", producer);
+
+    EXPECT_TRUE(engine.isProducer("test.*", producer));
+    EXPECT_FALSE(engine.isProducer("test.*", consumer));
+    EXPECT_TRUE(engine.isConsumer("test.*", consumer));
+    EXPECT_FALSE(engine.isConsumer("test.*", producer));
+}
+
+TEST(testCapioClEngine, testCommitCloseCount) {
+    capiocl::Engine engine;
+    engine.newFile("test.*");
+    engine.setCommitRule("test.*", capiocl::COMMITTED_ON_CLOSE);
+    engine.setCommitedCloseNumber("test.e", 100);
+
+    EXPECT_EQ(engine.getCommitCloseCount("test.e"), 100);
+    EXPECT_EQ(engine.getCommitCloseCount("test.d"), 0);
+
+    engine.setCommitedCloseNumber("test.*", 30);
+    EXPECT_EQ(engine.getCommitCloseCount("test.e"), 30);
+}
+
+TEST(testCapioClEngine, testStorageOptions) {
+    capiocl::Engine engine;
+    engine.newFile("A");
+    engine.newFile("B");
+
+    engine.setStoreFileInMemory("A");
+    EXPECT_TRUE(engine.isStoredInMemory("A"));
+    EXPECT_FALSE(engine.isStoredInMemory("B"));
+
+    engine.setStoreFileInMemory("B");
+    EXPECT_TRUE(engine.isStoredInMemory("A"));
+    EXPECT_TRUE(engine.isStoredInMemory("B"));
+
+    engine.setStoreFileInMemory("C");
+    EXPECT_TRUE(engine.isStoredInMemory("C"));
+
+    engine.newFile("D");
+    EXPECT_FALSE(engine.isStoredInMemory("D"));
+
+    engine.setAllStoreInMemory();
+    EXPECT_TRUE(engine.isStoredInMemory("A"));
+    EXPECT_TRUE(engine.isStoredInMemory("B"));
+    EXPECT_TRUE(engine.isStoredInMemory("C"));
+    EXPECT_TRUE(engine.isStoredInMemory("D"));
+
+    EXPECT_EQ(engine.getFileToStoreInMemory().size(), 4);
+}
+
+TEST(testCapioClEngine, testHomeNode) {
+    std::string nodename;
+    nodename.reserve(1024);
+    gethostname(nodename.data(), nodename.size());
+
+    capiocl::Engine engine;
+    engine.newFile("A");
+    EXPECT_TRUE(engine.getHomeNode("A") == nodename);
 }

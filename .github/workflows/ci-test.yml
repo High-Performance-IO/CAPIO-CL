@@ -111,8 +111,9 @@ jobs:
         run: |
           pip install --upgrade gcovr
           gcovr \
-            --exclude-throw-branches \
-            --xml coverage.xml \
+            --exclude-throw-branches    \
+            --exclude tests/            \
+            --xml coverage.xml          \
             --gcov-executable "${{ startsWith(matrix.cxx, 'clang-') && format('llvm-cov-{0} gcov', env.CXX_VERSION) || format('gcov-{0}', env.CXX_VERSION) }}" \
             ../build
       - name: "Upload coverage report"
