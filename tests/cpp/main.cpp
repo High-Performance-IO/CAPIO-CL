@@ -535,3 +535,29 @@ TEST(testCapioSerializerParser, testSerializeParseCAPIOCLV1) {
 
     std::filesystem::remove(path);
 }
+
+TEST(testCapioSerializerParser, testSerializeParseCAPIOCLV1NcloseNfiles) {
+    const std::filesystem::path path("./config.json");
+    const std::string workflow_name = "demo";
+    const std::string file_1_name = "file1.txt", file_2_name = "file2.txt",
+                      file_3_name = "my_command_history.txt";
+    std::string producer_name = "_first", consumer_name = "_last";
+
+    capiocl::Engine engine;
+
+    engine.setDirectory(file_1_name);
+    engine.setDirectoryFileCount(file_1_name, 10);
+    engine.addProducer(file_1_name, producer_name);
+    engine.addConsumer(file_1_name, consumer_name);
+
+    capiocl::Serializer::dump(engine, workflow_name, path);
+
+    std::filesystem::path resolve = "";
+    auto [wf_name, new_engine]    = capiocl::Parser::parse(path, resolve);
+
+    EXPECT_TRUE(wf_name == workflow_name);
+    capiocl::print_message("", "");
+    EXPECT_TRUE(engine == *new_engine);
+
+    std::filesystem::remove(path);
+}

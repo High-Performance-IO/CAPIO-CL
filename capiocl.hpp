@@ -449,7 +449,7 @@ class Serializer {
      * @param workflow_name Name of the current workflow
      * @param filename path of output file @param filename
      */
-    static void dump(const Engine &engine, const std::string workflow_name,
+    static void dump(const Engine &engine, const std::string &workflow_name,
                      const std::filesystem::path &filename);
 };
 } // namespace capiocl
