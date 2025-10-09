@@ -107,10 +107,13 @@ class Engine {
      *
      * @param str Input string.
      * @param n Number of characters to keep from the end.
-     * @return Truncated string with optional "[..]" prefix.
+     * @return Truncated string with "[..]" prefix.
      */
     static std::string truncateLastN(const std::string &str, const std::size_t n) {
-        return str.length() > n ? "[..] " + str.substr(str.length() - n) : str;
+        if (str.length() > n) {
+            return "[..] " + str.substr(str.length() - n);
+        }
+        return str;
     }
 
   protected:
@@ -320,7 +323,7 @@ class Engine {
     std::vector<std::string> getConsumers(const std::string &path);
 
     /// @brief Get the commit-on-close counter for a file.
-    long getCommitCloseCount(std::filesystem::path::iterator::reference path) const;
+    long getCommitCloseCount(std::filesystem::path::iterator::reference path);
 
     /// @brief Get file dependencies.
     std::vector<std::string> getCommitOnFileDependencies(const std::filesystem::path &path);
@@ -350,7 +353,7 @@ class Engine {
     bool isConsumer(const std::string &path, const std::string &app_name);
 
     /**
-     * @brief Check if a file is firable.
+     * @brief Check if a file is firable, that is fire rule is no_update.
      *
      * @param path File path.
      * @return true if the file is firable, false otherwise.
@@ -371,7 +374,7 @@ class Engine {
      * @param path File path.
      * @return true if excluded, false otherwise.
      */
-    bool isExcluded(const std::string &path) const;
+    bool isExcluded(const std::string &path);
 
     /**
      * @brief Check if a path is a directory.
@@ -396,6 +399,8 @@ class Engine {
      * @return
      */
     bool isPermanent(const std::string &path);
+
+    bool operator==(const capiocl::Engine &other) const;
 };
 
 /**
@@ -403,39 +408,36 @@ class Engine {
  *
  */
 class Parser {
-    /**
-     * @brief Check if a string is a representation of a integer number
-     *
-     * @param s
-     * @return true
-     * @return false
-     */
-    static bool isInteger(const std::string &s);
 
-    /**
-     * @brief compare two paths
-     *
-     * @param path
-     * @param base
-     * @return true if @p path is a subdirectory of base
-     * @return false otherwise
-     */
-    static inline bool firstIsSubpathOfSecond(const std::filesystem::path &path,
-                                              const std::filesystem::path &base);
+    static std::filesystem::path resolve(std::filesystem::path path,
+                                         const std::filesystem::path &prefix);
 
   public:
     /**
      * @brief Perform the parsing of the capio_server configuration file
      *
      * @param source
-     * @param resolve_prexix
+     * @param resolve_prefix
      * @param store_only_in_memory Set to true to set all files to be stored in memory
      * @return Tuple with workflow name and CapioCLEngine instance with the information provided by
      * the config file
      */
     static std::tuple<std::string, Engine *> parse(const std::filesystem::path &source,
-                                                   std::filesystem::path &resolve_prexix,
+                                                   const std::filesystem::path &resolve_prefix = "",
                                                    bool store_only_in_memory = false);
+};
+
+/**
+ * Custom exception for errors occurring within the Parser component
+ */
+class ParserException : public std::exception {
+    std::string message;
+
+  public:
+    explicit ParserException(const std::string &msg) : message(msg) {
+        print_message(CLI_LEVEL_ERROR, msg);
+    }
+    const char *what() const noexcept override { return message.c_str(); }
 };
 
 class Serializer {
@@ -447,7 +449,7 @@ class Serializer {
      * @param workflow_name Name of the current workflow
      * @param filename path of output file @param filename
      */
-    static void dump(const Engine &engine, const std::string workflow_name,
+    static void dump(const Engine &engine, const std::string &workflow_name,
                      const std::filesystem::path &filename);
 };
 } // namespace capiocl

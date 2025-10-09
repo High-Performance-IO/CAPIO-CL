@@ -36,7 +36,6 @@ jobs:
           check-path: "${{ matrix.path }}"
   unit-tests:
     name: "Build ${{ matrix.build_type }} with ${{ matrix.cxx }}"
-    needs: [ "codespell-check" , "format-check" ]
     runs-on: ubuntu-22.04
     strategy:
       matrix:
@@ -112,8 +111,9 @@ jobs:
         run: |
           pip install --upgrade gcovr
           gcovr \
-            --exclude-throw-branches \
-            --xml coverage.xml \
+            --exclude-throw-branches    \
+            --exclude tests/            \
+            --xml coverage.xml          \
             --gcov-executable "${{ startsWith(matrix.cxx, 'clang-') && format('llvm-cov-{0} gcov', env.CXX_VERSION) || format('gcov-{0}', env.CXX_VERSION) }}" \
             ../build
       - name: "Upload coverage report"
@@ -127,7 +127,7 @@ jobs:
 
   upload-to-codecov:
     name: "Codecov report upload"
-    needs: [ "unit-tests" ]
+    needs: [ "unit-tests" , "codespell-check" , "format-check" ]
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
