@@ -154,8 +154,8 @@ void capiocl::Engine::newFile(const std::string &path) {
         std::string matchKey;
         size_t matchSize = 0;
         for (const auto &[filename, data] : _locations) {
-            if (fnmatch(filename.c_str(), path.c_str(), FNM_PATHNAME) == 0 &&
-                filename.length() > matchSize) {
+            const bool match = fnmatch(filename.c_str(), path.c_str(), FNM_PATHNAME) == 0;
+            if (match && filename.length() > matchSize) {
                 LOG("Found match with %s", filename.c_str());
                 matchSize = filename.length();
                 matchKey  = filename;
@@ -233,7 +233,11 @@ void capiocl::Engine::addFileDependency(const std::string &path, std::string &fi
     file_dependency.erase(remove_if(file_dependency.begin(), file_dependency.end(), isspace),
                           file_dependency.end());
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
-        std::get<9>(itm->second).emplace_back(file_dependency);
+        if (auto vec = std::get<9>(itm->second);
+            std::find(vec.begin(), vec.end(), file_dependency) == vec.end()) {
+            std::get<9>(itm->second).emplace_back(file_dependency);
+        }
+
         return;
     }
     this->newFile(path);
@@ -614,7 +618,7 @@ bool capiocl::Engine::operator==(const capiocl::Engine &other) const {
 
         // check for producer vector
         auto this_producer  = std::get<0>(this_itm);
-        auto other_producer = std::get<0>(this_itm);
+        auto other_producer = std::get<0>(other_itm);
         if (this_producer.size() != other_producer.size()) {
             return false;
         }
@@ -627,7 +631,7 @@ bool capiocl::Engine::operator==(const capiocl::Engine &other) const {
 
         // check for consumer vector
         auto this_consumer  = std::get<1>(this_itm);
-        auto other_consumer = std::get<1>(this_itm);
+        auto other_consumer = std::get<1>(other_itm);
         if (this_consumer.size() != other_consumer.size()) {
             return false;
         }
@@ -641,7 +645,7 @@ bool capiocl::Engine::operator==(const capiocl::Engine &other) const {
         // check for file dependencies
 
         auto this_deps  = std::get<9>(this_itm);
-        auto other_deps = std::get<9>(this_itm);
+        auto other_deps = std::get<9>(other_itm);
         if (this_deps.size() != other_deps.size()) {
             return false;
         }

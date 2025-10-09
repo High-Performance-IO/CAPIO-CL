@@ -450,6 +450,50 @@ TEST(testCapioClEngine, testEqualDifferentOperator) {
     EXPECT_FALSE(engine1 == engine2);
 }
 
+TEST(testCapioClEngine, testEqualDifferentOperatorDifferentPathSameSize) {
+    capiocl::Engine engine1, engine2;
+    engine1.newFile("A");
+    engine2.newFile("B");
+    EXPECT_FALSE(engine1 == engine2);
+}
+
+TEST(testCapioClEngine, testEqualDifferentProducers) {
+    capiocl::Engine engine1, engine2;
+    engine1.newFile("A");
+    engine2.newFile("A");
+    std::string stepA = "prod1";
+    std::string stepB = "prod2";
+    engine1.addProducer("A", stepA);
+    EXPECT_FALSE(engine1 == engine2);
+    engine2.addProducer("A", stepB);
+    EXPECT_FALSE(engine1 == engine2);
+
+    engine1.addProducer("A", stepB);
+    engine2.addProducer("A", stepA);
+
+    engine1.addConsumer("A", stepA);
+    EXPECT_FALSE(engine1 == engine2);
+    engine2.addConsumer("A", stepB);
+    EXPECT_FALSE(engine1 == engine2);
+}
+
+TEST(testCapioClEngine, testFileDependenciesDifferences) {
+    capiocl::Engine engine1, engine2;
+    engine1.newFile("A");
+    engine2.newFile("A");
+    std::string depsA = "prod1";
+    std::string depsB = "prod2";
+    engine1.addFileDependency("A", depsA);
+    EXPECT_FALSE(engine1 == engine2);
+    engine2.addFileDependency("A", depsB);
+    EXPECT_FALSE(engine1 == engine2);
+
+    engine1.addFileDependency("A", depsB);
+    EXPECT_FALSE(engine1 == engine2);
+    engine2.addFileDependency("A", depsA);
+    EXPECT_TRUE(engine1 == engine2);
+}
+
 TEST(testCapioSerializerParser, testSerializeParseCAPIOCLV1) {
     const std::filesystem::path path("./config.json");
     const std::string workflow_name = "demo";
