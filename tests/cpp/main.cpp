@@ -13,8 +13,8 @@ TEST(testCapioClEngine, testAddFileDefault) {
     EXPECT_EQ(engine.size(), 0);
     engine.newFile("test.dat");
     EXPECT_EQ(engine.size(), 1);
-    EXPECT_EQ(engine.getCommitRule("test.dat"), capiocl::COMMITTED_ON_TERMINATION);
-    EXPECT_EQ(engine.getFireRule("test.dat"), capiocl::MODE_UPDATE);
+    EXPECT_EQ(engine.getCommitRule("test.dat"), capiocl::commit_rules::ON_TERMINATION);
+    EXPECT_EQ(engine.getFireRule("test.dat"), capiocl::fire_rules::UPDATE);
     EXPECT_TRUE(engine.getConsumers("test.dat").empty());
     EXPECT_TRUE(engine.getProducers("test.dat").empty());
     EXPECT_FALSE(engine.isPermanent("test.dat"));
@@ -30,8 +30,8 @@ TEST(testCapioClEngine, testAddFileDefaultGlob) {
     EXPECT_EQ(engine.size(), 0);
     engine.newFile("test.*");
     EXPECT_EQ(engine.size(), 1);
-    EXPECT_EQ(engine.getCommitRule("test.dat"), capiocl::COMMITTED_ON_TERMINATION);
-    EXPECT_EQ(engine.getFireRule("test.dat"), capiocl::MODE_UPDATE);
+    EXPECT_EQ(engine.getCommitRule("test.dat"), capiocl::commit_rules::ON_TERMINATION);
+    EXPECT_EQ(engine.getFireRule("test.dat"), capiocl::fire_rules::UPDATE);
     EXPECT_TRUE(engine.getConsumers("test.dat").empty());
     EXPECT_TRUE(engine.getProducers("test.dat").empty());
     EXPECT_FALSE(engine.isPermanent("test.dat"));
@@ -47,8 +47,8 @@ TEST(testCapioClEngine, testAddFileDefaultGlobQuestion) {
     EXPECT_EQ(engine.size(), 0);
     engine.newFile("test.?");
     EXPECT_EQ(engine.size(), 1);
-    EXPECT_EQ(engine.getCommitRule("test.1"), capiocl::COMMITTED_ON_TERMINATION);
-    EXPECT_EQ(engine.getFireRule("test.1"), capiocl::MODE_UPDATE);
+    EXPECT_EQ(engine.getCommitRule("test.1"), capiocl::commit_rules::ON_TERMINATION);
+    EXPECT_EQ(engine.getFireRule("test.1"), capiocl::fire_rules::UPDATE);
     EXPECT_TRUE(engine.getConsumers("test.1").empty());
     EXPECT_TRUE(engine.getProducers("test.1").empty());
     EXPECT_FALSE(engine.isPermanent("test.1"));
@@ -65,11 +65,11 @@ TEST(testCapioClEngine, testAddFileManually) {
     std::string path = "test.dat";
     std::vector<std::string> producers, consumers, file_dependencies;
 
-    engine.add(path, producers, consumers, capiocl::COMMITTED_ON_TERMINATION, capiocl::MODE_UPDATE,
-               false, false, file_dependencies);
+    engine.add(path, producers, consumers, capiocl::commit_rules::ON_TERMINATION,
+               capiocl::fire_rules::UPDATE, false, false, file_dependencies);
     EXPECT_EQ(engine.size(), 1);
-    EXPECT_EQ(engine.getCommitRule("test.dat"), capiocl::COMMITTED_ON_TERMINATION);
-    EXPECT_EQ(engine.getFireRule("test.dat"), capiocl::MODE_UPDATE);
+    EXPECT_EQ(engine.getCommitRule("test.dat"), capiocl::commit_rules::ON_TERMINATION);
+    EXPECT_EQ(engine.getFireRule("test.dat"), capiocl::fire_rules::UPDATE);
     EXPECT_TRUE(engine.getConsumers("test.dat").empty());
     EXPECT_TRUE(engine.getProducers("test.dat").empty());
     EXPECT_FALSE(engine.isPermanent("test.dat"));
@@ -88,11 +88,11 @@ TEST(testCapioClEngine, testAddFileManuallyGlob) {
     std::string path = "test.*";
     std::vector<std::string> producers, consumers, file_dependencies;
 
-    engine.add(path, producers, consumers, capiocl::COMMITTED_ON_TERMINATION, capiocl::MODE_UPDATE,
-               false, false, file_dependencies);
+    engine.add(path, producers, consumers, capiocl::commit_rules::ON_TERMINATION,
+               capiocl::fire_rules::UPDATE, false, false, file_dependencies);
     EXPECT_EQ(engine.size(), 1);
-    EXPECT_EQ(engine.getCommitRule("test.dat"), capiocl::COMMITTED_ON_TERMINATION);
-    EXPECT_EQ(engine.getFireRule("test.dat"), capiocl::MODE_UPDATE);
+    EXPECT_EQ(engine.getCommitRule("test.dat"), capiocl::commit_rules::ON_TERMINATION);
+    EXPECT_EQ(engine.getFireRule("test.dat"), capiocl::fire_rules::UPDATE);
     EXPECT_TRUE(engine.getConsumers("test.dat").empty());
     EXPECT_TRUE(engine.getProducers("test.dat").empty());
     EXPECT_FALSE(engine.isPermanent("test.dat"));
@@ -109,18 +109,18 @@ TEST(testCapioClEngine, testAddFileManuallyQuestion) {
     std::string path = "test.?";
     std::vector<std::string> producers, consumers, file_dependencies;
 
-    engine.add(path, producers, consumers, capiocl::COMMITTED_ON_CLOSE, capiocl::MODE_NO_UPDATE,
-               false, false, file_dependencies);
+    engine.add(path, producers, consumers, capiocl::commit_rules::ON_CLOSE,
+               capiocl::fire_rules::NO_UPDATE, false, false, file_dependencies);
     engine.setDirectory("test.?");
     engine.setDirectoryFileCount("test.?", 10);
 
     EXPECT_EQ(engine.size(), 1);
-    EXPECT_FALSE(engine.getCommitRule("test.dat") == capiocl::COMMITTED_ON_CLOSE);
-    EXPECT_FALSE(engine.getFireRule("test.dat") == capiocl::MODE_NO_UPDATE);
-    EXPECT_EQ(engine.getCommitRule("test.1"), capiocl::COMMITTED_ON_CLOSE);
-    EXPECT_EQ(engine.getFireRule("test.1"), capiocl::MODE_NO_UPDATE);
-    EXPECT_EQ(engine.getCommitRule("test.2"), capiocl::COMMITTED_ON_CLOSE);
-    EXPECT_EQ(engine.getFireRule("test.2"), capiocl::MODE_NO_UPDATE);
+    EXPECT_FALSE(engine.getCommitRule("test.dat") == capiocl::commit_rules::ON_CLOSE);
+    EXPECT_FALSE(engine.getFireRule("test.dat") == capiocl::fire_rules::NO_UPDATE);
+    EXPECT_EQ(engine.getCommitRule("test.1"), capiocl::commit_rules::ON_CLOSE);
+    EXPECT_EQ(engine.getFireRule("test.1"), capiocl::fire_rules::NO_UPDATE);
+    EXPECT_EQ(engine.getCommitRule("test.2"), capiocl::commit_rules::ON_CLOSE);
+    EXPECT_EQ(engine.getFireRule("test.2"), capiocl::fire_rules::NO_UPDATE);
     EXPECT_TRUE(engine.isDirectory("test.1"));
     EXPECT_EQ(engine.getDirectoryFileCount("test.?"), 10);
     EXPECT_EQ(engine.getDirectoryFileCount("test.3"), 10);
@@ -143,20 +143,20 @@ TEST(testCapioClEngine, testAddFileManuallyGlobExplcit) {
     std::string path = "test.[abc][abc][abc]";
     std::vector<std::string> producers, consumers, file_dependencies;
 
-    engine.add(path, producers, consumers, capiocl::COMMITTED_ON_CLOSE, capiocl::MODE_NO_UPDATE,
-               false, false, file_dependencies);
+    engine.add(path, producers, consumers, capiocl::commit_rules::ON_CLOSE,
+               capiocl::fire_rules::NO_UPDATE, false, false, file_dependencies);
     engine.setDirectory("test.[abc][abc][abc]");
     engine.setDirectoryFileCount("test.[abc][abc][abc]", 10);
 
     EXPECT_EQ(engine.size(), 1);
-    EXPECT_FALSE(engine.getCommitRule("test.dat") == capiocl::COMMITTED_ON_CLOSE);
-    EXPECT_FALSE(engine.getFireRule("test.dat") == capiocl::MODE_NO_UPDATE);
-    EXPECT_TRUE(engine.getCommitRule("test.abc") == capiocl::COMMITTED_ON_CLOSE);
-    EXPECT_TRUE(engine.getFireRule("test.aaa") == capiocl::MODE_NO_UPDATE);
-    EXPECT_EQ(engine.getCommitRule("test.cab"), capiocl::COMMITTED_ON_CLOSE);
-    EXPECT_EQ(engine.getFireRule("test.bac"), capiocl::MODE_NO_UPDATE);
-    EXPECT_EQ(engine.getCommitRule("test.ccc"), capiocl::COMMITTED_ON_CLOSE);
-    EXPECT_EQ(engine.getFireRule("test.aaa"), capiocl::MODE_NO_UPDATE);
+    EXPECT_FALSE(engine.getCommitRule("test.dat") == capiocl::commit_rules::ON_CLOSE);
+    EXPECT_FALSE(engine.getFireRule("test.dat") == capiocl::fire_rules::NO_UPDATE);
+    EXPECT_TRUE(engine.getCommitRule("test.abc") == capiocl::commit_rules::ON_CLOSE);
+    EXPECT_TRUE(engine.getFireRule("test.aaa") == capiocl::fire_rules::NO_UPDATE);
+    EXPECT_EQ(engine.getCommitRule("test.cab"), capiocl::commit_rules::ON_CLOSE);
+    EXPECT_EQ(engine.getFireRule("test.bac"), capiocl::fire_rules::NO_UPDATE);
+    EXPECT_EQ(engine.getCommitRule("test.ccc"), capiocl::commit_rules::ON_CLOSE);
+    EXPECT_EQ(engine.getFireRule("test.aaa"), capiocl::fire_rules::NO_UPDATE);
     EXPECT_TRUE(engine.isDirectory("test.bbb"));
     EXPECT_NE(engine.getDirectoryFileCount("test.3"), 10);
 }
@@ -196,7 +196,7 @@ TEST(testCapioClEngine, testProducerConsumersFileDependencies) {
     EXPECT_TRUE(engine.getCommitOnFileDependencies("myNewFile").empty());
 
     engine.addFileDependency("myFile.txt", file_dependencies[0]);
-    EXPECT_TRUE(engine.getCommitRule("myFile.txt") == capiocl::COMMITTED_ON_FILE);
+    EXPECT_TRUE(engine.getCommitRule("myFile.txt") == capiocl::commit_rules::ON_FILE);
     EXPECT_EQ(engine.getCommitOnFileDependencies("myFile.txt").size(), 1);
     EXPECT_TRUE(engine.getCommitOnFileDependencies("myFile.txt")[0] == file_dependencies[0]);
 }
@@ -237,12 +237,12 @@ TEST(testCapioClEngine, testProducerConsumersFileDependenciesGlob) {
 TEST(testCapioClEngine, testCommitFirePermanentExcludeOnGlobs) {
     capiocl::Engine engine;
     engine.newFile("test.*");
-    engine.setFireRule("test.*", capiocl::MODE_NO_UPDATE);
+    engine.setFireRule("test.*", capiocl::fire_rules::NO_UPDATE);
 
     EXPECT_TRUE(engine.isFirable("test.a"));
     EXPECT_FALSE(engine.isFirable("testb"));
 
-    engine.setCommitRule("testb", capiocl::COMMITTED_ON_FILE);
+    engine.setCommitRule("testb", capiocl::commit_rules::ON_FILE);
     engine.setFileDeps("testb", {"test.a"});
 
     engine.setPermanent("myFile", true);
@@ -258,7 +258,7 @@ TEST(testCapioClEngine, testCommitFirePermanentExcludeOnGlobs) {
     EXPECT_TRUE(engine.isExcluded("myFile.txt"));
     EXPECT_TRUE(engine.isExcluded("myFile.dat"));
 
-    engine.setFireRule("test.c", capiocl::MODE_NO_UPDATE);
+    engine.setFireRule("test.c", capiocl::fire_rules::NO_UPDATE);
     EXPECT_TRUE(engine.isFirable("test.c"));
 
     engine.setCommitedCloseNumber("test.e", 100);
@@ -326,7 +326,7 @@ TEST(testCapioClEngine, testProducersConsumers) {
 TEST(testCapioClEngine, testCommitCloseCount) {
     capiocl::Engine engine;
     engine.newFile("test.*");
-    engine.setCommitRule("test.*", capiocl::COMMITTED_ON_CLOSE);
+    engine.setCommitRule("test.*", capiocl::commit_rules::ON_CLOSE);
     engine.setCommitedCloseNumber("test.e", 100);
 
     EXPECT_EQ(engine.getCommitCloseCount("test.e"), 100);
@@ -335,8 +335,8 @@ TEST(testCapioClEngine, testCommitCloseCount) {
     engine.setCommitedCloseNumber("test.*", 30);
     EXPECT_EQ(engine.getCommitCloseCount("test.f"), 30);
 
-    engine.setCommitRule("myFile", capiocl::COMMITTED_ON_FILE);
-    EXPECT_TRUE(engine.getCommitRule("myFile") == capiocl::COMMITTED_ON_FILE);
+    engine.setCommitRule("myFile", capiocl::commit_rules::ON_FILE);
+    EXPECT_TRUE(engine.getCommitRule("myFile") == capiocl::commit_rules::ON_FILE);
 }
 
 TEST(testCapioClEngine, testStorageOptions) {
@@ -407,13 +407,13 @@ TEST(testCapioClEngine, testEqualDifferentOperator) {
     engine1.newFile("A");
     engine2.newFile("A");
 
-    engine1.setCommitRule("A", capiocl::COMMITTED_ON_CLOSE);
-    engine2.setCommitRule("A", capiocl::COMMITTED_ON_TERMINATION);
+    engine1.setCommitRule("A", capiocl::commit_rules::ON_CLOSE);
+    engine2.setCommitRule("A", capiocl::commit_rules::ON_TERMINATION);
     EXPECT_FALSE(engine1 == engine2);
     engine2.setCommitRule("A", engine1.getCommitRule("A"));
 
-    engine1.setFireRule("A", capiocl::MODE_NO_UPDATE);
-    engine2.setFireRule("A", capiocl::MODE_UPDATE);
+    engine1.setFireRule("A", capiocl::fire_rules::NO_UPDATE);
+    engine2.setFireRule("A", capiocl::fire_rules::UPDATE);
     EXPECT_FALSE(engine1 == engine2);
     engine2.setFireRule("A", engine1.getFireRule("A"));
 
@@ -510,22 +510,22 @@ TEST(testCapioSerializerParser, testSerializeParseCAPIOCLV1) {
     engine.addConsumer(file_1_name, consumer_name);
 
     engine.setStoreFileInMemory(file_1_name);
-    engine.setCommitRule(file_1_name, capiocl::COMMITTED_ON_CLOSE);
+    engine.setCommitRule(file_1_name, capiocl::commit_rules::ON_CLOSE);
     engine.setCommitedCloseNumber(file_1_name, 3);
-    engine.setFireRule(file_1_name, capiocl::MODE_UPDATE);
+    engine.setFireRule(file_1_name, capiocl::fire_rules::UPDATE);
     engine.setPermanent(file_1_name, true);
 
     engine.setStoreFileInFileSystem(file_2_name);
-    engine.setCommitRule(file_2_name, capiocl::COMMITTED_ON_TERMINATION);
-    engine.setFireRule(file_1_name, capiocl::MODE_NO_UPDATE);
+    engine.setCommitRule(file_2_name, capiocl::commit_rules::ON_TERMINATION);
+    engine.setFireRule(file_1_name, capiocl::fire_rules::NO_UPDATE);
 
     engine.addProducer(file_3_name, producer_name);
     engine.addProducer(file_3_name, consumer_name);
     engine.addProducer(file_3_name, intermediate_name);
     engine.setExclude(file_3_name, true);
 
-    engine.setCommitRule(file_4_name, capiocl::COMMITTED_N_FILES);
-    engine.setFireRule(file_4_name, capiocl::MODE_NO_UPDATE);
+    engine.setCommitRule(file_4_name, capiocl::commit_rules::N_FILES);
+    engine.setFireRule(file_4_name, capiocl::fire_rules::NO_UPDATE);
     engine.setDirectoryFileCount(file_4_name, 10);
     engine.addProducer(file_4_name, intermediate_name);
 

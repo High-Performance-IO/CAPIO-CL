@@ -9,12 +9,15 @@ PYBIND11_MODULE(_py_capio_cl, m) {
     m.doc() =
         "CAPIO-CL: Cross Application Programmable I/O - Coordination Language python bindings.";
 
-    m.attr("MODE_UPDATE")              = py::str(capiocl::MODE_UPDATE);
-    m.attr("MODE_NO_UPDATE")           = py::str(capiocl::MODE_NO_UPDATE);
-    m.attr("COMMITTED_ON_CLOSE")       = py::str(capiocl::COMMITTED_ON_CLOSE);
-    m.attr("COMMITTED_ON_FILE")        = py::str(capiocl::COMMITTED_ON_FILE);
-    m.attr("COMMITTED_N_FILES")        = py::str(capiocl::COMMITTED_N_FILES);
-    m.attr("COMMITTED_ON_TERMINATION") = py::str(capiocl::COMMITTED_ON_TERMINATION);
+    py::module_ fire_rules       = m.def_submodule("fire_rules", "CAPIO-CL fire rules");
+    fire_rules.attr("UPDATE")    = py::str(capiocl::fire_rules::UPDATE);
+    fire_rules.attr("NO_UPDATE") = py::str(capiocl::fire_rules::NO_UPDATE);
+
+    py::module_ commit_rules            = m.def_submodule("commit_rules", "CAPIO-CL commit rules");
+    commit_rules.attr("ON_CLOSE")       = py::str(capiocl::commit_rules::ON_CLOSE);
+    commit_rules.attr("ON_FILE")        = py::str(capiocl::commit_rules::ON_FILE);
+    commit_rules.attr("N_FILES")        = py::str(capiocl::commit_rules::N_FILES);
+    commit_rules.attr("ON_TERMINATION") = py::str(capiocl::commit_rules::ON_TERMINATION);
 
     py::class_<capiocl::Engine>(
         m, "Engine", "The main CAPIO-CL engine for managing data communication and I/O operations.")

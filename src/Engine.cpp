@@ -144,8 +144,8 @@ void capiocl::Engine::add(std::string &path, std::vector<std::string> &producers
 void capiocl::Engine::newFile(const std::string &path) {
     START_LOG(gettid(), "call(path=%s)", path.c_str());
     if (_locations.find(path) == _locations.end()) {
-        std::string commit = COMMITTED_ON_TERMINATION;
-        std::string fire   = MODE_UPDATE;
+        std::string commit = commit_rules::ON_TERMINATION;
+        std::string fire   = fire_rules::UPDATE;
 
         /*
          * Inherit commit and fire rules from LPM (Longest Prefix Match) directory
@@ -185,8 +185,8 @@ void capiocl::Engine::newFile(const std::string &path) {
         } else {
             _locations.emplace(
                 path, std::make_tuple(std::vector<std::string>(), std::vector<std::string>(),
-                                      COMMITTED_ON_TERMINATION, MODE_UPDATE, false, false, true, 0,
-                                      0, std::vector<std::string>(), false));
+                                      commit_rules::ON_TERMINATION, fire_rules::UPDATE, false,
+                                      false, true, 0, 0, std::vector<std::string>(), false));
         }
     }
 }
@@ -241,7 +241,7 @@ void capiocl::Engine::addFileDependency(const std::string &path, std::string &fi
         return;
     }
     this->newFile(path);
-    this->setCommitRule(path, capiocl::COMMITTED_ON_FILE);
+    this->setCommitRule(path, commit_rules::ON_FILE);
     this->addFileDependency(path, file_dependency);
 }
 
@@ -295,13 +295,13 @@ bool capiocl::Engine::isFirable(const std::string &path) {
     START_LOG(gettid(), "call(path=%s)", path.c_str());
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
         LOG("Fire rule for file %s is %s", path.c_str(), std::get<3>(itm->second).c_str());
-        return std::get<3>(itm->second) == MODE_NO_UPDATE;
+        return std::get<3>(itm->second) == fire_rules::NO_UPDATE;
     }
 
     LOG("No entry found on map. checking globs. Creating new file from globs for cache purpose");
     this->newFile((path));
     LOG("Fire rule for file %s is  %s", path.c_str(), std::get<3>(_locations.at((path))).c_str());
-    return std::get<3>(_locations.at((path))) == MODE_NO_UPDATE;
+    return std::get<3>(_locations.at((path))) == fire_rules::NO_UPDATE;
 }
 
 void capiocl::Engine::setPermanent(const std::string &path, bool value) {

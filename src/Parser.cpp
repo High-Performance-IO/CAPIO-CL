@@ -29,13 +29,13 @@ capiocl::Parser::parse(const std::filesystem::path &source,
     START_LOG(gettid(), "call(config_file='%s')", source.c_str());
 
     if (source.empty()) {
-        throw capiocl::ParserException("Empty source file name!");
+        throw ParserException("Empty source file name!");
     }
 
     // ---- Load JSON ----
     std::ifstream file(source);
     if (!file.is_open()) {
-        throw capiocl::ParserException("Failed to open file!");
+        throw ParserException("Failed to open file!");
     }
 
     nlohmann::json doc;
@@ -43,10 +43,10 @@ capiocl::Parser::parse(const std::filesystem::path &source,
 
     // ---- workflow name ----
     if (!doc.contains("name")) {
-        throw capiocl::ParserException("Missing workflow name!");
+        throw ParserException("Missing workflow name!");
     }
     if (!doc["name"].is_string()) {
-        throw capiocl::ParserException("Wrong data type for workflow name!");
+        throw ParserException("Wrong data type for workflow name!");
     }
 
     workflow_name = doc["name"].get<std::string>();
@@ -55,18 +55,18 @@ capiocl::Parser::parse(const std::filesystem::path &source,
 
     // ---- IO_Graph ----
     if (!doc.contains("IO_Graph")) {
-        throw capiocl::ParserException("Missing IO_Graph section");
+        throw ParserException("Missing IO_Graph section");
     }
     if (!doc["IO_Graph"].is_array()) {
-        throw capiocl::ParserException("Wrong data type for IO_Graph section");
+        throw ParserException("Wrong data type for IO_Graph section");
     }
 
     for (const auto &app : doc["IO_Graph"]) {
         if (!app.contains("name")) {
-            throw capiocl::ParserException("Missing name for streaming item!");
+            throw ParserException("Missing name for streaming item!");
         }
         if (!app["name"].is_string()) {
-            throw capiocl::ParserException("Wrong type for name streaming entry!");
+            throw ParserException("Wrong type for name streaming entry!");
         }
 
         std::string app_name = app["name"].get<std::string>();
@@ -75,11 +75,10 @@ capiocl::Parser::parse(const std::filesystem::path &source,
 
         // ---- input_stream ----
         if (!app.contains("input_stream")) {
-            throw capiocl::ParserException("No input_stream section found for app " + app_name);
+            throw ParserException("No input_stream section found for app " + app_name);
         }
         if (!app["input_stream"].is_array()) {
-            throw capiocl::ParserException("input_stream section for app " + app_name +
-                                           " is not array!");
+            throw ParserException("input_stream section for app " + app_name + " is not array!");
         }
 
         print_message(CLI_LEVEL_JSON, "Parsing input_stream for app " + app_name);
@@ -91,11 +90,10 @@ capiocl::Parser::parse(const std::filesystem::path &source,
 
         // ---- output_stream ----
         if (!app.contains("output_stream")) {
-            throw capiocl::ParserException("No output_stream section found for app " + app_name);
+            throw ParserException("No output_stream section found for app " + app_name);
         }
         if (!app["output_stream"].is_array()) {
-            throw capiocl::ParserException("output_stream section for app " + app_name +
-                                           " is not array!");
+            throw ParserException("output_stream section for app " + app_name + " is not array!");
         }
 
         print_message(CLI_LEVEL_JSON, "Parsing output_stream for app " + app_name);
@@ -112,9 +110,10 @@ capiocl::Parser::parse(const std::filesystem::path &source,
                 bool is_file = true;
                 std::vector<std::filesystem::path> streaming_names;
                 std::vector<std::string> file_deps;
-                std::string commit_rule = COMMITTED_ON_TERMINATION, mode = MODE_UPDATE;
-                long int n_close = 0;
-                int64_t n_files  = 0;
+                std::string commit_rule = commit_rules::ON_TERMINATION;
+                std::string mode        = fire_rules::UPDATE;
+                long int n_close        = 0;
+                int64_t n_files         = 0;
 
                 // name or dirname
                 if (stream_item.contains("name") && stream_item["name"].is_array()) {
@@ -129,7 +128,7 @@ capiocl::Parser::parse(const std::filesystem::path &source,
                         streaming_names.push_back(nm_resolved);
                     }
                 } else {
-                    throw capiocl::ParserException(
+                    throw ParserException(
                         "Missing streaming name/dirname, or name/dirname is not an array for app " +
                         app_name);
                 }
@@ -137,7 +136,7 @@ capiocl::Parser::parse(const std::filesystem::path &source,
                 // Commit rule. Optional in nature, hence no check required!
                 if (stream_item.contains("committed")) {
                     if (!stream_item["committed"].is_string()) {
-                        throw capiocl::ParserException("Error: invalid type for commit rule!");
+                        throw ParserException("Error: invalid type for commit rule!");
                     }
 
                     std::string committed = stream_item["committed"].get<std::string>();
@@ -150,25 +149,25 @@ capiocl::Parser::parse(const std::filesystem::path &source,
                             std::stoi(count_str, &num_len);
                         } catch (...) {
                             auto msg = "commit rule argument is not an integer!";
-                            throw capiocl::ParserException(msg);
+                            throw ParserException(msg);
                         }
 
-                        if (commit_rule == COMMITTED_ON_CLOSE) {
+                        if (commit_rule == commit_rules::ON_CLOSE) {
                             n_close = std::stol(count_str);
-                        } else if (commit_rule == COMMITTED_N_FILES) {
+                        } else if (commit_rule == commit_rules::N_FILES) {
                             n_files = std::stol(count_str);
                         } else {
-                            throw capiocl::ParserException("Invalid commit rule!");
+                            throw ParserException("Invalid commit rule!");
                         }
                     } else {
                         commit_rule = committed;
                     }
 
                     // file_deps
-                    if (commit_rule == COMMITTED_ON_FILE) {
+                    if (commit_rule == commit_rules::ON_FILE) {
                         if (!stream_item.contains("file_deps") ||
                             !stream_item["file_deps"].is_array()) {
-                            throw capiocl::ParserException(
+                            throw ParserException(
                                 "commit rule is on_file but no file_deps section found");
                         }
                         for (const auto &dep : stream_item["file_deps"]) {
@@ -178,24 +177,24 @@ capiocl::Parser::parse(const std::filesystem::path &source,
                     }
 
                     // check commit rule is one of the available
-                    if (commit_rule != capiocl::COMMITTED_N_FILES &&
-                        commit_rule != capiocl::COMMITTED_ON_CLOSE &&
-                        commit_rule != capiocl::COMMITTED_ON_FILE &&
-                        commit_rule != capiocl::COMMITTED_ON_TERMINATION) {
-                        throw capiocl::ParserException("Error: commit rule " + commit_rule +
-                                                       " is not one of the allowed one!");
+                    if (commit_rule != commit_rules::N_FILES &&
+                        commit_rule != commit_rules::ON_CLOSE &&
+                        commit_rule != commit_rules::ON_FILE &&
+                        commit_rule != commit_rules::ON_TERMINATION) {
+                        throw ParserException("Error: commit rule " + commit_rule +
+                                              " is not one of the allowed one!");
                     }
                 }
 
                 // Firing rule. Optional in nature, hence no check required!
                 if (stream_item.contains("mode")) {
                     if (!stream_item["mode"].is_string()) {
-                        throw capiocl::ParserException("Error: invalid firing rule data type");
+                        throw ParserException("Error: invalid firing rule data type");
                     }
                     mode = stream_item["mode"].get<std::string>();
 
-                    if (mode != capiocl::MODE_UPDATE && mode != capiocl::MODE_NO_UPDATE) {
-                        throw capiocl::ParserException(
+                    if (mode != fire_rules::UPDATE && mode != fire_rules::NO_UPDATE) {
+                        throw ParserException(
                             "Error: fire rule is not one of the allowed ones for app: " + app_name);
                     }
                 }
@@ -203,7 +202,7 @@ capiocl::Parser::parse(const std::filesystem::path &source,
                 // n_files (optional)
                 if (stream_item.contains("n_files")) {
                     if (!stream_item["n_files"].is_number_integer()) {
-                        throw capiocl::ParserException("wrong type for n_files!");
+                        throw ParserException("wrong type for n_files!");
                     }
                     n_files = stream_item["n_files"].get<int64_t>();
                 }
@@ -261,13 +260,13 @@ capiocl::Parser::parse(const std::filesystem::path &source,
     // ---- storage ----
     if (doc.contains("storage")) {
         if (!doc["storage"].is_object()) {
-            throw capiocl::ParserException("Wrong data type for storage section!");
+            throw ParserException("Wrong data type for storage section!");
         }
         const auto &storage = doc["storage"];
 
         if (storage.contains("memory")) {
             if (!storage["memory"].is_array()) {
-                throw capiocl::ParserException("Wrong data type for memory storage section");
+                throw ParserException("Wrong data type for memory storage section");
             }
             for (const auto &f : storage["memory"]) {
                 auto file_str = f.get<std::string>();
@@ -277,7 +276,7 @@ capiocl::Parser::parse(const std::filesystem::path &source,
 
         if (storage.contains("fs")) {
             if (!storage["fs"].is_array()) {
-                throw capiocl::ParserException("Wrong data type for fs storage section");
+                throw ParserException("Wrong data type for fs storage section");
             }
             for (const auto &f : storage["fs"]) {
                 auto file_str = f.get<std::string>();

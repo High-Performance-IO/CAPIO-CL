@@ -1,19 +1,19 @@
-import py_capio_cl
+from py_capio_cl import *
 
 
 def test_instantiation():
-    engine = py_capio_cl.Engine()
+    engine = Engine()
     assert engine.size() == 0
 
 
 def test_add_file_default():
-    engine = py_capio_cl.Engine()
+    engine = Engine()
     assert engine.size() == 0
 
     engine.newFile("test.dat")
     assert engine.size() == 1
-    assert engine.getCommitRule("test.dat") == py_capio_cl.COMMITTED_ON_TERMINATION
-    assert engine.getFireRule("test.dat") == py_capio_cl.MODE_UPDATE
+    assert engine.getCommitRule("test.dat") == commit_rules.ON_TERMINATION
+    assert engine.getFireRule("test.dat") == fire_rules.UPDATE
     assert engine.getConsumers("test.dat") == []
     assert engine.getProducers("test.dat") == []
     assert not engine.isPermanent("test.dat")
@@ -25,13 +25,13 @@ def test_add_file_default():
 
 
 def test_add_file_default_glob():
-    engine = py_capio_cl.Engine()
+    engine = Engine()
     assert engine.size() == 0
 
     engine.newFile("test.*")
     assert engine.size() == 1
-    assert engine.getCommitRule("test.dat") == py_capio_cl.COMMITTED_ON_TERMINATION
-    assert engine.getFireRule("test.dat") == py_capio_cl.MODE_UPDATE
+    assert engine.getCommitRule("test.dat") == commit_rules.ON_TERMINATION
+    assert engine.getFireRule("test.dat") == fire_rules.UPDATE
     assert engine.getConsumers("test.dat") == []
     assert engine.getProducers("test.dat") == []
     assert not engine.isPermanent("test.dat")
@@ -43,13 +43,13 @@ def test_add_file_default_glob():
 
 
 def test_add_file_default_glob_question():
-    engine = py_capio_cl.Engine()
+    engine = Engine()
     assert engine.size() == 0
 
     engine.newFile("test.?")
     assert engine.size() == 1
-    assert engine.getCommitRule("test.1") == py_capio_cl.COMMITTED_ON_TERMINATION
-    assert engine.getFireRule("test.1") == py_capio_cl.MODE_UPDATE
+    assert engine.getCommitRule("test.1") == commit_rules.ON_TERMINATION
+    assert engine.getFireRule("test.1") == fire_rules.UPDATE
     assert engine.getConsumers("test.1") == []
     assert engine.getProducers("test.1") == []
     assert not engine.isPermanent("test.1")
@@ -61,17 +61,17 @@ def test_add_file_default_glob_question():
 
 
 def test_add_file_manually():
-    engine = py_capio_cl.Engine()
+    engine = Engine()
     assert engine.size() == 0
     path = "test.dat"
     producers, consumers, file_dependencies = [], [], []
 
-    engine.add(path, producers, consumers, py_capio_cl.COMMITTED_ON_TERMINATION,
-               py_capio_cl.MODE_UPDATE, False, False, file_dependencies)
+    engine.add(path, producers, consumers, commit_rules.ON_TERMINATION,
+               fire_rules.UPDATE, False, False, file_dependencies)
 
     assert engine.size() == 1
-    assert engine.getCommitRule("test.dat") == py_capio_cl.COMMITTED_ON_TERMINATION
-    assert engine.getFireRule("test.dat") == py_capio_cl.MODE_UPDATE
+    assert engine.getCommitRule("test.dat") == commit_rules.ON_TERMINATION
+    assert engine.getFireRule("test.dat") == fire_rules.UPDATE
     assert engine.getConsumers("test.dat") == []
     assert engine.getProducers("test.dat") == []
     assert not engine.isPermanent("test.dat")
@@ -83,17 +83,17 @@ def test_add_file_manually():
 
 
 def test_add_file_manually_glob():
-    engine = py_capio_cl.Engine()
+    engine = Engine()
     assert engine.size() == 0
     path = "test.*"
     producers, consumers, file_dependencies = [], [], []
 
-    engine.add(path, producers, consumers, py_capio_cl.COMMITTED_ON_TERMINATION,
-               py_capio_cl.MODE_UPDATE, False, False, file_dependencies)
+    engine.add(path, producers, consumers, commit_rules.ON_TERMINATION,
+               fire_rules.UPDATE, False, False, file_dependencies)
 
     assert engine.size() == 1
-    assert engine.getCommitRule("test.dat") == py_capio_cl.COMMITTED_ON_TERMINATION
-    assert engine.getFireRule("test.dat") == py_capio_cl.MODE_UPDATE
+    assert engine.getCommitRule("test.dat") == commit_rules.ON_TERMINATION
+    assert engine.getFireRule("test.dat") == fire_rules.UPDATE
     assert engine.getConsumers("test.dat") == []
     assert engine.getProducers("test.dat") == []
     assert not engine.isPermanent("test.dat")
@@ -105,23 +105,23 @@ def test_add_file_manually_glob():
 
 
 def test_add_file_manually_question():
-    engine = py_capio_cl.Engine()
+    engine = Engine()
     assert engine.size() == 0
     path = "test.?"
     producers, consumers, file_dependencies = [], [], []
 
-    engine.add(path, producers, consumers, py_capio_cl.COMMITTED_ON_CLOSE,
-               py_capio_cl.MODE_NO_UPDATE, False, False, file_dependencies)
+    engine.add(path, producers, consumers, commit_rules.ON_CLOSE,
+               fire_rules.NO_UPDATE, False, False, file_dependencies)
     engine.setDirectory("test.?")
     engine.setDirectoryFileCount("test.?", 10)
 
     assert engine.size() == 1
-    assert engine.getCommitRule("test.dat") != py_capio_cl.COMMITTED_ON_CLOSE
-    assert engine.getFireRule("test.dat") != py_capio_cl.MODE_NO_UPDATE
-    assert engine.getCommitRule("test.1") == py_capio_cl.COMMITTED_ON_CLOSE
-    assert engine.getFireRule("test.1") == py_capio_cl.MODE_NO_UPDATE
-    assert engine.getCommitRule("test.2") == py_capio_cl.COMMITTED_ON_CLOSE
-    assert engine.getFireRule("test.2") == py_capio_cl.MODE_NO_UPDATE
+    assert engine.getCommitRule("test.dat") != commit_rules.ON_CLOSE
+    assert engine.getFireRule("test.dat") != fire_rules.NO_UPDATE
+    assert engine.getCommitRule("test.1") == commit_rules.ON_CLOSE
+    assert engine.getFireRule("test.1") == fire_rules.NO_UPDATE
+    assert engine.getCommitRule("test.2") == commit_rules.ON_CLOSE
+    assert engine.getFireRule("test.2") == fire_rules.NO_UPDATE
     assert engine.isDirectory("test.1")
     assert engine.getDirectoryFileCount("test.?") == 10
     assert engine.getDirectoryFileCount("test.3") == 10
@@ -136,31 +136,31 @@ def test_add_file_manually_question():
 
 
 def test_add_file_manually_glob_explicit():
-    engine = py_capio_cl.Engine()
+    engine = Engine()
     assert engine.size() == 0
     path = "test.[abc][abc][abc]"
     producers, consumers, file_dependencies = [], [], []
 
-    engine.add(path, producers, consumers, py_capio_cl.COMMITTED_ON_CLOSE,
-               py_capio_cl.MODE_NO_UPDATE, False, False, file_dependencies)
+    engine.add(path, producers, consumers, commit_rules.ON_CLOSE,
+               fire_rules.NO_UPDATE, False, False, file_dependencies)
     engine.setDirectory("test.[abc][abc][abc]")
     engine.setDirectoryFileCount("test.[abc][abc][abc]", 10)
 
     assert engine.size() == 1
-    assert engine.getCommitRule("test.dat") != py_capio_cl.COMMITTED_ON_CLOSE
-    assert engine.getFireRule("test.dat") != py_capio_cl.MODE_NO_UPDATE
-    assert engine.getCommitRule("test.abc") == py_capio_cl.COMMITTED_ON_CLOSE
-    assert engine.getFireRule("test.aaa") == py_capio_cl.MODE_NO_UPDATE
-    assert engine.getCommitRule("test.cab") == py_capio_cl.COMMITTED_ON_CLOSE
-    assert engine.getFireRule("test.bac") == py_capio_cl.MODE_NO_UPDATE
-    assert engine.getCommitRule("test.ccc") == py_capio_cl.COMMITTED_ON_CLOSE
-    assert engine.getFireRule("test.aaa") == py_capio_cl.MODE_NO_UPDATE
+    assert engine.getCommitRule("test.dat") != commit_rules.ON_CLOSE
+    assert engine.getFireRule("test.dat") != fire_rules.NO_UPDATE
+    assert engine.getCommitRule("test.abc") == commit_rules.ON_CLOSE
+    assert engine.getFireRule("test.aaa") == fire_rules.NO_UPDATE
+    assert engine.getCommitRule("test.cab") == commit_rules.ON_CLOSE
+    assert engine.getFireRule("test.bac") == fire_rules.NO_UPDATE
+    assert engine.getCommitRule("test.ccc") == commit_rules.ON_CLOSE
+    assert engine.getFireRule("test.aaa") == fire_rules.NO_UPDATE
     assert engine.isDirectory("test.bbb")
     assert engine.getDirectoryFileCount("test.3") != 10
 
 
 def test_producers_consumers_file_dependencies():
-    engine = py_capio_cl.Engine()
+    engine = Engine()
     assert engine.size() == 0
     producers = ["A", "B"]
     consumers = ["C", "D"]
@@ -194,7 +194,7 @@ def test_producers_consumers_file_dependencies():
 
 
 def test_producers_consumers_file_dependencies_glob():
-    engine = py_capio_cl.Engine()
+    engine = Engine()
     assert engine.size() == 0
     producers = ["A", "B"]
     consumers = ["C", "D"]
