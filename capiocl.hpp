@@ -2,6 +2,7 @@
 #define CAPIO_CL_CAPIOCL_HPP
 
 #include <climits>
+#include <cstring>
 #include <filesystem>
 #include <iostream>
 #include <string>
@@ -135,8 +136,9 @@ class Engine {
      * Class constructor
      */
     explicit Engine() {
-        node_name.reserve(HOST_NAME_MAX);
-        gethostname(node_name.data(), HOST_NAME_MAX);
+        node_name = std::string(1024, '\0');
+        gethostname(node_name.data(), node_name.size());
+        node_name.resize(std::strlen(node_name.c_str()));
         print_message(CLI_LEVEL_INFO, "Instance created");
     }
 

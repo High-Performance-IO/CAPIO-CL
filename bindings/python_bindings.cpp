@@ -1,4 +1,5 @@
 #include "capiocl.hpp"
+#include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/stl/filesystem.h>
@@ -8,6 +9,8 @@ namespace py = pybind11;
 PYBIND11_MODULE(_py_capio_cl, m) {
     m.doc() =
         "CAPIO-CL: Cross Application Programmable I/O - Coordination Language python bindings.";
+
+    py::register_exception<capiocl::ParserException>(m, "ParserException");
 
     py::module_ fire_rules       = m.def_submodule("fire_rules", "CAPIO-CL fire rules");
     fire_rules.attr("UPDATE")    = py::str(capiocl::fire_rules::UPDATE);
@@ -61,12 +64,15 @@ PYBIND11_MODULE(_py_capio_cl, m) {
         .def("isPermanent", &capiocl::Engine::isPermanent)
         .def("setAllStoreInMemory", &capiocl::Engine::setAllStoreInMemory)
         .def("__str__", &capiocl::Engine::print)
-        .def("__repr__", [](const capiocl::Engine &e) {
-            return "<Engine repr at " + std::to_string(reinterpret_cast<uintptr_t>(&e)) + ">";
-        });
+        .def("__repr__",
+             [](const capiocl::Engine &e) {
+                 return "<Engine repr at " + std::to_string(reinterpret_cast<uintptr_t>(&e)) + ">";
+             })
+        .def(pybind11::self == pybind11::self);
 
     py::class_<capiocl::Parser>(m, "Parser", "The CAPIO-CL Parser component.")
-        .def("parse", &capiocl::Parser::parse)
+        .def("parse", &capiocl::Parser::parse, py::arg("resolve_prefix") = "",
+             py::arg("store_only_in_memory") = false)
         .def("__str__",
              [](const capiocl::Parser &e) {
                  return "<Parser repr at " + std::to_string(reinterpret_cast<uintptr_t>(&e)) + ">";

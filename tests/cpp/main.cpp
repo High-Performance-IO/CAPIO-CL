@@ -1,4 +1,6 @@
 #include "capiocl.hpp"
+
+#include <cstring>
 #include <cxxabi.h>
 #include <gtest/gtest.h>
 
@@ -380,14 +382,14 @@ TEST(testCapioClEngine, testStorageOptions) {
 }
 
 TEST(testCapioClEngine, testHomeNode) {
-    std::string nodename;
-    nodename.reserve(1024);
-    gethostname(nodename.data(), nodename.size());
+    std::string node_name(1024, '\0');
+    gethostname(node_name.data(), node_name.size());
+    node_name.resize(std::strlen(node_name.c_str()));
 
     capiocl::Engine engine;
     engine.newFile("A");
-    EXPECT_TRUE(engine.getHomeNode("A") == nodename);
-    EXPECT_TRUE(engine.getHomeNode("B") == nodename);
+    EXPECT_TRUE(engine.getHomeNode("A") == node_name);
+    EXPECT_TRUE(engine.getHomeNode("B") == node_name);
 }
 
 TEST(testCapioClEngine, testInsertFileDependencies) {
