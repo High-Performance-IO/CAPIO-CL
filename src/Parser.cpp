@@ -12,7 +12,7 @@ bool capiocl::Parser::isInteger(const std::string &s) {
         res = *p == 0;
     }
     return res;
-};
+}
 
 std::tuple<std::string, capiocl::Engine *>
 capiocl::Parser::parse(const std::filesystem::path &source, std::filesystem::path resolve_prefix,
@@ -81,8 +81,8 @@ capiocl::Parser::parse(const std::filesystem::path &source, std::filesystem::pat
         for (const auto &itm : app["input_stream"]) {
             std::filesystem::path file_path(itm.get<std::string>());
             if (file_path.is_relative() && !skip_resolve) {
-                print_message(CLI_LEVEL_WARNING,
-                              "Path : " + file_path.string() + " IS RELATIVE! resolving...");
+                auto msg = "Path : " + file_path.string() + " IS RELATIVE! resolving...";
+                print_message(CLI_LEVEL_WARNING, msg);
                 file_path = resolve_prefix / file_path;
             }
             locations->newFile(file_path);
@@ -102,8 +102,8 @@ capiocl::Parser::parse(const std::filesystem::path &source, std::filesystem::pat
         for (const auto &itm : app["output_stream"]) {
             std::filesystem::path file_path(itm.get<std::string>());
             if (file_path.is_relative() && !skip_resolve) {
-                print_message(CLI_LEVEL_WARNING,
-                              "Path : " + file_path.string() + " IS RELATIVE! resolving...");
+                auto msg = "Path : " + file_path.string() + " IS RELATIVE! resolving...";
+                print_message(CLI_LEVEL_WARNING, msg);
                 file_path = resolve_prefix / file_path;
             }
             locations->newFile(file_path);
@@ -266,17 +266,26 @@ capiocl::Parser::parse(const std::filesystem::path &source, std::filesystem::pat
     }
 
     // ---- storage ----
-    if (doc.contains("storage") && doc["storage"].is_object()) {
+    if (doc.contains("storage")) {
+        if (!doc["storage"].is_object()) {
+            throw capiocl::ParserException("Wrong data type for storage section!");
+        }
         const auto &storage = doc["storage"];
 
-        if (storage.contains("memory") && storage["memory"].is_array()) {
+        if (storage.contains("memory")) {
+            if (!storage["memory"].is_array()) {
+                throw capiocl::ParserException("Wrong data type for memory storage section");
+            }
             for (const auto &f : storage["memory"]) {
                 auto file_str = f.get<std::string>();
                 locations->setStoreFileInMemory(file_str);
             }
         }
 
-        if (storage.contains("fs") && storage["fs"].is_array()) {
+        if (storage.contains("fs")) {
+            if (!storage["fs"].is_array()) {
+                throw capiocl::ParserException("Wrong data type for fs storage section");
+            }
             for (const auto &f : storage["fs"]) {
                 auto file_str = f.get<std::string>();
                 locations->setStoreFileInFileSystem(file_str);

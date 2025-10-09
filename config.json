@@ -1,0 +1,38 @@
+{
+  "IO_Graph": [
+    {
+      "input_stream": [],
+      "name": "_first",
+      "output_stream": [
+        "file1.txt"
+      ],
+      "streaming": [
+        {
+          "committed": "on_termination",
+          "dirname": [
+            "file1.txt"
+          ],
+          "file_deps": [],
+          "mode": "update",
+          "n_files": 10
+        }
+      ]
+    },
+    {
+      "input_stream": [
+        "file1.txt"
+      ],
+      "name": "_last",
+      "output_stream": []
+    }
+  ],
+  "exclude": [],
+  "name": "demo",
+  "permanent": [],
+  "storage": {
+    "fs": [
+      "file1.txt"
+    ],
+    "memory": []
+  }
+}

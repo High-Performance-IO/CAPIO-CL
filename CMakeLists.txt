@@ -146,12 +146,11 @@ if (CAPIO_CL_BUILD_TESTS)
     # Copy JSON test files
     #####################################
     set(TEST_JSON_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tests/jsons")
-    set(TEST_OUTPUT_DIR "/tmp/capio_cl_jsons")
 
     add_custom_command(
             TARGET CAPIO_CL_tests PRE_BUILD
-            COMMAND ${CMAKE_COMMAND} -E make_directory ${TEST_OUTPUT_DIR}
-            COMMAND ${CMAKE_COMMAND} -E copy_directory ${TEST_JSON_DIR} ${TEST_OUTPUT_DIR}
+            COMMAND ${CMAKE_COMMAND} -E make_directory "/tmp/capio_cl_jsons"
+            COMMAND ${CMAKE_COMMAND} -E copy_directory ${TEST_JSON_DIR} "/tmp/capio_cl_jsons"
             COMMENT "Copying JSON test files to build directory"
     )
 

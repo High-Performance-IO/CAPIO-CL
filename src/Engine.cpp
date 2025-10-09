@@ -488,7 +488,7 @@ long capiocl::Engine::getCommitCloseCount(std::filesystem::path::iterator::refer
 
     this->newFile(path);
     return getCommitCloseCount(path);
-};
+}
 
 std::vector<std::string>
 capiocl::Engine::getCommitOnFileDependencies(const std::filesystem::path &path) {
