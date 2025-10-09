@@ -10,9 +10,7 @@ void capiocl::Engine::print() const {
     print_message(CLI_LEVEL_JSON, "Composition of expected CAPIO FS: ");
 
     // Table header lines
-    print_message(CLI_LEVEL_JSON,
-                  "|============================================================================"
-                  "==========================================================|");
+    print_message(CLI_LEVEL_JSON, "*" + std::string(134, '=') + "*");
 
     print_message(CLI_LEVEL_JSON, "|" + std::string(134, ' ') + "|");
 
@@ -34,9 +32,7 @@ void capiocl::Engine::print() const {
         "|                            \033[48;5;172m  \033[0m File stored on file system" +
             std::string(77, ' ') + "|");
 
-    print_message(CLI_LEVEL_JSON,
-                  "|============================================================================"
-                  "==========================================================|");
+    print_message(CLI_LEVEL_JSON, "|" + std::string(134, '=') + "|");
 
     print_message(CLI_LEVEL_JSON,
                   "|======|===================|===================|====================|========"
@@ -101,25 +97,22 @@ void capiocl::Engine::print() const {
                             fire_rule   = std::get<3>(itm.second);
                 bool exclude = std::get<5>(itm.second), permanent = std::get<4>(itm.second);
 
-                line << " " << commit_rule << std::setfill(' ')
-                     << std::setw(20 - commit_rule.length()) << " | " << fire_rule
-                     << std::setfill(' ') << std::setw(13 - fire_rule.length()) << " | "
-                     << "    " << (permanent ? "YES" : "NO ") << "   |   "
-                     << (exclude ? "YES" : "NO ") << "   | " << n_files
-                     << std::setw(10 - n_files.length()) << " |";
+                line << " " << commit_rule << std::setfill(' ');
+                line << std::setw(20 - commit_rule.length()) << " | " << fire_rule;
+                line << std::setfill(' ') << std::setw(13 - fire_rule.length()) << " | ";
+                line << "    " << (permanent ? "YES" : "NO ") << "   |   ";
+                line << (exclude ? "YES" : "NO ");
+                line << "   | " << n_files << std::setw(10 - n_files.length()) << " |";
             } else {
-                line << std::setfill(' ') << std::setw(20) << "|" << std::setfill(' ')
-                     << std::setw(13) << "|" << std::setfill(' ') << std::setw(12) << "|"
-                     << std::setfill(' ') << std::setw(10) << "|" << std::setw(11) << "|";
+                line << std::setfill(' ') << std::setw(20) << "|" << std::setfill(' ');
+                line << std::setw(13) << "|" << std::setfill(' ') << std::setw(12) << "|";
+                line << std::setfill(' ') << std::setw(10) << "|" << std::setw(11) << "|";
             }
 
             print_message(CLI_LEVEL_JSON, line.str());
         }
 
-        print_message(CLI_LEVEL_JSON,
-                      "*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-                      "~~~~~~~~~~~~~~~~~~"
-                      "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*");
+        print_message(CLI_LEVEL_JSON, "*" + std::string(134, '~') + "*");
     }
 
     print_message(CLI_LEVEL_JSON, "");

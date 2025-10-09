@@ -386,6 +386,7 @@ TEST(testCapioClEngine, testHomeNode) {
     capiocl::Engine engine;
     engine.newFile("A");
     EXPECT_TRUE(engine.getHomeNode("A") == nodename);
+    EXPECT_TRUE(engine.getHomeNode("B") == nodename);
 }
 
 TEST(testCapioClEngine, testInsertFileDependencies) {
@@ -397,6 +398,56 @@ TEST(testCapioClEngine, testInsertFileDependencies) {
     EXPECT_TRUE(engine.getCommitOnFileDependencies("test.txt")[0] == "a");
     EXPECT_TRUE(engine.getCommitOnFileDependencies("test.txt")[1] == "b");
     EXPECT_TRUE(engine.getCommitOnFileDependencies("test.txt")[2] == "c");
+}
+
+TEST(testCapioClEngine, testEqualDifferentOperator) {
+    capiocl::Engine engine1, engine2;
+
+    engine1.newFile("A");
+    engine2.newFile("A");
+
+    engine1.setCommitRule("A", capiocl::COMMITTED_ON_CLOSE);
+    engine2.setCommitRule("A", capiocl::COMMITTED_ON_TERMINATION);
+    EXPECT_FALSE(engine1 == engine2);
+    engine2.setCommitRule("A", engine1.getCommitRule("A"));
+
+    engine1.setFireRule("A", capiocl::MODE_NO_UPDATE);
+    engine2.setFireRule("A", capiocl::MODE_UPDATE);
+    EXPECT_FALSE(engine1 == engine2);
+    engine2.setFireRule("A", engine1.getFireRule("A"));
+
+    engine1.setPermanent("A", true);
+    engine2.setPermanent("A", false);
+    EXPECT_FALSE(engine1 == engine2);
+    engine2.setPermanent("A", engine1.isPermanent("A"));
+
+    engine1.setExclude("A", true);
+    engine2.setExclude("A", false);
+    EXPECT_FALSE(engine1 == engine2);
+    engine2.setExclude("A", engine1.isExcluded("A"));
+
+    engine1.setFile("A");
+    engine2.setDirectory("A");
+    EXPECT_FALSE(engine1 == engine2);
+    engine2.setFile("A");
+
+    engine1.setCommitedCloseNumber("A", 10);
+    engine2.setCommitedCloseNumber("A", 5);
+    EXPECT_FALSE(engine1 == engine2);
+    engine2.setCommitedCloseNumber("A", engine1.getCommitCloseCount("A"));
+
+    engine1.setDirectoryFileCount("A", 10);
+    engine2.setDirectoryFileCount("A", 5);
+    EXPECT_FALSE(engine1 == engine2);
+    engine2.setDirectoryFileCount("A", engine1.getDirectoryFileCount("A"));
+
+    engine1.setStoreFileInFileSystem("A");
+    engine2.setStoreFileInMemory("A");
+    EXPECT_FALSE(engine1 == engine2);
+    engine2.setStoreFileInFileSystem("A");
+
+    engine2.newFile("C");
+    EXPECT_FALSE(engine1 == engine2);
 }
 
 TEST(testCapioSerializerParser, testSerializeParseCAPIOCLV1) {
@@ -435,6 +486,7 @@ TEST(testCapioSerializerParser, testSerializeParseCAPIOCLV1) {
     auto [wf_name, new_engine]    = capiocl::Parser::parse(path, resolve);
 
     EXPECT_TRUE(wf_name == workflow_name);
+    capiocl::print_message("", "");
     EXPECT_TRUE(engine == *new_engine);
 
     std::filesystem::remove(path);
