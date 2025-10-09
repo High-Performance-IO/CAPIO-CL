@@ -13,15 +13,16 @@ std::filesystem::path capiocl::Parser::resolve(std::filesystem::path path,
         return path;
     }
 
-    auto msg = "Path : " + path.string() + " IS RELATIVE! resolving...";
+    auto resolved  = prefix / path;
+    const auto msg = "Path : " + path.string() + " IS RELATIVE! Resolved to: " + resolved.string();
     print_message(CLI_LEVEL_WARNING, msg);
 
-    return prefix / path;
+    return resolved;
 }
 
 std::tuple<std::string, capiocl::Engine *>
-capiocl::Parser::parse(const std::filesystem::path &source, std::filesystem::path resolve_prefix,
-                       bool store_only_in_memory) {
+capiocl::Parser::parse(const std::filesystem::path &source,
+                       const std::filesystem::path &resolve_prefix, bool store_only_in_memory) {
 
     std::string workflow_name = CAPIO_CL_DEFAULT_WF_NAME;
     auto locations            = new Engine();

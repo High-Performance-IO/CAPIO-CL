@@ -499,7 +499,7 @@ TEST(testCapioSerializerParser, testSerializeParseCAPIOCLV1) {
     const std::filesystem::path path("./config.json");
     const std::string workflow_name = "demo";
     const std::string file_1_name = "file1.txt", file_2_name = "file2.txt",
-                      file_3_name = "my_command_history.txt";
+                      file_3_name = "my_command_history.txt", file_4_name = "/tmp";
     std::string producer_name = "_first", consumer_name = "_last", intermediate_name = "_middle";
 
     capiocl::Engine engine;
@@ -523,6 +523,12 @@ TEST(testCapioSerializerParser, testSerializeParseCAPIOCLV1) {
     engine.addProducer(file_3_name, consumer_name);
     engine.addProducer(file_3_name, intermediate_name);
     engine.setExclude(file_3_name, true);
+
+    engine.setCommitRule(file_4_name, capiocl::COMMITTED_N_FILES);
+    engine.setFireRule(file_4_name, capiocl::MODE_NO_UPDATE);
+    engine.setDirectoryFileCount(file_4_name, 10);
+    engine.addProducer(file_4_name, intermediate_name);
+
     engine.print();
 
     capiocl::Serializer::dump(engine, workflow_name, path);
@@ -535,7 +541,7 @@ TEST(testCapioSerializerParser, testSerializeParseCAPIOCLV1) {
     EXPECT_TRUE(engine == *new_engine);
 
     auto [wf_name1, new_engine1] = capiocl::Parser::parse(path, resolve, true);
-    EXPECT_EQ(new_engine1->getFileToStoreInMemory().size(), 3);
+    EXPECT_EQ(new_engine1->getFileToStoreInMemory().size(), engine.size());
 
     std::filesystem::remove(path);
 }
@@ -563,6 +569,16 @@ TEST(testCapioSerializerParser, testSerializeParseCAPIOCLV1NcloseNfiles) {
     EXPECT_TRUE(engine == *new_engine);
 
     std::filesystem::remove(path);
+}
+
+TEST(testCapioSerializerParser, testParserResolveAbsolute) {
+    const std::filesystem::path json_path("/tmp/capio_cl_jsons/V1_test0.json");
+    auto [wf_name, engine] = capiocl::Parser::parse(json_path, "/tmp");
+    EXPECT_TRUE(wf_name == "test");
+    EXPECT_TRUE(engine->contains("/tmp/file"));
+    EXPECT_TRUE(engine->contains("/tmp/file1"));
+    EXPECT_TRUE(engine->contains("/tmp/file2"));
+    EXPECT_TRUE(engine->contains("/tmp/file3"));
 }
 
 template <typename T> std::string demangled_name(const T &obj) {
@@ -603,6 +619,7 @@ TEST(testCapioSerializerParser, testParserException) {
         JSON_DIR / "V1_test20.json",
         JSON_DIR / "V1_test21.json",
         JSON_DIR / "V1_test22.json",
+        JSON_DIR / "V1_test23.json",
     };
 
     for (const auto &test : test_filenames) {

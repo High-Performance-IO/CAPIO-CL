@@ -417,14 +417,14 @@ class Parser {
      * @brief Perform the parsing of the capio_server configuration file
      *
      * @param source
-     * @param resolve_prexix
+     * @param resolve_prefix
      * @param store_only_in_memory Set to true to set all files to be stored in memory
      * @return Tuple with workflow name and CapioCLEngine instance with the information provided by
      * the config file
      */
     static std::tuple<std::string, Engine *> parse(const std::filesystem::path &source,
-                                                   std::filesystem::path resolve_prexix = "",
-                                                   bool store_only_in_memory            = false);
+                                                   const std::filesystem::path &resolve_prefix = "",
+                                                   bool store_only_in_memory = false);
 };
 
 /**
