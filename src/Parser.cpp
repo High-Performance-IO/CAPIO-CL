@@ -3,17 +3,6 @@
 #include <fstream>
 #include <nlohmann/json.hpp>
 
-bool capiocl::Parser::isInteger(const std::string &s) {
-    START_LOG(gettid(), "call(%s)", s.c_str());
-    bool res = false;
-    if (!s.empty()) {
-        char *p;
-        strtol(s.c_str(), &p, 10);
-        res = *p == 0;
-    }
-    return res;
-}
-
 std::tuple<std::string, capiocl::Engine *>
 capiocl::Parser::parse(const std::filesystem::path &source, std::filesystem::path resolve_prefix,
                        bool store_only_in_memory) {
@@ -156,10 +145,14 @@ capiocl::Parser::parse(const std::filesystem::path &source, std::filesystem::pat
                     if (pos != std::string::npos) {
                         commit_rule           = committed.substr(0, pos);
                         std::string count_str = committed.substr(pos + 1);
-                        if (!isInteger(count_str)) {
-                            throw capiocl::ParserException(
-                                "commit rule argument is not an integer!");
+                        try {
+                            size_t num_len;
+                            std::stoi(count_str, &num_len);
+                        } catch (...) {
+                            auto msg = "commit rule argument is not an integer!";
+                            throw capiocl::ParserException(msg);
                         }
+
                         if (commit_rule == COMMITTED_ON_CLOSE) {
                             n_close = std::stol(count_str);
                         } else if (commit_rule == COMMITTED_N_FILES) {
@@ -211,12 +204,15 @@ capiocl::Parser::parse(const std::filesystem::path &source, std::filesystem::pat
                 }
 
                 // n_files (optional)
-                if (stream_item.contains("n_files") && stream_item["n_files"].is_number_integer()) {
+                if (stream_item.contains("n_files")) {
+                    if (!stream_item["n_files"].is_number_integer()) {
+                        throw capiocl::ParserException("wrong type for n_files!");
+                    }
                     n_files = stream_item["n_files"].get<int64_t>();
                 }
 
                 for (auto &path : streaming_names) {
-                    if (n_files != -1) {
+                    if (n_files != 0) {
                         locations->setDirectoryFileCount(path, n_files);
                     }
                     if (is_file) {

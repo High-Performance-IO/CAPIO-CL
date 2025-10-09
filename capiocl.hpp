@@ -107,10 +107,13 @@ class Engine {
      *
      * @param str Input string.
      * @param n Number of characters to keep from the end.
-     * @return Truncated string with optional "[..]" prefix.
+     * @return Truncated string with "[..]" prefix.
      */
     static std::string truncateLastN(const std::string &str, const std::size_t n) {
-        return str.length() > n ? "[..] " + str.substr(str.length() - n) : str;
+        if (str.length() > n) {
+            return "[..] " + str.substr(str.length() - n);
+        }
+        return str;
     }
 
   protected:
@@ -405,14 +408,6 @@ class Engine {
  *
  */
 class Parser {
-    /**
-     * @brief Check if a string is a representation of a integer number
-     *
-     * @param s
-     * @return true
-     * @return false
-     */
-    static bool isInteger(const std::string &s);
 
   public:
     /**
