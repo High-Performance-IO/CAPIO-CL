@@ -14,14 +14,8 @@ bool capiocl::Parser::isInteger(const std::string &s) {
     return res;
 };
 
-bool capiocl::Parser::firstIsSubpathOfSecond(const std::filesystem::path &path,
-                                             const std::filesystem::path &base) {
-    const auto mismatch_pair = std::mismatch(path.begin(), path.end(), base.begin(), base.end());
-    return mismatch_pair.second == base.end();
-}
-
 std::tuple<std::string, capiocl::Engine *>
-capiocl::Parser::parse(const std::filesystem::path &source, std::filesystem::path &resolve_prefix,
+capiocl::Parser::parse(const std::filesystem::path &source, std::filesystem::path resolve_prefix,
                        bool store_only_in_memory) {
 
     bool skip_resolve         = resolve_prefix.empty();
@@ -30,31 +24,24 @@ capiocl::Parser::parse(const std::filesystem::path &source, std::filesystem::pat
     START_LOG(gettid(), "call(config_file='%s')", source.c_str());
 
     if (source.empty()) {
-        return {workflow_name, locations};
+        throw capiocl::ParserException("Empty source file name!");
     }
 
     // ---- Load JSON ----
     std::ifstream file(source);
     if (!file.is_open()) {
-        std::string msg = "Failed to open config file: " + source.string();
-        print_message(CLI_LEVEL_ERROR, msg);
-        ERR_EXIT(msg.c_str());
+        throw capiocl::ParserException("Failed to open file!");
     }
 
     nlohmann::json doc;
-    try {
-        file >> doc;
-    } catch (const std::exception &e) {
-        std::string err = "JSON parse error: ";
-        err += e.what();
-        print_message(CLI_LEVEL_ERROR, err);
-        ERR_EXIT(err.c_str());
-    }
+    file >> doc;
 
     // ---- workflow name ----
-    if (!doc.contains("name") || !doc["name"].is_string()) {
-        print_message(CLI_LEVEL_ERROR, "Missing workflow name!");
-        ERR_EXIT("Error: workflow name is mandatory");
+    if (!doc.contains("name")) {
+        throw capiocl::ParserException("Missing workflow name!");
+    }
+    if (!doc["name"].is_string()) {
+        throw capiocl::ParserException("Wrong data type for workflow name!");
     }
 
     workflow_name = doc["name"].get<std::string>();
@@ -62,14 +49,19 @@ capiocl::Parser::parse(const std::filesystem::path &source, std::filesystem::pat
     LOG("Parsing configuration for workflow: %s", workflow_name.c_str());
 
     // ---- IO_Graph ----
-    if (!doc.contains("IO_Graph") || !doc["IO_Graph"].is_array()) {
-        ERR_EXIT("Error: IO_Graph section missing or invalid");
+    if (!doc.contains("IO_Graph")) {
+        throw capiocl::ParserException("Missing IO_Graph section");
+    }
+    if (!doc["IO_Graph"].is_array()) {
+        throw capiocl::ParserException("Wrong data type for IO_Graph section");
     }
 
     for (const auto &app : doc["IO_Graph"]) {
-        if (!app.contains("name") || !app["name"].is_string()) {
-            print_message(CLI_LEVEL_ERROR, "Missing IO_Graph name or name is not a valid string!");
-            ERR_EXIT("Error: app name is mandatory");
+        if (!app.contains("name")) {
+            throw capiocl::ParserException("Missing name for streaming item!");
+        }
+        if (!app["name"].is_string()) {
+            throw capiocl::ParserException("Wrong type for name streaming entry!");
         }
 
         std::string app_name = app["name"].get<std::string>();
@@ -77,10 +69,12 @@ capiocl::Parser::parse(const std::filesystem::path &source, std::filesystem::pat
         LOG("Parsing config for app %s", app_name.c_str());
 
         // ---- input_stream ----
-        if (!app.contains("input_stream") || !app["input_stream"].is_array()) {
-            std::string msg = "No input_stream section found for app " + app_name;
-            print_message(CLI_LEVEL_ERROR, msg);
-            ERR_EXIT(msg.c_str());
+        if (!app.contains("input_stream")) {
+            throw capiocl::ParserException("No input_stream section found for app " + app_name);
+        }
+        if (!app["input_stream"].is_array()) {
+            throw capiocl::ParserException("input_stream section for app " + app_name +
+                                           " is not array!");
         }
 
         print_message(CLI_LEVEL_JSON, "Parsing input_stream for app " + app_name);
@@ -96,11 +90,14 @@ capiocl::Parser::parse(const std::filesystem::path &source, std::filesystem::pat
         }
 
         // ---- output_stream ----
-        if (!app.contains("output_stream") || !app["output_stream"].is_array()) {
-            std::string msg = "No output_stream section found for app " + app_name;
-            print_message(CLI_LEVEL_ERROR, msg);
-            ERR_EXIT(msg.c_str());
+        if (!app.contains("output_stream")) {
+            throw capiocl::ParserException("No output_stream section found for app " + app_name);
         }
+        if (!app["output_stream"].is_array()) {
+            throw capiocl::ParserException("output_stream section for app " + app_name +
+                                           " is not array!");
+        }
+
         print_message(CLI_LEVEL_JSON, "Parsing output_stream for app " + app_name);
         for (const auto &itm : app["output_stream"]) {
             std::filesystem::path file_path(itm.get<std::string>());
@@ -143,18 +140,15 @@ capiocl::Parser::parse(const std::filesystem::path &source, std::filesystem::pat
                         streaming_names.push_back(p);
                     }
                 } else {
-                    print_message(
-                        CLI_LEVEL_ERROR,
+                    throw capiocl::ParserException(
                         "Missing streaming name/dirname, or name/dirname is not an array for app " +
-                            app_name);
-                    ERR_EXIT("error: either name or dirname in streaming section is required");
+                        app_name);
                 }
 
                 // Commit rule. Optional in nature, hence no check required!
                 if (stream_item.contains("committed")) {
                     if (!stream_item["committed"].is_string()) {
-                        print_message(CLI_LEVEL_ERROR, "Error: invalid type for commit rule!");
-                        ERR_EXIT("Error: invalid type for commit rule!");
+                        throw capiocl::ParserException("Error: invalid type for commit rule!");
                     }
 
                     std::string committed = stream_item["committed"].get<std::string>();
@@ -163,14 +157,15 @@ capiocl::Parser::parse(const std::filesystem::path &source, std::filesystem::pat
                         commit_rule           = committed.substr(0, pos);
                         std::string count_str = committed.substr(pos + 1);
                         if (!isInteger(count_str)) {
-                            ERR_EXIT("invalid number in commit rule");
+                            throw capiocl::ParserException(
+                                "commit rule argument is not an integer!");
                         }
                         if (commit_rule == COMMITTED_ON_CLOSE) {
                             n_close = std::stol(count_str);
                         } else if (commit_rule == COMMITTED_N_FILES) {
                             n_files = std::stol(count_str);
                         } else {
-                            ERR_EXIT("invalid commit rule type");
+                            throw capiocl::ParserException("Invalid commit rule!");
                         }
                     } else {
                         commit_rule = committed;
@@ -180,7 +175,8 @@ capiocl::Parser::parse(const std::filesystem::path &source, std::filesystem::pat
                     if (commit_rule == COMMITTED_ON_FILE) {
                         if (!stream_item.contains("file_deps") ||
                             !stream_item["file_deps"].is_array()) {
-                            ERR_EXIT("commit rule is on_file but no file_deps section found");
+                            throw capiocl::ParserException(
+                                "commit rule is on_file but no file_deps section found");
                         }
                         for (const auto &dep : stream_item["file_deps"]) {
                             std::filesystem::path p(dep.get<std::string>());
@@ -196,25 +192,21 @@ capiocl::Parser::parse(const std::filesystem::path &source, std::filesystem::pat
                         commit_rule != capiocl::COMMITTED_ON_CLOSE &&
                         commit_rule != capiocl::COMMITTED_ON_FILE &&
                         commit_rule != capiocl::COMMITTED_ON_TERMINATION) {
-                        print_message(CLI_LEVEL_ERROR, "Error: commit rule " + commit_rule +
-                                                           " is not one of the allowed one!");
-                        ERR_EXIT("Unknown commit rule %s", commit_rule.c_str());
+                        throw capiocl::ParserException("Error: commit rule " + commit_rule +
+                                                       " is not one of the allowed one!");
                     }
                 }
 
                 // Firing rule. Optional in nature, hence no check required!
                 if (stream_item.contains("mode")) {
                     if (!stream_item["mode"].is_string()) {
-                        print_message(CLI_LEVEL_ERROR, "Error: invalid type for mode");
-                        ERR_EXIT("Error: invalid type for mode");
+                        throw capiocl::ParserException("Error: invalid firing rule data type");
                     }
                     mode = stream_item["mode"].get<std::string>();
 
                     if (mode != capiocl::MODE_UPDATE && mode != capiocl::MODE_NO_UPDATE) {
-                        print_message(CLI_LEVEL_ERROR,
-                                      "Error: invalid firing rule provided for app: " + app_name);
-                        ERR_EXIT("Error: invalid firing rule provided for app: %s",
-                                 app_name.c_str());
+                        throw capiocl::ParserException(
+                            "Error: fire rule is not one of the allowed ones for app: " + app_name);
                     }
                 }
 

@@ -109,13 +109,7 @@ void capiocl::Serializer::dump(const capiocl::Engine &engine, const std::string 
     doc["storage"]    = storage;
 
     std::ofstream out(filename);
-    if (!out.is_open()) {
-        std::string msg = "Failed to open output file: " + filename.string();
-        capiocl::print_message(capiocl::CLI_LEVEL_ERROR, msg);
-        ERR_EXIT(msg.c_str());
-    }
-
-    out << std::setw(4) << doc << std::endl;
+    out << std::setw(2) << doc << std::endl;
 
     capiocl::print_message(capiocl::CLI_LEVEL_INFO,
                            "Configuration serialized to " + filename.string());

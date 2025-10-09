@@ -34,15 +34,15 @@ if (NOT PROJECT_IS_TOP_LEVEL)
     message(STATUS "CAPIO-CL included as subproject → tests disabled")
 endif ()
 
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_compile_options(-O0 -g)
-endif()
+endif ()
 
-if(ENABLE_COVERAGE)
+if (ENABLE_COVERAGE)
     message(STATUS "Building with code coverage instrumentation")
     add_compile_options(--coverage -O0 -g)
     add_link_options(--coverage)
-endif()
+endif ()
 
 #####################################
 # External projects
@@ -143,10 +143,29 @@ if (CAPIO_CL_BUILD_TESTS)
     gtest_discover_tests(CAPIO_CL_tests)
 
     #####################################
+    # Copy JSON test files
+    #####################################
+    set(TEST_JSON_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tests/jsons")
+    set(TEST_OUTPUT_DIR "/tmp/capio_cl_jsons")
+
+    add_custom_command(
+            TARGET CAPIO_CL_tests PRE_BUILD
+            COMMAND ${CMAKE_COMMAND} -E make_directory ${TEST_OUTPUT_DIR}
+            COMMAND ${CMAKE_COMMAND} -E copy_directory ${TEST_JSON_DIR} ${TEST_OUTPUT_DIR}
+            COMMENT "Copying JSON test files to build directory"
+    )
+
+    #####################################
     # Install rules
     #####################################
     # Optionally install tests
     install(TARGETS CAPIO_CL_tests
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
+
+    # Copy tests jsons
+    install(DIRECTORY ${TEST_JSON_DIR}
+            DESTINATION ${CMAKE_INSTALL_BINDIR}/jsons
+            FILES_MATCHING PATTERN "*.json"
     )
 endif ()

@@ -414,17 +414,6 @@ class Parser {
      */
     static bool isInteger(const std::string &s);
 
-    /**
-     * @brief compare two paths
-     *
-     * @param path
-     * @param base
-     * @return true if @p path is a subdirectory of base
-     * @return false otherwise
-     */
-    static inline bool firstIsSubpathOfSecond(const std::filesystem::path &path,
-                                              const std::filesystem::path &base);
-
   public:
     /**
      * @brief Perform the parsing of the capio_server configuration file
@@ -436,8 +425,21 @@ class Parser {
      * the config file
      */
     static std::tuple<std::string, Engine *> parse(const std::filesystem::path &source,
-                                                   std::filesystem::path &resolve_prexix,
-                                                   bool store_only_in_memory = false);
+                                                   std::filesystem::path resolve_prexix = "",
+                                                   bool store_only_in_memory            = false);
+};
+
+/**
+ * Custom exception for errors occurring within the Parser component
+ */
+class ParserException : public std::exception {
+    std::string message;
+
+  public:
+    explicit ParserException(const std::string &msg) : message(msg) {
+        print_message(CLI_LEVEL_ERROR, msg);
+    }
+    const char *what() const noexcept override { return message.c_str(); }
 };
 
 class Serializer {

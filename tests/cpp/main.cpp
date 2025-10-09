@@ -561,3 +561,44 @@ TEST(testCapioSerializerParser, testSerializeParseCAPIOCLV1NcloseNfiles) {
 
     std::filesystem::remove(path);
 }
+
+TEST(testCapioSerializerParser, testParserException) {
+    std::filesystem::path JSON_DIR = "/tmp/capio_cl_jsons";
+    capiocl::print_message(capiocl::CLI_LEVEL_INFO, "Loading jsons from " + JSON_DIR.string());
+    bool exception_catched = false;
+
+    std::vector<std::filesystem::path> test_filenames = {
+        "",
+        "ANonExistingFile",
+        JSON_DIR / "V1_test1.json",
+        JSON_DIR / "V1_test2.json",
+        JSON_DIR / "V1_test3.json",
+        JSON_DIR / "V1_test4.json",
+        JSON_DIR / "V1_test5.json",
+        JSON_DIR / "V1_test6.json",
+        JSON_DIR / "V1_test7.json",
+        JSON_DIR / "V1_test8.json",
+        JSON_DIR / "V1_test9.json",
+        JSON_DIR / "V1_test10.json",
+        JSON_DIR / "V1_test11.json",
+        JSON_DIR / "V1_test12.json",
+        JSON_DIR / "V1_test13.json",
+        JSON_DIR / "V1_test14.json",
+        JSON_DIR / "V1_test15.json",
+        JSON_DIR / "V1_test16.json",
+        JSON_DIR / "V1_test17.json",
+        JSON_DIR / "V1_test18.json",
+    };
+
+    for (const auto &test : test_filenames) {
+        exception_catched = false;
+        try {
+            capiocl::print_message(capiocl::CLI_LEVEL_WARNING, "Testing on file " + test.string());
+            auto [wf_name, engine] = capiocl::Parser::parse(test);
+        } catch (capiocl::ParserException &e) {
+            exception_catched = true;
+        }
+        EXPECT_TRUE(exception_catched);
+        capiocl::print_message(capiocl::CLI_LEVEL_WARNING);
+    }
+}
