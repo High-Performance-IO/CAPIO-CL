@@ -397,24 +397,7 @@ class Engine {
      */
     bool isPermanent(const std::string &path);
 
-    bool operator==(const capiocl::Engine &other) const {
-        const auto &other_locations = other.getLocations();
-
-        // check same size
-        if (this->_locations.size() != other_locations->size()) {
-            return false;
-        }
-
-        // check same entry paths
-        for (const auto &[this_path, this_itm] : this->_locations) {
-            if (other_locations->find(this_path) == other_locations->end()) {
-                return false;
-            }
-            // check same config for each path
-            auto other_itm = other_locations->at(this_path);
-        }
-        return true;
-    }
+    bool operator==(const capiocl::Engine &other) const;
 };
 
 /**

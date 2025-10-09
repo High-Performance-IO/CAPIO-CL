@@ -24,19 +24,10 @@ std::tuple<std::string, capiocl::Engine *>
 capiocl::Parser::parse(const std::filesystem::path &source, std::filesystem::path &resolve_prefix,
                        bool store_only_in_memory) {
 
+    bool skip_resolve         = resolve_prefix.empty();
     std::string workflow_name = CAPIO_CL_DEFAULT_WF_NAME;
     auto locations            = new Engine();
     START_LOG(gettid(), "call(config_file='%s')", source.c_str());
-
-    if (resolve_prefix.empty()) {
-        resolve_prefix = ".";
-    }
-
-    locations->newFile("*");
-    locations->setDirectory("*");
-    if (store_only_in_memory) {
-        locations->setStoreFileInMemory("*");
-    }
 
     if (source.empty()) {
         return {workflow_name, locations};
@@ -95,7 +86,7 @@ capiocl::Parser::parse(const std::filesystem::path &source, std::filesystem::pat
         print_message(CLI_LEVEL_JSON, "Parsing input_stream for app " + app_name);
         for (const auto &itm : app["input_stream"]) {
             std::filesystem::path file_path(itm.get<std::string>());
-            if (file_path.is_relative()) {
+            if (file_path.is_relative() && !skip_resolve) {
                 print_message(CLI_LEVEL_WARNING,
                               "Path : " + file_path.string() + " IS RELATIVE! resolving...");
                 file_path = resolve_prefix / file_path;
@@ -113,7 +104,7 @@ capiocl::Parser::parse(const std::filesystem::path &source, std::filesystem::pat
         print_message(CLI_LEVEL_JSON, "Parsing output_stream for app " + app_name);
         for (const auto &itm : app["output_stream"]) {
             std::filesystem::path file_path(itm.get<std::string>());
-            if (file_path.is_relative()) {
+            if (file_path.is_relative() && !skip_resolve) {
                 print_message(CLI_LEVEL_WARNING,
                               "Path : " + file_path.string() + " IS RELATIVE! resolving...");
                 file_path = resolve_prefix / file_path;
@@ -130,14 +121,14 @@ capiocl::Parser::parse(const std::filesystem::path &source, std::filesystem::pat
                 std::vector<std::filesystem::path> streaming_names;
                 std::vector<std::string> file_deps;
                 std::string commit_rule = COMMITTED_ON_TERMINATION, mode = MODE_UPDATE;
-                long int n_close = -1;
-                int64_t n_files  = -1;
+                long int n_close = 0;
+                int64_t n_files  = 0;
 
                 // name or dirname
                 if (stream_item.contains("name") && stream_item["name"].is_array()) {
                     for (const auto &nm : stream_item["name"]) {
                         std::filesystem::path p(nm.get<std::string>());
-                        if (p.is_relative()) {
+                        if (p.is_relative() && !skip_resolve) {
                             p = resolve_prefix / p;
                         }
                         streaming_names.push_back(p);
@@ -146,7 +137,7 @@ capiocl::Parser::parse(const std::filesystem::path &source, std::filesystem::pat
                     is_file = false;
                     for (const auto &nm : stream_item["dirname"]) {
                         std::filesystem::path p(nm.get<std::string>());
-                        if (p.is_relative()) {
+                        if (p.is_relative() && !skip_resolve) {
                             p = resolve_prefix / p;
                         }
                         streaming_names.push_back(p);
@@ -193,7 +184,7 @@ capiocl::Parser::parse(const std::filesystem::path &source, std::filesystem::pat
                         }
                         for (const auto &dep : stream_item["file_deps"]) {
                             std::filesystem::path p(dep.get<std::string>());
-                            if (p.is_relative()) {
+                            if (p.is_relative() && !skip_resolve) {
                                 p = resolve_prefix / p;
                             }
                             file_deps.push_back(p);

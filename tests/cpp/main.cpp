@@ -399,8 +399,7 @@ TEST(testCapioClEngine, testInsertFileDependencies) {
     EXPECT_TRUE(engine.getCommitOnFileDependencies("test.txt")[2] == "c");
 }
 
-/*
-TEST(testCapioSerializerParser, testSerializeParse) {
+TEST(testCapioSerializerParser, testSerializeParseCAPIOCLV1) {
     const std::filesystem::path path("./config.json");
     const std::string workflow_name = "demo";
     const std::string file_1_name = "file1.txt", file_2_name = "file2.txt",
@@ -433,9 +432,10 @@ TEST(testCapioSerializerParser, testSerializeParse) {
     capiocl::Serializer::dump(engine, workflow_name, path);
 
     std::filesystem::path resolve = "";
-    auto [wf_name, new_engine] = capiocl::Parser::parse(path, resolve);
+    auto [wf_name, new_engine]    = capiocl::Parser::parse(path, resolve);
 
     EXPECT_TRUE(wf_name == workflow_name);
     EXPECT_TRUE(engine == *new_engine);
+
+    std::filesystem::remove(path);
 }
-*/

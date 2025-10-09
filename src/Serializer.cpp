@@ -29,11 +29,6 @@ void capiocl::Serializer::dump(const capiocl::Engine &engine, const std::string 
     for (const auto &[path, data] : *files) {
         const auto &[producers, consumers, commit_rule, fire_rule, permanent_flag, excluded_flag,
                      is_file, n_close, n_dir_files, file_deps, store_in_memory] = data;
-        if (path == "*") {
-            LOG("Skipping * path");
-            print_message(CLI_LEVEL_WARNING, "Skipping * path");
-            continue;
-        }
 
         // Collect permanent/exclude info
         if (permanent_flag) {
@@ -80,12 +75,6 @@ void capiocl::Serializer::dump(const capiocl::Engine &engine, const std::string 
             const auto &[producers, consumers, commit_rule, fire_rule, permanent_flag,
                          excluded_flag, is_file, n_close, n_dir_files, file_deps, store_in_fs] =
                 data;
-
-            if (path == "*") {
-                LOG("Skipping * path");
-                print_message(CLI_LEVEL_WARNING, "Skipping * path");
-                continue;
-            }
 
             nlohmann::json sitem;
             if (is_file) {

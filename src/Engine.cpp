@@ -569,3 +569,94 @@ bool capiocl::Engine::isExcluded(const std::string &path) {
     this->newFile(path);
     return isExcluded(path);
 }
+
+bool capiocl::Engine::operator==(const capiocl::Engine &other) const {
+    const auto &other_locations = other.getLocations();
+
+    // check same size
+    if (this->_locations.size() != other_locations->size()) {
+        return false;
+    }
+
+    // check same entry paths
+    for (const auto &[this_path, this_itm] : this->_locations) {
+        if (other_locations->find(this_path) == other_locations->end()) {
+            return false;
+        }
+        // check same config for each path
+        auto other_itm = other_locations->at(this_path);
+
+        // check for "primitive" data types
+        if (std::get<2>(this_itm) != std::get<2>(other_itm)) {
+            return false;
+        }
+
+        if (std::get<3>(this_itm) != std::get<3>(other_itm)) {
+            return false;
+        }
+
+        if (std::get<4>(this_itm) != std::get<4>(other_itm)) {
+            return false;
+        }
+
+        if (std::get<5>(this_itm) != std::get<5>(other_itm)) {
+            return false;
+        }
+
+        if (std::get<6>(this_itm) != std::get<6>(other_itm)) {
+            return false;
+        }
+
+        if (std::get<7>(this_itm) != std::get<7>(other_itm)) {
+            return false;
+        }
+
+        if (std::get<8>(this_itm) != std::get<8>(other_itm)) {
+            return false;
+        }
+
+        if (std::get<10>(this_itm) != std::get<10>(other_itm)) {
+            return false;
+        }
+
+        // check for producer vector
+        auto this_producer  = std::get<0>(this_itm);
+        auto other_producer = std::get<0>(this_itm);
+        if (this_producer.size() != other_producer.size()) {
+            return false;
+        }
+        for (const auto &entry : this_producer) {
+            if (std::find(other_producer.begin(), other_producer.end(), entry) ==
+                other_producer.end()) {
+                return false;
+            }
+        }
+
+        // check for consumer vector
+        auto this_consumer  = std::get<1>(this_itm);
+        auto other_consumer = std::get<1>(this_itm);
+        if (this_consumer.size() != other_consumer.size()) {
+            return false;
+        }
+        for (const auto &entry : this_consumer) {
+            if (std::find(other_consumer.begin(), other_consumer.end(), entry) ==
+                other_consumer.end()) {
+                return false;
+            }
+        }
+
+        // check for file dependencies
+
+        auto this_deps  = std::get<9>(this_itm);
+        auto other_deps = std::get<9>(this_itm);
+        if (this_deps.size() != other_deps.size()) {
+            return false;
+        }
+        for (const auto &entry : this_deps) {
+            if (std::find(other_deps.begin(), other_deps.end(), entry) == other_deps.end()) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
