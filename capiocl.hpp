@@ -2,6 +2,7 @@
 #define CAPIO_CL_CAPIOCL_HPP
 
 #include <climits>
+#include <cstring>
 #include <filesystem>
 #include <iostream>
 #include <string>
@@ -34,12 +35,18 @@ constexpr char CLI_LEVEL_ERROR[]   = "[\033[1;31mCAPIO-CL\033[0m";
 constexpr char CLI_LEVEL_JSON[]    = "[\033[1;34mCAPIO-CL\033[0m";
 
 // CAPIO streaming semantics
-constexpr char MODE_NO_UPDATE[]           = "no_update";
-constexpr char MODE_UPDATE[]              = "update";
-constexpr char COMMITTED_ON_CLOSE[]       = "on_close";
-constexpr char COMMITTED_ON_FILE[]        = "on_file";
-constexpr char COMMITTED_N_FILES[]        = "n_files";
-constexpr char COMMITTED_ON_TERMINATION[] = "on_termination";
+
+namespace fire_rules {
+constexpr char NO_UPDATE[] = "no_update";
+constexpr char UPDATE[]    = "update";
+} // namespace fire_rules
+
+namespace commit_rules {
+constexpr char ON_CLOSE[]       = "on_close";
+constexpr char ON_FILE[]        = "on_file";
+constexpr char N_FILES[]        = "n_files";
+constexpr char ON_TERMINATION[] = "on_termination";
+} // namespace commit_rules
 
 /**
  * Print a message to standard out. Used to log messages related to the CAPIO-CL engine
@@ -129,8 +136,9 @@ class Engine {
      * Class constructor
      */
     explicit Engine() {
-        node_name.reserve(HOST_NAME_MAX);
-        gethostname(node_name.data(), HOST_NAME_MAX);
+        node_name = std::string(1024, '\0');
+        gethostname(node_name.data(), node_name.size());
+        node_name.resize(std::strlen(node_name.c_str()));
         print_message(CLI_LEVEL_INFO, "Instance created");
     }
 

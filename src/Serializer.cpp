@@ -3,7 +3,7 @@
 #include <fstream>
 #include <nlohmann/json.hpp>
 
-void capiocl::Serializer::dump(const capiocl::Engine &engine, const std::string &workflow_name,
+void capiocl::Serializer::dump(const Engine &engine, const std::string &workflow_name,
                                const std::filesystem::path &filename) {
     START_LOG(gettid(), "call(output='%s')", target.c_str());
 
@@ -60,10 +60,10 @@ void capiocl::Serializer::dump(const capiocl::Engine &engine, const std::string 
             streaming_item[name_kind] = {path};
 
             // Commit rule
-            if (commit_rule == capiocl::COMMITTED_ON_CLOSE && n_close > 0) {
+            if (commit_rule == commit_rules::ON_CLOSE && n_close > 0) {
                 committed += ":" + std::to_string(n_close);
             }
-            if (commit_rule == capiocl::COMMITTED_N_FILES && n_dir_files > 0) {
+            if (commit_rule == commit_rules::N_FILES && n_dir_files > 0) {
                 committed += ":" + std::to_string(n_dir_files);
             }
 
@@ -111,6 +111,5 @@ void capiocl::Serializer::dump(const capiocl::Engine &engine, const std::string 
     std::ofstream out(filename);
     out << std::setw(2) << doc << std::endl;
 
-    capiocl::print_message(capiocl::CLI_LEVEL_INFO,
-                           "Configuration serialized to " + filename.string());
+    print_message(CLI_LEVEL_INFO, "Configuration serialized to " + filename.string());
 }

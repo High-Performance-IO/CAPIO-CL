@@ -1,4 +1,5 @@
 #include "capiocl.hpp"
+#include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/stl/filesystem.h>
@@ -9,12 +10,17 @@ PYBIND11_MODULE(_py_capio_cl, m) {
     m.doc() =
         "CAPIO-CL: Cross Application Programmable I/O - Coordination Language python bindings.";
 
-    m.attr("MODE_UPDATE")              = py::str(capiocl::MODE_UPDATE);
-    m.attr("MODE_NO_UPDATE")           = py::str(capiocl::MODE_NO_UPDATE);
-    m.attr("COMMITTED_ON_CLOSE")       = py::str(capiocl::COMMITTED_ON_CLOSE);
-    m.attr("COMMITTED_ON_FILE")        = py::str(capiocl::COMMITTED_ON_FILE);
-    m.attr("COMMITTED_N_FILES")        = py::str(capiocl::COMMITTED_N_FILES);
-    m.attr("COMMITTED_ON_TERMINATION") = py::str(capiocl::COMMITTED_ON_TERMINATION);
+    py::register_exception<capiocl::ParserException>(m, "ParserException");
+
+    py::module_ fire_rules       = m.def_submodule("fire_rules", "CAPIO-CL fire rules");
+    fire_rules.attr("UPDATE")    = py::str(capiocl::fire_rules::UPDATE);
+    fire_rules.attr("NO_UPDATE") = py::str(capiocl::fire_rules::NO_UPDATE);
+
+    py::module_ commit_rules            = m.def_submodule("commit_rules", "CAPIO-CL commit rules");
+    commit_rules.attr("ON_CLOSE")       = py::str(capiocl::commit_rules::ON_CLOSE);
+    commit_rules.attr("ON_FILE")        = py::str(capiocl::commit_rules::ON_FILE);
+    commit_rules.attr("N_FILES")        = py::str(capiocl::commit_rules::N_FILES);
+    commit_rules.attr("ON_TERMINATION") = py::str(capiocl::commit_rules::ON_TERMINATION);
 
     py::class_<capiocl::Engine>(
         m, "Engine", "The main CAPIO-CL engine for managing data communication and I/O operations.")
@@ -58,12 +64,15 @@ PYBIND11_MODULE(_py_capio_cl, m) {
         .def("isPermanent", &capiocl::Engine::isPermanent)
         .def("setAllStoreInMemory", &capiocl::Engine::setAllStoreInMemory)
         .def("__str__", &capiocl::Engine::print)
-        .def("__repr__", [](const capiocl::Engine &e) {
-            return "<Engine repr at " + std::to_string(reinterpret_cast<uintptr_t>(&e)) + ">";
-        });
+        .def("__repr__",
+             [](const capiocl::Engine &e) {
+                 return "<Engine repr at " + std::to_string(reinterpret_cast<uintptr_t>(&e)) + ">";
+             })
+        .def(pybind11::self == pybind11::self);
 
     py::class_<capiocl::Parser>(m, "Parser", "The CAPIO-CL Parser component.")
-        .def("parse", &capiocl::Parser::parse)
+        .def("parse", &capiocl::Parser::parse, py::arg("resolve_prefix") = "",
+             py::arg("store_only_in_memory") = false)
         .def("__str__",
              [](const capiocl::Parser &e) {
                  return "<Parser repr at " + std::to_string(reinterpret_cast<uintptr_t>(&e)) + ">";
