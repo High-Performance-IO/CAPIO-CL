@@ -409,6 +409,9 @@ class Engine {
  */
 class Parser {
 
+    static std::filesystem::path resolve(std::filesystem::path path,
+                                         const std::filesystem::path &prefix);
+
   public:
     /**
      * @brief Perform the parsing of the capio_server configuration file

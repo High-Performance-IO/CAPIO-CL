@@ -3,11 +3,26 @@
 #include <fstream>
 #include <nlohmann/json.hpp>
 
+std::filesystem::path capiocl::Parser::resolve(std::filesystem::path path,
+                                               const std::filesystem::path &prefix) {
+    if (prefix.empty()) {
+        return path;
+    }
+
+    if (path.is_absolute()) {
+        return path;
+    }
+
+    auto msg = "Path : " + path.string() + " IS RELATIVE! resolving...";
+    print_message(CLI_LEVEL_WARNING, msg);
+
+    return prefix / path;
+}
+
 std::tuple<std::string, capiocl::Engine *>
 capiocl::Parser::parse(const std::filesystem::path &source, std::filesystem::path resolve_prefix,
                        bool store_only_in_memory) {
 
-    bool skip_resolve         = resolve_prefix.empty();
     std::string workflow_name = CAPIO_CL_DEFAULT_WF_NAME;
     auto locations            = new Engine();
     START_LOG(gettid(), "call(config_file='%s')", source.c_str());
@@ -68,12 +83,7 @@ capiocl::Parser::parse(const std::filesystem::path &source, std::filesystem::pat
 
         print_message(CLI_LEVEL_JSON, "Parsing input_stream for app " + app_name);
         for (const auto &itm : app["input_stream"]) {
-            std::filesystem::path file_path(itm.get<std::string>());
-            if (file_path.is_relative() && !skip_resolve) {
-                auto msg = "Path : " + file_path.string() + " IS RELATIVE! resolving...";
-                print_message(CLI_LEVEL_WARNING, msg);
-                file_path = resolve_prefix / file_path;
-            }
+            auto file_path = resolve(itm.get<std::string>(), resolve_prefix);
             locations->newFile(file_path);
             locations->addConsumer(file_path, app_name);
         }
@@ -89,12 +99,7 @@ capiocl::Parser::parse(const std::filesystem::path &source, std::filesystem::pat
 
         print_message(CLI_LEVEL_JSON, "Parsing output_stream for app " + app_name);
         for (const auto &itm : app["output_stream"]) {
-            std::filesystem::path file_path(itm.get<std::string>());
-            if (file_path.is_relative() && !skip_resolve) {
-                auto msg = "Path : " + file_path.string() + " IS RELATIVE! resolving...";
-                print_message(CLI_LEVEL_WARNING, msg);
-                file_path = resolve_prefix / file_path;
-            }
+            auto file_path = resolve(itm.get<std::string>(), resolve_prefix);
             locations->newFile(file_path);
             locations->addProducer(file_path, app_name);
         }
@@ -113,20 +118,14 @@ capiocl::Parser::parse(const std::filesystem::path &source, std::filesystem::pat
                 // name or dirname
                 if (stream_item.contains("name") && stream_item["name"].is_array()) {
                     for (const auto &nm : stream_item["name"]) {
-                        std::filesystem::path p(nm.get<std::string>());
-                        if (p.is_relative() && !skip_resolve) {
-                            p = resolve_prefix / p;
-                        }
-                        streaming_names.push_back(p);
+                        auto nm_resolved = resolve(nm.get<std::string>(), resolve_prefix);
+                        streaming_names.push_back(nm_resolved);
                     }
                 } else if (stream_item.contains("dirname") && stream_item["dirname"].is_array()) {
                     is_file = false;
                     for (const auto &nm : stream_item["dirname"]) {
-                        std::filesystem::path p(nm.get<std::string>());
-                        if (p.is_relative() && !skip_resolve) {
-                            p = resolve_prefix / p;
-                        }
-                        streaming_names.push_back(p);
+                        auto nm_resolved = resolve(nm.get<std::string>(), resolve_prefix);
+                        streaming_names.push_back(nm_resolved);
                     }
                 } else {
                     throw capiocl::ParserException(
@@ -172,11 +171,8 @@ capiocl::Parser::parse(const std::filesystem::path &source, std::filesystem::pat
                                 "commit rule is on_file but no file_deps section found");
                         }
                         for (const auto &dep : stream_item["file_deps"]) {
-                            std::filesystem::path p(dep.get<std::string>());
-                            if (p.is_relative() && !skip_resolve) {
-                                p = resolve_prefix / p;
-                            }
-                            file_deps.push_back(p);
+                            auto dep_resolved = resolve(dep.get<std::string>(), resolve_prefix);
+                            file_deps.push_back(dep_resolved);
                         }
                     }
 
