@@ -497,6 +497,59 @@ TEST(testCapioClEngine, testFileDependenciesDifferences) {
     EXPECT_TRUE(engine1 == engine2);
 }
 
+TEST(testCapioClEngine, testOnEmptyPath) {
+    capiocl::Engine engine;
+
+    std::vector<std::string> empty1, empty2;
+    std::string empty_file_name;
+    std::string producer_name_1 = "producer", producer_name_2 = "producer";
+
+    engine.newFile(empty_file_name);
+    EXPECT_EQ(engine.size(), 0);
+    engine.add(empty_file_name, empty1, empty2, capiocl::commit_rules::ON_TERMINATION,
+               capiocl::fire_rules::UPDATE, true, true, {});
+    EXPECT_EQ(engine.size(), 0);
+    EXPECT_EQ(engine.getDirectoryFileCount(empty_file_name), 0);
+
+    engine.addProducer(empty_file_name, producer_name_1);
+    engine.addConsumer(empty_file_name, producer_name_1);
+    engine.addFileDependency(empty_file_name, empty_file_name);
+    engine.setCommitRule(empty_file_name, capiocl::commit_rules::ON_TERMINATION);
+    engine.setFireRule(empty_file_name, capiocl::fire_rules::UPDATE);
+
+    EXPECT_TRUE(engine.getCommitRule(empty_file_name) == capiocl::commit_rules::ON_TERMINATION);
+    EXPECT_TRUE(engine.getFireRule(empty_file_name) == capiocl::fire_rules::NO_UPDATE);
+    EXPECT_TRUE(engine.isFirable(empty_file_name));
+
+    engine.setPermanent(empty_file_name, false);
+    EXPECT_TRUE(engine.isPermanent(empty_file_name));
+
+    engine.setExclude(empty_file_name, false);
+    EXPECT_TRUE(engine.isExcluded(empty_file_name));
+
+    engine.setDirectory(empty_file_name);
+    EXPECT_TRUE(engine.isDirectory(empty_file_name));
+    engine.setFile(empty_file_name);
+    EXPECT_TRUE(engine.isFile(empty_file_name));
+
+    engine.setCommitedCloseNumber(empty_file_name, 10);
+    engine.setDirectoryFileCount(empty_file_name, 10);
+    EXPECT_EQ(engine.getDirectoryFileCount(empty_file_name), 0);
+    EXPECT_EQ(engine.getCommitCloseCount(empty_file_name), 0);
+    EXPECT_TRUE(engine.isConsumer(empty_file_name, producer_name_2));
+    EXPECT_TRUE(engine.isProducer(empty_file_name, producer_name_1));
+    EXPECT_TRUE(engine.getProducers(empty_file_name).empty());
+
+    engine.setFileDeps(empty_file_name, {});
+
+    engine.setStoreFileInMemory(empty_file_name);
+    engine.setStoreFileInFileSystem(empty_file_name);
+    EXPECT_TRUE(engine.isStoredInMemory(empty_file_name));
+
+    engine.setExclude(empty_file_name, false);
+    EXPECT_TRUE(engine.isExcluded(empty_file_name));
+}
+
 TEST(testCapioSerializerParser, testSerializeParseCAPIOCLV1) {
     const std::filesystem::path path("./config.json");
     const std::string workflow_name = "demo";
