@@ -291,7 +291,9 @@ class Engine {
      */
     void setStoreFileInMemory(const std::filesystem::path &path);
 
-    /// @brief set all files to be stored in memory
+    /// @brief set all files to be stored in memory. Once this method is called, all new files will
+    ///        be stored in memory unless afterward an explicit call to setStoreFileInFileSystem()
+    ///        is issued targeting the newly created file
     void setAllStoreInMemory();
 
     /**
