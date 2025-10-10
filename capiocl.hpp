@@ -14,16 +14,6 @@
 #define HOST_NAME_MAX 1024
 #endif
 
-/**
- * Compatibility layer for CAPIO logger.
- */
-#ifndef CAPIO_LOG
-#define START_LOG(...)
-#define LOG(...)
-#define DBG(...)
-#define ERR_EXIT(...) exit(EXIT_FAILURE);
-#endif
-
 namespace capiocl {
 class Serializer;
 
@@ -88,6 +78,7 @@ inline void print_message(const std::string &message_type = "",
 class Engine {
     friend class capiocl::Serializer;
     std::string node_name;
+    bool store_all_in_memory = false;
 
     /**
      * Hash map used to store the configuration from CAPIO-CL
@@ -300,7 +291,9 @@ class Engine {
      */
     void setStoreFileInMemory(const std::filesystem::path &path);
 
-    /// @brief set all files to be stored in memory
+    /// @brief set all files to be stored in memory. Once this method is called, all new files will
+    ///        be stored in memory unless afterward an explicit call to setStoreFileInFileSystem()
+    ///        is issued targeting the newly created file
     void setAllStoreInMemory();
 
     /**

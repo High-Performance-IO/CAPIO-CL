@@ -31,7 +31,9 @@ option(ENABLE_COVERAGE "Enable code coverage collection" FALSE)
 # Disable tests when included as a subproject
 if (NOT PROJECT_IS_TOP_LEVEL)
     set(CAPIO_CL_BUILD_TESTS OFF)
+    set(BUILD_PYTHON_BINDINGS OFF)
     message(STATUS "CAPIO-CL included as subproject → tests disabled")
+    message(STATUS "CAPIO-CL included as subproject → python bindings disabled")
 endif ()
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -53,13 +55,17 @@ FetchContent_Declare(
         GIT_REPOSITORY https://github.com/nlohmann/json.git
         GIT_TAG v3.12.0
 )
-FetchContent_Declare(
-        pybind11
-        GIT_REPOSITORY https://github.com/pybind/pybind11.git
-        GIT_TAG v3.0.1
-)
+FetchContent_MakeAvailable(nlohmann_json)
 
-FetchContent_MakeAvailable(nlohmann_json pybind11)
+if (BUILD_PYTHON_BINDINGS)
+    FetchContent_Declare(
+            pybind11
+            GIT_REPOSITORY https://github.com/pybind/pybind11.git
+            GIT_TAG v3.0.1
+    )
+    FetchContent_MakeAvailable(pybind11)
+endif ()
+
 
 #####################################
 # Sources and headers
@@ -80,7 +86,7 @@ target_include_directories(libcapio_cl PUBLIC
 #####################################
 # Install rules
 #####################################
-install(TARGETS ${TARGET_NAME}
+install(TARGETS libcapio_cl
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 

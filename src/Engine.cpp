@@ -119,7 +119,6 @@ void capiocl::Engine::print() const {
 }
 
 bool capiocl::Engine::contains(const std::filesystem::path &file) {
-    START_LOG(gettid(), "call(file=%s)", file.c_str());
     for (auto &[fst, snd] : _locations) {
         if (fnmatch(fst.c_str(), file.c_str(), FNM_PATHNAME) == 0) {
             return true;
@@ -133,16 +132,13 @@ void capiocl::Engine::add(std::string &path, std::vector<std::string> &producers
                           std::vector<std::string> &consumers, const std::string &commit_rule,
                           const std::string &fire_rule, bool permanent, bool exclude,
                           const std::vector<std::string> &dependencies) {
-    START_LOG(gettid(), "call(path=%s, commit=%s, fire=%s, permanent=%s, exclude=%s)", path.c_str(),
-              commit_rule.c_str(), fire_rule.c_str(), permanent ? "YES" : "NO",
-              exclude ? "YES" : "NO");
-
     _locations.emplace(path, std::make_tuple(producers, consumers, commit_rule, fire_rule,
-                                             permanent, exclude, true, 0, 0, dependencies, false));
+                                             permanent, exclude, true, 0, 0, dependencies,
+                                             this->store_all_in_memory));
 }
 
 void capiocl::Engine::newFile(const std::string &path) {
-    START_LOG(gettid(), "call(path=%s)", path.c_str());
+
     if (_locations.find(path) == _locations.end()) {
         std::string commit = commit_rules::ON_TERMINATION;
         std::string fire   = fire_rules::UPDATE;
@@ -156,15 +152,12 @@ void capiocl::Engine::newFile(const std::string &path) {
         for (const auto &[filename, data] : _locations) {
             const bool match = fnmatch(filename.c_str(), path.c_str(), FNM_PATHNAME) == 0;
             if (match && filename.length() > matchSize) {
-                LOG("Found match with %s", filename.c_str());
                 matchSize = filename.length();
                 matchKey  = filename;
             }
         }
 
         if (matchSize > 0) {
-            LOG("Adding file %s to _locations with commit=%s, and fire=%s", path.c_str(),
-                commit.c_str(), fire.c_str());
             const auto data                    = _locations.at(matchKey);
             std::vector<std::string> prod      = std::get<0>(data);
             std::vector<std::string> cons      = std::get<1>(data);
@@ -184,9 +177,10 @@ void capiocl::Engine::newFile(const std::string &path) {
 
         } else {
             _locations.emplace(
-                path, std::make_tuple(std::vector<std::string>(), std::vector<std::string>(),
-                                      commit_rules::ON_TERMINATION, fire_rules::UPDATE, false,
-                                      false, true, 0, 0, std::vector<std::string>(), false));
+                path,
+                std::make_tuple(std::vector<std::string>(), std::vector<std::string>(),
+                                commit_rules::ON_TERMINATION, fire_rules::UPDATE, false, false,
+                                true, 0, 0, std::vector<std::string>(), this->store_all_in_memory));
         }
     }
 }
@@ -200,7 +194,6 @@ long capiocl::Engine::getDirectoryFileCount(const std::string &path) {
 }
 
 void capiocl::Engine::addProducer(const std::string &path, std::string &producer) {
-    START_LOG(gettid(), "call(path=%s, producer=%s)", path.c_str(), producer.c_str());
     producer.erase(remove_if(producer.begin(), producer.end(), isspace), producer.end());
 
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
@@ -215,7 +208,6 @@ void capiocl::Engine::addProducer(const std::string &path, std::string &producer
 }
 
 void capiocl::Engine::addConsumer(const std::string &path, std::string &consumer) {
-    START_LOG(gettid(), "call(path=%s, consumer=%s)", path.c_str(), consumer.c_str());
     consumer.erase(remove_if(consumer.begin(), consumer.end(), isspace), consumer.end());
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
         if (auto vec = std::get<1>(itm->second);
@@ -229,7 +221,6 @@ void capiocl::Engine::addConsumer(const std::string &path, std::string &consumer
 }
 
 void capiocl::Engine::addFileDependency(const std::string &path, std::string &file_dependency) {
-    START_LOG(gettid(), "call(path=%s, consumer=%s)", path.c_str(), consumer.c_str());
     file_dependency.erase(remove_if(file_dependency.begin(), file_dependency.end(), isspace),
                           file_dependency.end());
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
@@ -246,7 +237,6 @@ void capiocl::Engine::addFileDependency(const std::string &path, std::string &fi
 }
 
 void capiocl::Engine::setCommitRule(const std::string &path, const std::string &commit_rule) {
-    START_LOG(gettid(), "call(path=%s, commit_rule=%s)", path.c_str(), commit_rule.c_str());
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
         std::get<2>(itm->second) = commit_rule;
         return;
@@ -256,33 +246,26 @@ void capiocl::Engine::setCommitRule(const std::string &path, const std::string &
 }
 
 std::string capiocl::Engine::getCommitRule(const std::string &path) {
-    START_LOG(gettid(), "call(path=%s)", path.c_str());
+
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
-        LOG("Commit rule: %s", std::get<2>(_locations.at(path)).c_str());
         return std::get<2>(itm->second);
     }
 
-    LOG("No entry found on map. checking globs. Creating new file from globs for cache purpose");
     this->newFile(path);
-    LOG("Returning commit rule for file %s (update)", path.c_str());
     return getCommitRule(path);
 }
 
 std::string capiocl::Engine::getFireRule(const std::string &path) {
-    START_LOG(gettid(), "call(path=%s)", path.c_str());
+
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
-        LOG("Fire rule: %s", std::get<3>(_locations.at(path)).c_str());
         return std::get<3>(itm->second);
     }
 
-    LOG("No entry found on map. checking globs. Creating new file from globs for cache purpose");
     this->newFile(path);
-    LOG("Returning Fire rule for file %s (update)", path.c_str());
     return getFireRule(path);
 }
 
 void capiocl::Engine::setFireRule(const std::string &path, const std::string &fire_rule) {
-    START_LOG(gettid(), "call(path=%s, fire_rule=%s)", path.c_str(), fire_rule.c_str());
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
         std::get<3>(itm->second) = fire_rule;
         return;
@@ -292,20 +275,15 @@ void capiocl::Engine::setFireRule(const std::string &path, const std::string &fi
 }
 
 bool capiocl::Engine::isFirable(const std::string &path) {
-    START_LOG(gettid(), "call(path=%s)", path.c_str());
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
-        LOG("Fire rule for file %s is %s", path.c_str(), std::get<3>(itm->second).c_str());
         return std::get<3>(itm->second) == fire_rules::NO_UPDATE;
     }
 
-    LOG("No entry found on map. checking globs. Creating new file from globs for cache purpose");
     this->newFile((path));
-    LOG("Fire rule for file %s is  %s", path.c_str(), std::get<3>(_locations.at((path))).c_str());
     return std::get<3>(_locations.at((path))) == fire_rules::NO_UPDATE;
 }
 
 void capiocl::Engine::setPermanent(const std::string &path, bool value) {
-    START_LOG(gettid(), "call(path=%s, value=%s)", path.c_str(), value ? "true" : "false");
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
         std::get<4>(itm->second) = value;
         return;
@@ -315,7 +293,6 @@ void capiocl::Engine::setPermanent(const std::string &path, bool value) {
 }
 
 bool capiocl::Engine::isPermanent(const std::string &path) {
-    START_LOG(gettid(), "call(path=%s, value=%s)", path.c_str(), value ? "true" : "false");
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
         return std::get<4>(itm->second);
     }
@@ -325,7 +302,6 @@ bool capiocl::Engine::isPermanent(const std::string &path) {
 }
 
 void capiocl::Engine::setExclude(const std::string &path, const bool value) {
-    START_LOG(gettid(), "call(path=%s, value=%s)", path.c_str(), value ? "true" : "false");
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
         std::get<5>(itm->second) = value;
         return;
@@ -335,7 +311,6 @@ void capiocl::Engine::setExclude(const std::string &path, const bool value) {
 }
 
 void capiocl::Engine::setDirectory(const std::string &path) {
-    START_LOG(gettid(), "call(path=%s)", path.c_str());
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
         std::get<6>(itm->second) = false;
         return;
@@ -345,7 +320,6 @@ void capiocl::Engine::setDirectory(const std::string &path) {
 }
 
 void capiocl::Engine::setFile(const std::string &path) {
-    START_LOG(gettid(), "call(path=%s)", path.c_str());
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
         std::get<6>(itm->second) = true;
         return;
@@ -362,13 +336,9 @@ bool capiocl::Engine::isFile(const std::string &path) {
     return isPermanent(path);
 }
 
-bool capiocl::Engine::isDirectory(const std::string &path) {
-    START_LOG(gettid(), "call(path=%s)", path.c_str());
-    return !isFile(path);
-}
+bool capiocl::Engine::isDirectory(const std::string &path) { return !isFile(path); }
 
 void capiocl::Engine::setCommitedCloseNumber(const std::string &path, const long num) {
-    START_LOG(gettid(), "call(path=%s, num=%ld)", path.c_str(), num);
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
         std::get<7>(itm->second) = num;
         return;
@@ -378,7 +348,6 @@ void capiocl::Engine::setCommitedCloseNumber(const std::string &path, const long
 }
 
 void capiocl::Engine::setDirectoryFileCount(const std::string &path, long num) {
-    START_LOG(gettid(), "call(path=%s, num=%ld)", path.c_str(), num);
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
         std::get<8>(itm->second) = num;
         return;
@@ -389,7 +358,6 @@ void capiocl::Engine::setDirectoryFileCount(const std::string &path, long num) {
 }
 
 void capiocl::Engine::remove(const std::string &path) {
-    START_LOG(gettid(), "call(path=%s)", path.c_str());
     if (const auto itm = _locations.find(path); itm == _locations.end()) {
         return;
     }
@@ -397,7 +365,6 @@ void capiocl::Engine::remove(const std::string &path) {
 }
 
 std::vector<std::string> capiocl::Engine::getConsumers(const std::string &path) {
-    START_LOG(gettid(), "call(path=%s)", path.c_str());
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
         return std::get<1>(itm->second);
     }
@@ -405,29 +372,17 @@ std::vector<std::string> capiocl::Engine::getConsumers(const std::string &path) 
 }
 
 bool capiocl::Engine::isConsumer(const std::string &path, const std::string &app_name) {
-    START_LOG(gettid(), "call(path=%s, pid=%ld", path.c_str(), pid);
-
-    LOG("App name is %s", app_name.c_str());
-
-    // check for exact entry
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
-        LOG("Found exact match for path");
         std::vector<std::string> producers = std::get<1>(itm->second);
-        DBG(gettid(), [&](const std::vector<std::string> &arr) {
-            for (auto elem : arr) {
-                LOG("producer: %s", elem.c_str());
-            }
-        }(producers));
         return std::find(producers.begin(), producers.end(), app_name) != producers.end();
     }
-    LOG("No exact match found in locations. checking for globs");
 
     this->newFile(path);
     return isConsumer(path, app_name);
 }
 
 std::vector<std::string> capiocl::Engine::getProducers(const std::string &path) {
-    START_LOG(gettid(), "call(path=%s)", path.c_str());
+
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
         return std::get<0>(itm->second);
     }
@@ -436,22 +391,10 @@ std::vector<std::string> capiocl::Engine::getProducers(const std::string &path) 
 }
 
 bool capiocl::Engine::isProducer(const std::string &path, const std::string &app_name) {
-    START_LOG(gettid(), "call(path=%s, pid=%ld", path.c_str(), pid);
-
-    LOG("App name is %s", app_name.c_str());
-
-    // check for exact entry
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
-        LOG("Found exact match for path");
         std::vector<std::string> producers = std::get<0>(itm->second);
-        DBG(gettid(), [&](const std::vector<std::string> &arr) {
-            for (auto elem : arr) {
-                LOG("producer: %s", elem.c_str());
-            }
-        }(producers));
         return std::find(producers.begin(), producers.end(), app_name) != producers.end();
     }
-    LOG("No exact match found in locations. checking for globs");
 
     this->newFile(path);
     return isProducer(path, app_name);
@@ -459,13 +402,11 @@ bool capiocl::Engine::isProducer(const std::string &path, const std::string &app
 
 void capiocl::Engine::setFileDeps(const std::filesystem::path &path,
                                   const std::vector<std::string> &dependencies) {
-    START_LOG(gettid(), "call()");
     if (dependencies.empty()) {
         return;
     }
 
     for (const auto &itm : dependencies) {
-        LOG("Creating new file for path %s", itm.c_str());
         newFile(itm);
     }
 
@@ -478,11 +419,8 @@ void capiocl::Engine::setFileDeps(const std::filesystem::path &path,
 }
 
 long capiocl::Engine::getCommitCloseCount(std::filesystem::path::iterator::reference path) {
-    START_LOG(gettid(), "call(path=%s)", path.c_str());
-
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
         auto count = std::get<7>(itm->second);
-        LOG("Expected number on close to commit file: %d", count);
         return count;
     }
 
@@ -508,6 +446,7 @@ void capiocl::Engine::setStoreFileInMemory(const std::filesystem::path &path) {
 }
 
 void capiocl::Engine::setAllStoreInMemory() {
+    this->store_all_in_memory = true;
     for (const auto &[fst, snd] : _locations) {
         this->setStoreFileInMemory(fst);
     }
@@ -526,12 +465,12 @@ bool capiocl::Engine::isStoredInMemory(const std::filesystem::path &path) {
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
         return std::get<10>(itm->second);
     }
+
     this->newFile(path);
     return isStoredInMemory(path);
 }
 
 std::vector<std::string> capiocl::Engine::getFileToStoreInMemory() {
-    START_LOG(gettid(), "call()");
     std::vector<std::string> files;
 
     for (const auto &[path, file] : _locations) {
@@ -546,22 +485,17 @@ std::vector<std::string> capiocl::Engine::getFileToStoreInMemory() {
 std::string capiocl::Engine::getHomeNode(const std::string &path) {
     // TODO: understand here how to get the home node policy when home_node_policies are
     //       being implemented.
-    START_LOG(gettid(), "call(path=%s)", path.c_str());
+
     if (const auto location = _locations.find(path); location == _locations.end()) {
-        LOG("No rule for home node. Returning create home node");
         return node_name;
     }
-
-    LOG("Found location entry");
     return node_name;
 }
 
 bool capiocl::Engine::isExcluded(const std::string &path) {
-
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
         return std::get<5>(itm->second);
     }
-    LOG("Checking against GLOB");
 
     this->newFile(path);
     return isExcluded(path);

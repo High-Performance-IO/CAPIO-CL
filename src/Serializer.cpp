@@ -5,7 +5,6 @@
 
 void capiocl::Serializer::dump(const Engine &engine, const std::string &workflow_name,
                                const std::filesystem::path &filename) {
-    START_LOG(gettid(), "call(output='%s')", target.c_str());
 
     nlohmann::json doc;
     doc["name"] = workflow_name;

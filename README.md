@@ -72,18 +72,32 @@ By default, this will:
 ```cmake
 include(FetchContent)
 
+#####################################
+# External projects
+#####################################
 FetchContent_Declare(
         capio_cl
         GIT_REPOSITORY https://github.com/High-Performance-IO/CAPIO-CL.git
         GIT_TAG main  
 )
-
 FetchContent_MakeAvailable(capio_cl)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE libcapio_cl)
+#####################################
+# Include files and directories
+#####################################
+target_include_directories(${TARGET_NAME} PRIVATE 
+        ${capio_cl_SOURCE_DIR}
+)
+
+#####################################
+# Link libraries
+#####################################
+target_link_libraries(${PROJECT_NAME} PRIVATE 
+        libcapio_cl
+)
 ```
 
-When included this way, tests are **not built**, keeping integration clean for external projects.
+When included this way, tests and python bindings are **not built**, keeping integration clean for external projects.
 
 ---
 
