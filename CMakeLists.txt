@@ -55,13 +55,18 @@ FetchContent_Declare(
         GIT_REPOSITORY https://github.com/nlohmann/json.git
         GIT_TAG v3.12.0
 )
-FetchContent_Declare(
-        pybind11
-        GIT_REPOSITORY https://github.com/pybind/pybind11.git
-        GIT_TAG v3.0.1
-)
 
-FetchContent_MakeAvailable(nlohmann_json pybind11)
+if (BUILD_PYTHON_BINDINGS)
+    FetchContent_Declare(
+            pybind11
+            GIT_REPOSITORY https://github.com/pybind/pybind11.git
+            GIT_TAG v3.0.1
+    )
+    FetchContent_MakeAvailable(nlohmann_json pybind11)
+else ()
+    FetchContent_MakeAvailable(nlohmann_json)
+endif ()
+
 
 #####################################
 # Sources and headers
@@ -82,7 +87,7 @@ target_include_directories(libcapio_cl PUBLIC
 #####################################
 # Install rules
 #####################################
-install(TARGETS ${TARGET_NAME}
+install(TARGETS libcapio_cl
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
