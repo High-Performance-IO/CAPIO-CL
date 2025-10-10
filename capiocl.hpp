@@ -14,15 +14,6 @@
 #define HOST_NAME_MAX 1024
 #endif
 
-/**
- * Compatibility layer for CAPIO logger.
- */
-#ifndef CAPIO_LOG
-#define START_LOG(...)
-#define LOG(...)
-#define DBG(...)
-#define ERR_EXIT(...) exit(EXIT_FAILURE);
-#endif
 
 namespace capiocl {
 class Serializer;

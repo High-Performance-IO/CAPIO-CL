@@ -26,7 +26,6 @@ capiocl::Parser::parse(const std::filesystem::path &source,
 
     std::string workflow_name = CAPIO_CL_DEFAULT_WF_NAME;
     auto locations            = new Engine();
-    START_LOG(gettid(), "call(config_file='%s')", source.c_str());
 
     if (source.empty()) {
         throw ParserException("Empty source file name!");
@@ -51,7 +50,6 @@ capiocl::Parser::parse(const std::filesystem::path &source,
 
     workflow_name = doc["name"].get<std::string>();
     print_message(CLI_LEVEL_JSON, "Parsing configuration for workflow: " + workflow_name);
-    LOG("Parsing configuration for workflow: %s", workflow_name.c_str());
 
     // ---- IO_Graph ----
     if (!doc.contains("IO_Graph")) {
@@ -71,7 +69,6 @@ capiocl::Parser::parse(const std::filesystem::path &source,
 
         std::string app_name = app["name"].get<std::string>();
         print_message(CLI_LEVEL_JSON, "Parsing config for app " + app_name);
-        LOG("Parsing config for app %s", app_name.c_str());
 
         // ---- input_stream ----
         if (!app.contains("input_stream")) {
