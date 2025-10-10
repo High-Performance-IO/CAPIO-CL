@@ -55,6 +55,7 @@ FetchContent_Declare(
         GIT_REPOSITORY https://github.com/nlohmann/json.git
         GIT_TAG v3.12.0
 )
+FetchContent_MakeAvailable(nlohmann_json)
 
 if (BUILD_PYTHON_BINDINGS)
     FetchContent_Declare(
@@ -62,9 +63,7 @@ if (BUILD_PYTHON_BINDINGS)
             GIT_REPOSITORY https://github.com/pybind/pybind11.git
             GIT_TAG v3.0.1
     )
-    FetchContent_MakeAvailable(nlohmann_json pybind11)
-else ()
-    FetchContent_MakeAvailable(nlohmann_json)
+    FetchContent_MakeAvailable(pybind11)
 endif ()
 
 
