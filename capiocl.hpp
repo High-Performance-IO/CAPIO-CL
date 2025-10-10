@@ -14,7 +14,6 @@
 #define HOST_NAME_MAX 1024
 #endif
 
-
 namespace capiocl {
 class Serializer;
 
