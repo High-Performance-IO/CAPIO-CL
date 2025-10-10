@@ -106,7 +106,7 @@ capiocl::Parser::parse(const std::filesystem::path &source,
             for (const auto &stream_item : app["streaming"]) {
                 bool is_file = true;
                 std::vector<std::filesystem::path> streaming_names;
-                std::vector<std::string> file_deps;
+                std::vector<std::filesystem::path> file_deps;
                 std::string commit_rule = commit_rules::ON_TERMINATION;
                 std::string mode        = fire_rules::UPDATE;
                 long int n_close        = 0;

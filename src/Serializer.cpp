@@ -22,23 +22,21 @@ void capiocl::Serializer::dump(const Engine &engine, const std::string &workflow
     nlohmann::json storage;
     nlohmann::json io_graph = nlohmann::json::array();
 
-    for (const auto &[path, data] : *files) {
-        const auto &[producers, consumers, commit_rule, fire_rule, permanent_flag, excluded_flag,
-                     is_file, n_close, n_dir_files, file_deps, store_in_memory] = data;
+    for (const auto &[path, entry] : *files) {
 
-        if (permanent_flag) {
+        if (entry.permanent) {
             permanent.push_back(path);
         }
-        if (excluded_flag) {
+        if (entry.excluded) {
             exclude.push_back(path);
         }
 
-        store_in_memory ? memory_storage.push_back(path) : fs_storage.push_back(path);
+        entry.store_in_memory ? memory_storage.push_back(path) : fs_storage.push_back(path);
 
-        for (const auto &p : producers) {
+        for (const auto &p : entry.producers) {
             app_outputs[p].push_back(path);
         }
-        for (const auto &c : consumers) {
+        for (const auto &c : entry.consumers) {
             app_inputs[c].push_back(path);
         }
     }
@@ -48,28 +46,26 @@ void capiocl::Serializer::dump(const Engine &engine, const std::string &workflow
         nlohmann::json streaming = nlohmann::json::array();
 
         for (const auto &path : outputs) {
-            const auto &data = files->at(path);
-            const auto &[producers, consumers, commit_rule, fire_rule, permanent_flag,
-                         excluded_flag, is_file, n_close, n_dir_files, file_deps, store_in_fs] =
-                data;
+            const auto &entry = files->at(path);
 
             nlohmann::json streaming_item;
-            std::string committed     = commit_rule;
-            const auto name_kind      = is_file ? "name" : "dirname";
+            std::string committed     = entry.commit_rule;
+            const auto name_kind      = entry.is_file ? "name" : "dirname";
             streaming_item[name_kind] = {path};
 
             // Commit rule
-            if (commit_rule == commit_rules::ON_CLOSE && n_close > 0) {
-                committed += ":" + std::to_string(n_close);
+            if (entry.commit_rule == commit_rules::ON_CLOSE && entry.commit_on_close_count > 0) {
+                committed += ":" + std::to_string(entry.commit_on_close_count);
             }
-            if (commit_rule == commit_rules::N_FILES && n_dir_files > 0) {
-                committed += ":" + std::to_string(n_dir_files);
+            if (entry.commit_rule == commit_rules::N_FILES &&
+                entry.directory_commit_file_count > 0) {
+                committed += ":" + std::to_string(entry.directory_commit_file_count);
             }
 
-            streaming_item["file_deps"] = file_deps;
+            streaming_item["file_deps"] = entry.file_dependencies;
             streaming_item["committed"] = committed;
-            streaming_item["mode"]      = fire_rule;
-            streaming_item["n_files"]   = n_dir_files;
+            streaming_item["mode"]      = entry.fire_rule;
+            streaming_item["n_files"]   = entry.directory_commit_file_count;
 
             streaming.push_back(streaming_item);
         }

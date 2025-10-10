@@ -65,7 +65,8 @@ TEST(testCapioClEngine, testAddFileManually) {
     capiocl::Engine engine;
     EXPECT_EQ(engine.size(), 0);
     std::string path = "test.dat";
-    std::vector<std::string> producers, consumers, file_dependencies;
+    std::vector<std::string> producers, consumers;
+    std::vector<std::filesystem::path> file_dependencies;
 
     engine.add(path, producers, consumers, capiocl::commit_rules::ON_TERMINATION,
                capiocl::fire_rules::UPDATE, false, false, file_dependencies);
@@ -88,7 +89,8 @@ TEST(testCapioClEngine, testAddFileManuallyGlob) {
     capiocl::Engine engine;
     EXPECT_EQ(engine.size(), 0);
     std::string path = "test.*";
-    std::vector<std::string> producers, consumers, file_dependencies;
+    std::vector<std::string> producers, consumers;
+    std::vector<std::filesystem::path> file_dependencies;
 
     engine.add(path, producers, consumers, capiocl::commit_rules::ON_TERMINATION,
                capiocl::fire_rules::UPDATE, false, false, file_dependencies);
@@ -109,7 +111,8 @@ TEST(testCapioClEngine, testAddFileManuallyQuestion) {
     capiocl::Engine engine;
     EXPECT_EQ(engine.size(), 0);
     std::string path = "test.?";
-    std::vector<std::string> producers, consumers, file_dependencies;
+    std::vector<std::string> producers, consumers;
+    std::vector<std::filesystem::path> file_dependencies;
 
     engine.add(path, producers, consumers, capiocl::commit_rules::ON_CLOSE,
                capiocl::fire_rules::NO_UPDATE, false, false, file_dependencies);
@@ -143,7 +146,8 @@ TEST(testCapioClEngine, testAddFileManuallyGlobExplcit) {
     capiocl::Engine engine;
     EXPECT_EQ(engine.size(), 0);
     std::string path = "test.[abc][abc][abc]";
-    std::vector<std::string> producers, consumers, file_dependencies;
+    std::vector<std::string> producers, consumers;
+    std::vector<std::filesystem::path> file_dependencies;
 
     engine.add(path, producers, consumers, capiocl::commit_rules::ON_CLOSE,
                capiocl::fire_rules::NO_UPDATE, false, false, file_dependencies);
@@ -503,11 +507,12 @@ TEST(testCapioClEngine, testOnEmptyPath) {
     std::vector<std::string> empty1, empty2;
     std::string empty_file_name;
     std::string producer_name_1 = "producer", producer_name_2 = "producer";
+    std::vector<std::filesystem::path> file_dependencies;
 
     engine.newFile(empty_file_name);
     EXPECT_EQ(engine.size(), 0);
     engine.add(empty_file_name, empty1, empty2, capiocl::commit_rules::ON_TERMINATION,
-               capiocl::fire_rules::UPDATE, true, true, {});
+               capiocl::fire_rules::UPDATE, true, true, file_dependencies);
     EXPECT_EQ(engine.size(), 0);
     EXPECT_EQ(engine.getDirectoryFileCount(empty_file_name), 0);
 

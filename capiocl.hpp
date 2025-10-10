@@ -76,26 +76,28 @@ inline void print_message(const std::string &message_type = "",
  * - Storage policy (in-memory or on filesystem)
  */
 class Engine {
-    friend class capiocl::Serializer;
+    friend class Serializer;
     std::string node_name;
     bool store_all_in_memory = false;
+
+    struct CapioCLEntry {
+        std::vector<std::string> producers;
+        std::vector<std::string> consumers;
+        std::vector<std::filesystem::path> file_dependencies;
+        std::string commit_rule          = commit_rules::ON_TERMINATION;
+        std::string fire_rule            = fire_rules::UPDATE;
+        bool permanent                   = false;
+        bool excluded                    = false;
+        bool is_file                     = true;
+        bool store_in_memory             = false;
+        long commit_on_close_count       = 0;
+        long directory_commit_file_count = 0;
+    };
 
     /**
      * Hash map used to store the configuration from CAPIO-CL
      */
-    std::unordered_map<std::string,                         ///< Path name
-                       std::tuple<std::vector<std::string>, ///< Producers list                 [0]
-                                  std::vector<std::string>, ///< Consumers list                 [1]
-                                  std::string,              ///< Commit rule                    [2]
-                                  std::string,              ///< Fire rule                      [3]
-                                  bool,                     ///< Permanent flag                 [4]
-                                  bool,                     ///< Excluded flag                  [5]
-                                  bool,                     ///< Is file (false = directory)    [6]
-                                  long,                     ///< Commit-on-close count          [7]
-                                  long,                     ///< Expected directory file count  [8]
-                                  std::vector<std::string>, ///< File dependencies              [9]
-                                  bool>>                    ///< Store in FS (false = memory)   [10]
-        _locations;
+    std::unordered_map<std::string, CapioCLEntry> _locations;
 
     /**
      * @brief Utility method to truncate a string to its last @p n characters. This is only used
@@ -166,7 +168,7 @@ class Engine {
     void add(std::string &path, std::vector<std::string> &producers,
              std::vector<std::string> &consumers, const std::string &commit_rule,
              const std::string &fire_rule, bool permanent, bool exclude,
-             const std::vector<std::string> &dependencies);
+             std::vector<std::filesystem::path> &dependencies);
 
     /**
      * @brief Add a new producer to a file entry.
@@ -282,7 +284,7 @@ class Engine {
      * @param dependencies List of dependent files.
      */
     void setFileDeps(const std::filesystem::path &path,
-                     const std::vector<std::string> &dependencies);
+                     const std::vector<std::filesystem::path> &dependencies);
 
     /**
      * @brief Store the file in memory only.
@@ -327,7 +329,8 @@ class Engine {
     long getCommitCloseCount(std::filesystem::path::iterator::reference path);
 
     /// @brief Get file dependencies.
-    std::vector<std::string> getCommitOnFileDependencies(const std::filesystem::path &path);
+    std::vector<std::filesystem::path>
+    getCommitOnFileDependencies(const std::filesystem::path &path);
 
     /// @brief Get the list of files stored in memory.
     std::vector<std::string> getFileToStoreInMemory();
