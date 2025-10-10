@@ -133,7 +133,8 @@ void capiocl::Engine::add(std::string &path, std::vector<std::string> &producers
                           const std::string &fire_rule, bool permanent, bool exclude,
                           const std::vector<std::string> &dependencies) {
     _locations.emplace(path, std::make_tuple(producers, consumers, commit_rule, fire_rule,
-                                             permanent, exclude, true, 0, 0, dependencies, false));
+                                             permanent, exclude, true, 0, 0, dependencies,
+                                             false | this->store_all_in_memory));
 }
 
 void capiocl::Engine::newFile(const std::string &path) {
@@ -444,6 +445,7 @@ void capiocl::Engine::setStoreFileInMemory(const std::filesystem::path &path) {
 }
 
 void capiocl::Engine::setAllStoreInMemory() {
+    this->store_all_in_memory = true;
     for (const auto &[fst, snd] : _locations) {
         this->setStoreFileInMemory(fst);
     }
@@ -459,9 +461,15 @@ void capiocl::Engine::setStoreFileInFileSystem(const std::filesystem::path &path
 }
 
 bool capiocl::Engine::isStoredInMemory(const std::filesystem::path &path) {
+
+    if (this->store_all_in_memory) {
+        return true;
+    }
+
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
         return std::get<10>(itm->second);
     }
+
     this->newFile(path);
     return isStoredInMemory(path);
 }
@@ -470,7 +478,7 @@ std::vector<std::string> capiocl::Engine::getFileToStoreInMemory() {
     std::vector<std::string> files;
 
     for (const auto &[path, file] : _locations) {
-        if (std::get<10>(file)) {
+        if (std::get<10>(file) || this->store_all_in_memory) {
             files.push_back(path);
         }
     }

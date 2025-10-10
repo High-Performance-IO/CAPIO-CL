@@ -78,6 +78,7 @@ inline void print_message(const std::string &message_type = "",
 class Engine {
     friend class capiocl::Serializer;
     std::string node_name;
+    bool store_all_in_memory = false;
 
     /**
      * Hash map used to store the configuration from CAPIO-CL
