@@ -1,5 +1,5 @@
 import os
-from pathlib import Path
+from pathlib import Path, PosixPath
 
 import py_capio_cl
 
@@ -7,10 +7,10 @@ import py_capio_cl
 def test_serialize_parse_py_capio_cl_v1(tmp_path):
     path = tmp_path / "config.json"
     workflow_name = "demo"
-    file1 = "file1.txt"
-    file2 = "file2.txt"
-    file3 = "my_command_history.txt"
-    file4 = "/tmp"
+    file1 = PosixPath("file1.txt")
+    file2 = PosixPath("file2.txt")
+    file3 = PosixPath("my_command_history.txt")
+    file4 = PosixPath("/tmp")
 
     producer = "_first"
     consumer = "_last"
@@ -51,16 +51,15 @@ def test_serialize_parse_py_capio_cl_v1(tmp_path):
     engine.print()
 
     # Serialize
-    py_capio_cl.Serializer.dump(engine, workflow_name, str(path))
+    py_capio_cl.Serializer.dump(engine, workflow_name, path)
 
     # Parse back
-    resolve = Path("")
-    wf_name, new_engine = py_capio_cl.Parser.parse(str(path), str(resolve), False)
+    wf_name, new_engine = py_capio_cl.Parser.parse(path)
 
     assert wf_name == workflow_name
 
     # Parse with memory flag
-    wf_name1, new_engine1 = py_capio_cl.Parser.parse(str(path), str(resolve), True)
+    wf_name1, new_engine1 = py_capio_cl.Parser.parse(path, store_only_in_memory=True)
     assert len(new_engine1.getFileToStoreInMemory()) == engine.size()
 
     # cleanup
@@ -91,6 +90,6 @@ def test_parser_exception():
         except Exception as e:
             caught = True
             typename = type(e).__name__
-            assert typename == "CAPIOCLParserException"
+            assert typename == "ParserException"
             assert len(str(e)) > 0
         assert caught

@@ -97,7 +97,7 @@ class Engine {
     /**
      * Hash map used to store the configuration from CAPIO-CL
      */
-    std::unordered_map<std::string, CapioCLEntry> _locations;
+    std::unordered_map<std::filesystem::path, CapioCLEntry> _locations;
 
     /**
      * @brief Utility method to truncate a string to its last @p n characters. This is only used
@@ -165,7 +165,7 @@ class Engine {
      * @param exclude Whether the file/directory is excluded.
      * @param dependencies List of dependent files.
      */
-    void add(std::string &path, std::vector<std::string> &producers,
+    void add(std::filesystem::path &path, std::vector<std::string> &producers,
              std::vector<std::string> &consumers, const std::string &commit_rule,
              const std::string &fire_rule, bool permanent, bool exclude,
              std::vector<std::filesystem::path> &dependencies);
@@ -176,7 +176,7 @@ class Engine {
      * @param path File path.
      * @param producer Application name of the producer.
      */
-    void addProducer(const std::string &path, std::string &producer);
+    void addProducer(const std::filesystem::path &path, std::string &producer);
 
     /**
      * @brief Add a new consumer to a file entry.
@@ -184,7 +184,7 @@ class Engine {
      * @param path File path.
      * @param consumer Application name of the consumer.
      */
-    void addConsumer(const std::string &path, std::string &consumer);
+    void addConsumer(const std::filesystem::path &path, std::string &consumer);
 
     /**
      * @brief Add a new file dependency, when rule is commit_on_file
@@ -192,7 +192,8 @@ class Engine {
      * @param path
      * @param file_dependency
      */
-    void addFileDependency(const std::string &path, std::string &file_dependency);
+    void addFileDependency(const std::filesystem::path &path,
+                           std::filesystem::path &file_dependency);
 
     /**
      * @brief Create a new CAPIO file entry.
@@ -202,14 +203,14 @@ class Engine {
      *
      * @param path Path of the new file.
      */
-    void newFile(const std::string &path);
+    void newFile(const std::filesystem::path &path);
 
     /**
      * @brief Remove a file from the configuration.
      *
      * @param path Path of the file to remove.
      */
-    void remove(const std::string &path);
+    void remove(const std::filesystem::path &path);
 
     /**
      * @brief Set the commit rule of a file.
@@ -217,7 +218,7 @@ class Engine {
      * @param path File path.
      * @param commit_rule Commit rule string.
      */
-    void setCommitRule(const std::string &path, const std::string &commit_rule);
+    void setCommitRule(const std::filesystem::path &path, const std::string &commit_rule);
 
     /**
      * @brief Set the fire rule of a file.
@@ -225,7 +226,7 @@ class Engine {
      * @param path File path.
      * @param fire_rule Fire rule string.
      */
-    void setFireRule(const std::string &path, const std::string &fire_rule);
+    void setFireRule(const std::filesystem::path &path, const std::string &fire_rule);
 
     /**
      * @brief Mark a file as permanent or not.
@@ -233,7 +234,7 @@ class Engine {
      * @param path File path.
      * @param value true to mark permanent, false otherwise.
      */
-    void setPermanent(const std::string &path, bool value);
+    void setPermanent(const std::filesystem::path &path, bool value);
 
     /**
      * @brief Mark a file as excluded or not.
@@ -241,21 +242,21 @@ class Engine {
      * @param path File path.
      * @param value true to exclude, false otherwise.
      */
-    void setExclude(const std::string &path, bool value);
+    void setExclude(const std::filesystem::path &path, bool value);
 
     /**
      * @brief Mark a path as a directory.
      *
      * @param path Path to mark.
      */
-    void setDirectory(const std::string &path);
+    void setDirectory(const std::filesystem::path &path);
 
     /**
      * @brief Mark a path as a file.
      *
      * @param path Path to mark.
      */
-    void setFile(const std::string &path);
+    void setFile(const std::filesystem::path &path);
 
     /**
      * @brief Set the commit-on-close counter.
@@ -265,7 +266,7 @@ class Engine {
      * @param path File path.
      * @param num Number of close operations before commit.
      */
-    void setCommitedCloseNumber(const std::string &path, long num);
+    void setCommitedCloseNumber(const std::filesystem::path &path, long num);
 
     /**
      * @brief Set the expected number of files in a directory.
@@ -273,7 +274,7 @@ class Engine {
      * @param path Directory path.
      * @param num Expected file count.
      */
-    void setDirectoryFileCount(const std::string &path, long num);
+    void setDirectoryFileCount(const std::filesystem::path &path, long num);
 
     /**
      * @brief Set the dependencies of a file.
@@ -311,19 +312,19 @@ class Engine {
      * @param path Directory path.
      * @return Expected file count.
      */
-    long getDirectoryFileCount(const std::string &path);
+    long getDirectoryFileCount(const std::filesystem::path &path);
 
     /// @brief Get the commit rule of a file.
-    std::string getCommitRule(const std::string &path);
+    std::string getCommitRule(const std::filesystem::path &path);
 
     /// @brief Get the fire rule of a file.
-    std::string getFireRule(const std::string &path);
+    std::string getFireRule(const std::filesystem::path &path);
 
     /// @brief Get the producers of a file.
-    std::vector<std::string> getProducers(const std::string &path);
+    std::vector<std::string> getProducers(const std::filesystem::path &path);
 
     /// @brief Get the consumers of a file.
-    std::vector<std::string> getConsumers(const std::string &path);
+    std::vector<std::string> getConsumers(const std::filesystem::path &path);
 
     /// @brief Get the commit-on-close counter for a file.
     long getCommitCloseCount(std::filesystem::path::iterator::reference path);
@@ -336,7 +337,7 @@ class Engine {
     std::vector<std::string> getFileToStoreInMemory();
 
     /// @brief Get the home node of a file.
-    std::string getHomeNode(const std::string &path);
+    std::string getHomeNode(const std::filesystem::path &path);
 
     /**
      * @brief Check if a process is a producer for a file.
@@ -345,7 +346,7 @@ class Engine {
      * @param app_name Application name.
      * @return true if the process is a producer, false otherwise.
      */
-    bool isProducer(const std::string &path, const std::string &app_name);
+    bool isProducer(const std::filesystem::path &path, const std::string &app_name);
 
     /**
      * @brief Check if a process is a consumer for a file.
@@ -354,7 +355,7 @@ class Engine {
      * @param app_name Application name.
      * @return true if the process is a consumer, false otherwise.
      */
-    bool isConsumer(const std::string &path, const std::string &app_name);
+    bool isConsumer(const std::filesystem::path &path, const std::string &app_name);
 
     /**
      * @brief Check if a file is firable, that is fire rule is no_update.
@@ -362,7 +363,7 @@ class Engine {
      * @param path File path.
      * @return true if the file is firable, false otherwise.
      */
-    bool isFirable(const std::string &path);
+    bool isFirable(const std::filesystem::path &path);
 
     /**
      * @brief Check if a path refers to a file.
@@ -370,7 +371,7 @@ class Engine {
      * @param path File path.
      * @return true if the path is a file, false otherwise.
      */
-    bool isFile(const std::string &path);
+    bool isFile(const std::filesystem::path &path);
 
     /**
      * @brief Check if a path is excluded.
@@ -378,7 +379,7 @@ class Engine {
      * @param path File path.
      * @return true if excluded, false otherwise.
      */
-    bool isExcluded(const std::string &path);
+    bool isExcluded(const std::filesystem::path &path);
 
     /**
      * @brief Check if a path is a directory.
@@ -386,7 +387,7 @@ class Engine {
      * @param path Directory path.
      * @return true if directory, false otherwise.
      */
-    bool isDirectory(const std::string &path);
+    bool isDirectory(const std::filesystem::path &path);
 
     /**
      * @brief Check if a file is stored in memory.
@@ -402,7 +403,7 @@ class Engine {
      * @param path
      * @return
      */
-    bool isPermanent(const std::string &path);
+    bool isPermanent(const std::filesystem::path &path);
 
     bool operator==(const capiocl::Engine &other) const;
 };

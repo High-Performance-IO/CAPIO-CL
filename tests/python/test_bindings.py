@@ -1,7 +1,6 @@
-import pytest
-import os
 import socket
-from pathlib import Path
+from pathlib import PosixPath
+
 import py_capio_cl
 
 
@@ -141,7 +140,7 @@ def test_producers_consumers_file_dependencies():
     engine = py_capio_cl.Engine()
     producers = ["A", "B"]
     consumers = ["C", "D"]
-    deps = ["E", "F"]
+    deps = [PosixPath("E"), PosixPath("F")]
 
     engine.newFile("test.dat")
     engine.addProducer("test.dat", producers[0])
@@ -271,4 +270,4 @@ def test_insert_file_dependencies():
     engine.setFileDeps("myFile.txt", [])
     engine.setFileDeps("test.txt", ["a", "b", "c"])
     deps = engine.getCommitOnFileDependencies("test.txt")
-    assert deps == ["a", "b", "c"]
+    assert deps == [PosixPath("a"), PosixPath("b"), PosixPath("c")]

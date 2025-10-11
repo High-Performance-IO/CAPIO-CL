@@ -64,7 +64,7 @@ TEST(testCapioClEngine, testAddFileDefaultGlobQuestion) {
 TEST(testCapioClEngine, testAddFileManually) {
     capiocl::Engine engine;
     EXPECT_EQ(engine.size(), 0);
-    std::string path = "test.dat";
+    std::filesystem::path path = "test.dat";
     std::vector<std::string> producers, consumers;
     std::vector<std::filesystem::path> file_dependencies;
 
@@ -88,7 +88,7 @@ TEST(testCapioClEngine, testAddFileManually) {
 TEST(testCapioClEngine, testAddFileManuallyGlob) {
     capiocl::Engine engine;
     EXPECT_EQ(engine.size(), 0);
-    std::string path = "test.*";
+    std::filesystem::path path = "test.*";
     std::vector<std::string> producers, consumers;
     std::vector<std::filesystem::path> file_dependencies;
 
@@ -110,7 +110,7 @@ TEST(testCapioClEngine, testAddFileManuallyGlob) {
 TEST(testCapioClEngine, testAddFileManuallyQuestion) {
     capiocl::Engine engine;
     EXPECT_EQ(engine.size(), 0);
-    std::string path = "test.?";
+    std::filesystem::path path = "test.?";
     std::vector<std::string> producers, consumers;
     std::vector<std::filesystem::path> file_dependencies;
 
@@ -145,7 +145,7 @@ TEST(testCapioClEngine, testAddFileManuallyQuestion) {
 TEST(testCapioClEngine, testAddFileManuallyGlobExplcit) {
     capiocl::Engine engine;
     EXPECT_EQ(engine.size(), 0);
-    std::string path = "test.[abc][abc][abc]";
+    std::filesystem::path path = "test.[abc][abc][abc]";
     std::vector<std::string> producers, consumers;
     std::vector<std::filesystem::path> file_dependencies;
 
@@ -170,8 +170,8 @@ TEST(testCapioClEngine, testAddFileManuallyGlobExplcit) {
 TEST(testCapioClEngine, testProducerConsumersFileDependencies) {
     capiocl::Engine engine;
     EXPECT_EQ(engine.size(), 0);
-    std::vector<std::string> producers = {"A", "B"}, consumers = {"C", "D"},
-                             file_dependencies = {"E", "F"};
+    std::vector<std::string> producers = {"A", "B"}, consumers = {"C", "D"};
+    std::vector<std::filesystem::path> file_dependencies = {"E", "F"};
 
     engine.newFile("test.dat");
 
@@ -210,8 +210,8 @@ TEST(testCapioClEngine, testProducerConsumersFileDependencies) {
 TEST(testCapioClEngine, testProducerConsumersFileDependenciesGlob) {
     capiocl::Engine engine;
     EXPECT_EQ(engine.size(), 0);
-    std::vector<std::string> producers = {"A", "B"}, consumers = {"C", "D"},
-                             file_dependencies = {"E", "F"};
+    std::vector<std::string> producers = {"A", "B"}, consumers = {"C", "D"};
+    std::vector<std::filesystem::path> file_dependencies = {"E", "F"};
 
     engine.newFile("test.*");
 
@@ -488,8 +488,8 @@ TEST(testCapioClEngine, testFileDependenciesDifferences) {
     capiocl::Engine engine1, engine2;
     engine1.newFile("A");
     engine2.newFile("A");
-    std::string depsA = "prod1";
-    std::string depsB = "prod2";
+    std::filesystem::path depsA = "prod1";
+    std::filesystem::path depsB = "prod2";
     engine1.addFileDependency("A", depsA);
     EXPECT_FALSE(engine1 == engine2);
     engine2.addFileDependency("A", depsB);
@@ -505,7 +505,7 @@ TEST(testCapioClEngine, testOnEmptyPath) {
     capiocl::Engine engine;
 
     std::vector<std::string> empty1, empty2;
-    std::string empty_file_name;
+    std::filesystem::path empty_file_name;
     std::string producer_name_1 = "producer", producer_name_2 = "producer";
     std::vector<std::filesystem::path> file_dependencies;
 
