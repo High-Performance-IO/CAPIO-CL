@@ -163,8 +163,8 @@ void capiocl::Engine::newFile(const std::filesystem::path &path) {
         size_t matchSize = 0;
         for (const auto &[filename, data] : _locations) {
             if (const bool match = fnmatch(filename.c_str(), path.c_str(), FNM_PATHNAME) == 0;
-                match && filename.string().length() > matchSize) {
-                matchSize = filename.string().length();
+                match && filename.length() > matchSize) {
+                matchSize = filename.length();
                 matchKey  = filename;
             }
         }

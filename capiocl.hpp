@@ -97,7 +97,7 @@ class Engine {
     /**
      * Hash map used to store the configuration from CAPIO-CL
      */
-    std::unordered_map<std::filesystem::path, CapioCLEntry> _locations;
+    std::unordered_map<std::string, CapioCLEntry> _locations;
 
     /**
      * @brief Utility method to truncate a string to its last @p n characters. This is only used
