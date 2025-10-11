@@ -34,17 +34,17 @@ void capiocl::Engine::print() const {
 
     print_message(CLI_LEVEL_JSON, "|" + std::string(134, '=') + "|");
 
-    print_message(CLI_LEVEL_JSON,
-                  "|======|===================|===================|====================|========"
-                  "============|============|===========|=========|==========|");
+    std::string line = "|======|===================|===================|====================";
+    line += "|========|============|============|===========|=========|==========|";
+    print_message(CLI_LEVEL_JSON, line);
 
-    print_message(CLI_LEVEL_JSON,
-                  "| Kind | Filename          | Producer step     | Consumer step      |  "
-                  "Commit Rule       |  Fire Rule | Permanent | Exclude | n_files  |");
+    line = "| Kind | Filename          | Producer step     | Consumer step      |  ";
+    line += "Commit Rule       |  Fire Rule | Permanent | Exclude | n_files  |";
+    print_message(CLI_LEVEL_JSON, line);
 
-    print_message(CLI_LEVEL_JSON,
-                  "|======|===================|===================|====================|========"
-                  "============|============|===========|=========|==========|");
+    line = "|======|===================|===================|====================|========";
+    line += "============|============|===========|=========|==========|";
+    print_message(CLI_LEVEL_JSON, line);
 
     // Iterate over _locations
     for (auto &itm : _locations) {
@@ -53,7 +53,12 @@ void capiocl::Engine::print() const {
         std::string color_post = "\033[0m";
 
         std::string name_trunc = truncateLastN(itm.first, 12);
-        auto kind              = itm.second.is_file ? "F" : "D";
+        std::string kind;
+        if (itm.second.is_file) {
+            kind = "F";
+        } else {
+            kind = "D";
+        }
 
         std::ostringstream base_line;
         base_line << "|   " << color_preamble << kind << color_post << "  | " << color_preamble

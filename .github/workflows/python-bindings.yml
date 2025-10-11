@@ -46,6 +46,8 @@ jobs:
       # Install Python build dependencies
       - name: "Build and Install Python wheel"
         run: |
+          mkdir -p /tmp/capio_cl_jsons
+          cp tests/jsons/*.json /tmp/capio_cl_jsons
           python -m pip install --upgrade pip
           python -m pip install -r build-requirements.txt
           
