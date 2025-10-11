@@ -25,7 +25,7 @@ capiocl::Parser::parse(const std::filesystem::path &source,
                        const std::filesystem::path &resolve_prefix, bool store_only_in_memory) {
 
     std::string workflow_name = CAPIO_CL_DEFAULT_WF_NAME;
-    auto locations            = new Engine();
+    auto engine               = new Engine();
 
     if (source.empty()) {
         throw ParserException("Empty source file name!");
@@ -81,8 +81,8 @@ capiocl::Parser::parse(const std::filesystem::path &source,
         print_message(CLI_LEVEL_JSON, "Parsing input_stream for app " + app_name);
         for (const auto &itm : app["input_stream"]) {
             auto file_path = resolve(itm.get<std::string>(), resolve_prefix);
-            locations->newFile(file_path);
-            locations->addConsumer(file_path, app_name);
+            engine->newFile(file_path);
+            engine->addConsumer(file_path, app_name);
         }
 
         // ---- output_stream ----
@@ -96,8 +96,8 @@ capiocl::Parser::parse(const std::filesystem::path &source,
         print_message(CLI_LEVEL_JSON, "Parsing output_stream for app " + app_name);
         for (const auto &itm : app["output_stream"]) {
             auto file_path = resolve(itm.get<std::string>(), resolve_prefix);
-            locations->newFile(file_path);
-            locations->addProducer(file_path, app_name);
+            engine->newFile(file_path);
+            engine->addProducer(file_path, app_name);
         }
 
         // ---- streaming ----
@@ -206,12 +206,12 @@ capiocl::Parser::parse(const std::filesystem::path &source,
 
                 for (auto &path : streaming_names) {
                     if (n_files != 0) {
-                        locations->setDirectoryFileCount(path, n_files);
+                        engine->setDirectoryFileCount(path, n_files);
                     }
                     if (is_file) {
-                        locations->setFile(path);
+                        engine->setFile(path);
                     } else {
-                        locations->setDirectory(path);
+                        engine->setDirectory(path);
                     }
 
                     print_message(CLI_LEVEL_INFO,
@@ -221,10 +221,10 @@ capiocl::Parser::parse(const std::filesystem::path &source,
                                       "n_close: " + std::to_string(n_close));
                     print_message(CLI_LEVEL_INFO, "");
 
-                    locations->setCommitRule(path, commit_rule);
-                    locations->setFireRule(path, mode);
-                    locations->setCommitedCloseNumber(path, n_close);
-                    locations->setFileDeps(path, file_deps);
+                    engine->setCommitRule(path, commit_rule);
+                    engine->setFireRule(path, mode);
+                    engine->setCommitedCloseNumber(path, n_close);
+                    engine->setFileDeps(path, file_deps);
                 }
             }
         }
@@ -237,8 +237,8 @@ capiocl::Parser::parse(const std::filesystem::path &source,
             if (path.is_relative()) {
                 path = resolve_prefix / path;
             }
-            locations->newFile(path);
-            locations->setPermanent(path, true);
+            engine->newFile(path);
+            engine->setPermanent(path, true);
         }
     }
 
@@ -249,8 +249,8 @@ capiocl::Parser::parse(const std::filesystem::path &source,
             if (path.is_relative()) {
                 path = resolve_prefix / path;
             }
-            locations->newFile(path);
-            locations->setExclude(path, true);
+            engine->newFile(path);
+            engine->setExclude(path, true);
         }
     }
 
@@ -267,7 +267,7 @@ capiocl::Parser::parse(const std::filesystem::path &source,
             }
             for (const auto &f : storage["memory"]) {
                 auto file_str = f.get<std::string>();
-                locations->setStoreFileInMemory(file_str);
+                engine->setStoreFileInMemory(file_str);
             }
         }
 
@@ -277,7 +277,7 @@ capiocl::Parser::parse(const std::filesystem::path &source,
             }
             for (const auto &f : storage["fs"]) {
                 auto file_str = f.get<std::string>();
-                locations->setStoreFileInFileSystem(file_str);
+                engine->setStoreFileInFileSystem(file_str);
             }
         }
     }
@@ -286,8 +286,8 @@ capiocl::Parser::parse(const std::filesystem::path &source,
 
     if (store_only_in_memory) {
         print_message(CLI_LEVEL_INFO, "Storing all files in memory");
-        locations->setAllStoreInMemory();
+        engine->setAllStoreInMemory();
     }
 
-    return {workflow_name, locations};
+    return {workflow_name, engine};
 }
