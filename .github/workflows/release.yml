@@ -2,7 +2,7 @@ name: "Release new version"
 on:
   workflow_run:
     workflows:
-      - "C++ Unit Tests"
+      - "CPP Unit Tests"
       - "Python Bindings Unit Tests"
     branches:
       - main
@@ -36,13 +36,11 @@ jobs:
           else
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
-
       - name: "Get previous tag"
         id: prev-tag
         run: |
           PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
           echo "previous=${PREV_TAG}" >> $GITHUB_OUTPUT
-
       - name: "Generate changelog"
         if: ${{ steps.check-tag.outputs.exists == 'false' }}
         id: changelog
@@ -57,17 +55,14 @@ jobs:
           echo "changelog<<EOF" >> $GITHUB_ENV
           cat CHANGELOG.txt >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
-
       - name: "Create tag and release"
         if: ${{ steps.check-tag.outputs.exists == 'false' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Creating tag and release for version ${CAPIO_CL_VERSION}"
-
           git tag "${CAPIO_CL_VERSION}"
           git push origin "${CAPIO_CL_VERSION}"
-
           gh release create "${CAPIO_CL_VERSION}" \
             --title "${CAPIO_CL_VERSION}" \
             --notes-file CHANGELOG.txt

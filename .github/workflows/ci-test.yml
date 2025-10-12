@@ -1,4 +1,4 @@
-name: "C++ Unit Tests"
+name: "CPP Unit Tests"
 on:
   push:
     branches:
