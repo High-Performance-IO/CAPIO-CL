@@ -46,16 +46,23 @@ if (ENABLE_COVERAGE)
     add_link_options(--coverage)
 endif ()
 
+add_compile_options(-Wall -Wextra -Wpedantic)
+
 #####################################
 # External projects
 #####################################
-# simdjson
+
 FetchContent_Declare(
-        nlohmann_json
-        GIT_REPOSITORY https://github.com/nlohmann/json.git
-        GIT_TAG v3.12.0
+        jsoncons
+        GIT_REPOSITORY https://github.com/danielaparker/jsoncons.git
+        GIT_TAG v1.4.3
 )
-FetchContent_MakeAvailable(nlohmann_json)
+
+set(JSONCONS_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(JSONCONS_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(JSONCONS_BUILD_FUZZERS OFF CACHE BOOL "" FORCE)
+
+FetchContent_MakeAvailable(jsoncons)
 
 if (BUILD_PYTHON_BINDINGS)
     FetchContent_Declare(
@@ -66,6 +73,38 @@ if (BUILD_PYTHON_BINDINGS)
     FetchContent_MakeAvailable(pybind11)
 endif ()
 
+#####################################
+# Encode CAPIO-CL JSON Schemas
+#####################################
+set(CAPIOCL_JSON_SCHEMAS_DIRECTORY "${CMAKE_BINARY_DIR}/schemas")
+set(OUTPUT_HEADER "${CAPIOCL_JSON_SCHEMAS_DIRECTORY}/capio_cl_json_schemas.hpp")
+file(GLOB SCHEMA_FILES "${CMAKE_SOURCE_DIR}/schema/*.json")
+
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/schema*.json")
+
+file(WRITE ${OUTPUT_HEADER} "// Bundled CAPIO-CL encoded JSON schemas\n")
+file(APPEND ${OUTPUT_HEADER} "#pragma once\n\n")
+
+foreach (SCHEMA_FILE ${SCHEMA_FILES})
+    get_filename_component(SCHEMA_NAME ${SCHEMA_FILE} NAME_WE)
+    get_filename_component(SCHEMA_BASENAME ${SCHEMA_FILE} NAME)
+    message(STATUS "Bundling CAPIO-CL schema: ${SCHEMA_BASENAME}")
+    file(APPEND ${OUTPUT_HEADER} "// CAPIO-CL version: ${SCHEMA_NAME}\n")
+
+    execute_process(
+            COMMAND xxd -i ${SCHEMA_BASENAME}
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/schema
+            OUTPUT_VARIABLE HEXDATA
+            RESULT_VARIABLE RES
+    )
+    if (NOT RES EQUAL 0)
+        message(FATAL_ERROR "xxd failed for ${SCHEMA_FILE}")
+    endif ()
+
+    file(APPEND ${OUTPUT_HEADER} "${HEXDATA}\n\n")
+endforeach ()
+
+message(STATUS "Generated header: ${OUTPUT_HEADER}")
 
 #####################################
 # Sources and headers
@@ -73,15 +112,18 @@ endif ()
 file(GLOB_RECURSE CAPIO_SRC CONFIGURE_DEPENDS "src/*.cpp")
 set(CAPIO_CL_HEADERS capiocl.hpp)
 
-# Library target (for use with external projects)
+# Library target
 add_library(libcapio_cl STATIC ${CAPIO_SRC} ${CAPIO_CL_HEADERS})
 
 target_include_directories(libcapio_cl PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${nlohmann_json_SOURCE_DIR}/include
+        ${jsoncons_SOURCE_DIR}/include
+        ${CAPIOCL_JSON_SCHEMAS_DIRECTORY}
 )
 
+# jsoncons is header-only, no linking required
+target_link_libraries(libcapio_cl PUBLIC)
 
 #####################################
 # Install rules
@@ -90,22 +132,18 @@ install(TARGETS libcapio_cl
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
-
 #####################################
 # Python bindings
 #####################################
 if (BUILD_PYTHON_BINDINGS)
-
     set(PYTHON_BIND_NAME _py_capio_cl)
 
     pybind11_add_module(${PYTHON_BIND_NAME}
             bindings/python_bindings.cpp
     )
 
-
-    # Make sure the binding sees the CAPIO CL headers & links against the core lib
-    target_link_libraries(${PYTHON_BIND_NAME}
-            PRIVATE libcapio_cl
+    target_link_libraries(${PYTHON_BIND_NAME} PRIVATE
+            libcapio_cl
     )
 
     target_include_directories(${PYTHON_BIND_NAME}
@@ -114,9 +152,7 @@ if (BUILD_PYTHON_BINDINGS)
     )
 
     install(TARGETS _py_capio_cl DESTINATION py_capio_cl)
-
 endif ()
-
 
 #####################################
 # Tests (only when built standalone)
@@ -161,14 +197,12 @@ if (CAPIO_CL_BUILD_TESTS)
     )
 
     #####################################
-    # Install rules
+    # Install rules for tests
     #####################################
-    # Optionally install tests
     install(TARGETS CAPIO_CL_tests
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     )
 
-    # Copy tests jsons
     install(DIRECTORY ${TEST_JSON_DIR}
             DESTINATION ${CMAKE_INSTALL_BINDIR}/jsons
             FILES_MATCHING PATTERN "*.json"

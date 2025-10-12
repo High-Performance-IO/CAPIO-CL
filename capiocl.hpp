@@ -34,7 +34,7 @@ constexpr char UPDATE[]    = "update";
 namespace commit_rules {
 constexpr char ON_CLOSE[]       = "on_close";
 constexpr char ON_FILE[]        = "on_file";
-constexpr char N_FILES[]        = "n_files";
+constexpr char N_FILES[]        = "on_n_files";
 constexpr char ON_TERMINATION[] = "on_termination";
 } // namespace commit_rules
 
@@ -413,10 +413,6 @@ class Engine {
  *
  */
 class Parser {
-
-    static std::filesystem::path resolve(std::filesystem::path path,
-                                         const std::filesystem::path &prefix);
-
   public:
     /**
      * @brief Perform the parsing of the capio_server configuration file

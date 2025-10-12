@@ -631,6 +631,39 @@ TEST(testCapioSerializerParser, testSerializeParseCAPIOCLV1NcloseNfiles) {
     std::filesystem::remove(path);
 }
 
+TEST(testCapioSerializerParser, testSerializeParseCAPIOCLV1FileDeps) {
+    const std::filesystem::path path("./config.json");
+    const std::string workflow_name = "demo";
+    const std::string file_1_name = "file1.txt", file_2_name = "file2.txt",
+                      file_3_name = "file3.txt";
+    std::string producer_name = "_first", consumer_name = "_last";
+
+    capiocl::Engine engine;
+
+    engine.newFile(file_1_name);
+    engine.newFile(file_2_name);
+    engine.addProducer(file_1_name, producer_name);
+    engine.addProducer(file_2_name, producer_name);
+
+    engine.newFile(file_3_name);
+    engine.addConsumer(file_3_name, consumer_name);
+    engine.addProducer(file_3_name, producer_name);
+    engine.setCommitRule(file_3_name, capiocl::commit_rules::ON_FILE);
+    engine.setFileDeps(file_3_name, {file_1_name, file_2_name});
+
+    engine.print();
+    capiocl::Serializer::dump(engine, workflow_name, path);
+
+    std::filesystem::path resolve = "";
+    auto [wf_name, new_engine]    = capiocl::Parser::parse(path, resolve);
+
+    EXPECT_TRUE(wf_name == workflow_name);
+    capiocl::print_message("", "");
+    EXPECT_TRUE(engine == *new_engine);
+
+    std::filesystem::remove(path);
+}
+
 TEST(testCapioSerializerParser, testParserResolveAbsolute) {
     const std::filesystem::path json_path("/tmp/capio_cl_jsons/V1_test0.json");
     auto [wf_name, engine] = capiocl::Parser::parse(json_path, "/tmp");
@@ -689,10 +722,13 @@ TEST(testCapioSerializerParser, testParserException) {
             auto [wf_name, engine] = capiocl::Parser::parse(test);
         } catch (std::exception &e) {
             exception_catched = true;
-            EXPECT_TRUE(demangled_name(e) == "capiocl::ParserException");
+            auto demangled    = demangled_name(e);
+            capiocl::print_message(capiocl::CLI_LEVEL_INFO,
+                                   "Caught exception of type =" + demangled);
+            EXPECT_TRUE(demangled == "capiocl::ParserException");
             EXPECT_GT(std::string(e.what()).size(), 0);
         }
         EXPECT_TRUE(exception_catched);
-        capiocl::print_message(capiocl::CLI_LEVEL_WARNING);
+        capiocl::print_message(capiocl::CLI_LEVEL_INFO, "Test failed successfully\n\n");
     }
 }

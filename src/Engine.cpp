@@ -441,11 +441,11 @@ void capiocl::Engine::setDirectoryFileCount(const std::filesystem::path &path, l
     }
 
     if (const auto itm = _locations.find(path); itm != _locations.end()) {
+        this->setDirectory(path);
         itm->second.directory_commit_file_count = num;
         return;
     }
     this->newFile(path);
-    this->setDirectory(path);
     this->setDirectoryFileCount(path, num);
 }
 
