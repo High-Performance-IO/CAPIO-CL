@@ -5,7 +5,6 @@
 #include <cstring>
 #include <filesystem>
 #include <iostream>
-#include <nlohmann/json.hpp>
 #include <string>
 #include <unistd.h>
 #include <unordered_map>
@@ -414,13 +413,6 @@ class Engine {
  *
  */
 class Parser {
-
-    static std::filesystem::path resolve(std::filesystem::path path,
-                                         const std::filesystem::path &prefix);
-
-    /// @brief Validate a CAPIO-CL configuration file to match the given schema
-    static void validate_json(nlohmann::json doc);
-
   public:
     /**
      * @brief Perform the parsing of the capio_server configuration file
