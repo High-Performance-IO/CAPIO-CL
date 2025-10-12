@@ -1,0 +1,73 @@
+name: "Release new version"
+on:
+  workflow_run:
+    workflows:
+      - "C++ Unit Tests"
+      - "Python Bindings Unit Tests"
+    branches:
+      - main
+    types:
+      - completed
+
+jobs:
+  github:
+    name: "Create GitHub Release"
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Needed to get all tags and history
+
+      - name: "Install GitHub CLI"
+        uses: cli/cli-action@v2
+
+      - name: "Get CAPIO-CL version"
+        run: echo "CAPIO_CL_VERSION=$(grep -m1 'VERSION' CMakeLists.txt | awk '{print $2}')" >> $GITHUB_ENV
+
+      - name: "Check if tag exists"
+        id: check-tag
+        run: |
+          if git ls-remote --tags origin | grep -q "refs/tags/${CAPIO_CL_VERSION}$"; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: "Get previous tag"
+        id: prev-tag
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          echo "previous=${PREV_TAG}" >> $GITHUB_OUTPUT
+
+      - name: "Generate changelog"
+        if: ${{ steps.check-tag.outputs.exists == 'false' }}
+        id: changelog
+        run: |
+          if [ -n "${{ steps.prev-tag.outputs.previous }}" ]; then
+            echo "Generating changelog from ${{ steps.prev-tag.outputs.previous }} to HEAD"
+            git log ${{ steps.prev-tag.outputs.previous }}..HEAD --pretty=format:"- %s (%h)" > CHANGELOG.txt
+          else
+            echo "No previous tag found — listing all commits"
+            git log --pretty=format:"- %s (%h)" > CHANGELOG.txt
+          fi
+          echo "changelog<<EOF" >> $GITHUB_ENV
+          cat CHANGELOG.txt >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: "Create tag and release"
+        if: ${{ steps.check-tag.outputs.exists == 'false' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Creating tag and release for version ${CAPIO_CL_VERSION}"
+
+          git tag "${CAPIO_CL_VERSION}"
+          git push origin "${CAPIO_CL_VERSION}"
+
+          gh release create "${CAPIO_CL_VERSION}" \
+            --title "${CAPIO_CL_VERSION}" \
+            --notes-file CHANGELOG.txt
