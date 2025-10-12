@@ -5,6 +5,7 @@
 #include <cstring>
 #include <filesystem>
 #include <iostream>
+#include <nlohmann/json.hpp>
 #include <string>
 #include <unistd.h>
 #include <unordered_map>
@@ -34,7 +35,7 @@ constexpr char UPDATE[]    = "update";
 namespace commit_rules {
 constexpr char ON_CLOSE[]       = "on_close";
 constexpr char ON_FILE[]        = "on_file";
-constexpr char N_FILES[]        = "n_files";
+constexpr char N_FILES[]        = "on_n_files";
 constexpr char ON_TERMINATION[] = "on_termination";
 } // namespace commit_rules
 
@@ -416,6 +417,9 @@ class Parser {
 
     static std::filesystem::path resolve(std::filesystem::path path,
                                          const std::filesystem::path &prefix);
+
+    /// @brief Validate a CAPIO-CL configuration file to match the given schema
+    static void validate_json(nlohmann::json doc);
 
   public:
     /**

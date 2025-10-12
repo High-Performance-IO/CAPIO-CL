@@ -55,9 +55,23 @@ FetchContent_Declare(
         GIT_REPOSITORY https://github.com/nlohmann/json.git
         GIT_TAG v3.12.0
 )
-FetchContent_MakeAvailable(nlohmann_json)
+
+FetchContent_Declare(
+        valijson
+        GIT_REPOSITORY https://github.com/tristanpenman/valijson.git
+        GIT_TAG master   # Use master as it is the branch that targets C++17
+)
+set(valijson_BUILD_TESTS OFF CACHE BOOL "Disable building tests for Valijson" FORCE)
+set(valijson_BUILD_EXAMPLES OFF CACHE BOOL "Disable building examples for Valijson" FORCE)
+
+
+FetchContent_MakeAvailable(nlohmann_json valijson)
+
 
 if (BUILD_PYTHON_BINDINGS)
+
+    # Add pybind11 project only ehn building python bindings
+
     FetchContent_Declare(
             pybind11
             GIT_REPOSITORY https://github.com/pybind/pybind11.git
@@ -82,6 +96,11 @@ target_include_directories(libcapio_cl PUBLIC
         ${nlohmann_json_SOURCE_DIR}/include
 )
 
+target_link_libraries(libcapio_cl
+        PUBLIC
+        nlohmann_json::nlohmann_json
+        ValiJSON::valijson
+)
 
 #####################################
 # Install rules
@@ -104,8 +123,9 @@ if (BUILD_PYTHON_BINDINGS)
 
 
     # Make sure the binding sees the CAPIO CL headers & links against the core lib
-    target_link_libraries(${PYTHON_BIND_NAME}
-            PRIVATE libcapio_cl
+    target_link_libraries(${PYTHON_BIND_NAME} PRIVATE
+            libcapio_cl
+            ValiJSON::valijson
     )
 
     target_include_directories(${PYTHON_BIND_NAME}
@@ -137,6 +157,7 @@ if (CAPIO_CL_BUILD_TESTS)
 
     target_link_libraries(CAPIO_CL_tests PRIVATE
             libcapio_cl
+            ValiJSON::valijson
             GTest::gtest_main
     )
 

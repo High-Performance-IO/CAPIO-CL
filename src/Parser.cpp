@@ -3,6 +3,11 @@
 #include <fstream>
 #include <nlohmann/json.hpp>
 
+#include <valijson/adapters/nlohmann_json_adapter.hpp>
+#include <valijson/schema.hpp>
+#include <valijson/schema_parser.hpp>
+#include <valijson/validator.hpp>
+
 std::filesystem::path capiocl::Parser::resolve(std::filesystem::path path,
                                                const std::filesystem::path &prefix) {
     if (prefix.empty()) {
@@ -18,6 +23,49 @@ std::filesystem::path capiocl::Parser::resolve(std::filesystem::path path,
     print_message(CLI_LEVEL_WARNING, msg);
 
     return resolved;
+}
+
+void capiocl::Parser::validate_json(nlohmann::json doc) {
+    nlohmann::json schema_doc;
+    valijson::Schema schema;
+    valijson::SchemaParser schema_parser;
+    valijson::Validator validator;
+
+    std::ifstream schema_file("schema/v1.json");
+    if (!schema_file.is_open()) {
+        throw ParserException("Failed to open JSON schema!");
+    }
+    schema_file >> schema_doc;
+
+    valijson::adapters::NlohmannJsonAdapter schema_adapter(schema_doc);
+    schema_parser.populateSchema(schema_adapter, schema);
+
+    valijson::adapters::NlohmannJsonAdapter target_adapter(doc);
+    valijson::ValidationResults results;
+
+    bool is_valid;
+
+    try {
+        is_valid = validator.validate(schema, target_adapter, &results);
+    } catch (std::exception &e) {
+        // If runtime exception is thrown, convert it to ParserException
+        throw ParserException(e.what());
+    }
+
+    if (!is_valid) {
+        valijson::ValidationResults::Error error;
+
+        while (results.popError(error)) {
+            std::stringstream err;
+            for (auto c : error.context) {
+                err << c;
+            }
+            err << ": " << error.description;
+
+            print_message(CLI_LEVEL_ERROR, err.str());
+        }
+        throw ParserException("JSON validation failed!");
+    }
 }
 
 std::tuple<std::string, capiocl::Engine *>
@@ -40,44 +88,18 @@ capiocl::Parser::parse(const std::filesystem::path &source,
     nlohmann::json doc;
     file >> doc;
 
-    // ---- workflow name ----
-    if (!doc.contains("name")) {
-        throw ParserException("Missing workflow name!");
-    }
-    if (!doc["name"].is_string()) {
-        throw ParserException("Wrong data type for workflow name!");
-    }
+    validate_json(doc);
 
+    // ---- workflow name ----
     workflow_name = doc["name"].get<std::string>();
     print_message(CLI_LEVEL_JSON, "Parsing configuration for workflow: " + workflow_name);
 
     // ---- IO_Graph ----
-    if (!doc.contains("IO_Graph")) {
-        throw ParserException("Missing IO_Graph section");
-    }
-    if (!doc["IO_Graph"].is_array()) {
-        throw ParserException("Wrong data type for IO_Graph section");
-    }
-
     for (const auto &app : doc["IO_Graph"]) {
-        if (!app.contains("name")) {
-            throw ParserException("Missing name for streaming item!");
-        }
-        if (!app["name"].is_string()) {
-            throw ParserException("Wrong type for name streaming entry!");
-        }
-
         std::string app_name = app["name"].get<std::string>();
         print_message(CLI_LEVEL_JSON, "Parsing config for app " + app_name);
 
         // ---- input_stream ----
-        if (!app.contains("input_stream")) {
-            throw ParserException("No input_stream section found for app " + app_name);
-        }
-        if (!app["input_stream"].is_array()) {
-            throw ParserException("input_stream section for app " + app_name + " is not array!");
-        }
-
         print_message(CLI_LEVEL_JSON, "Parsing input_stream for app " + app_name);
         for (const auto &itm : app["input_stream"]) {
             auto file_path = resolve(itm.get<std::string>(), resolve_prefix);
@@ -86,13 +108,6 @@ capiocl::Parser::parse(const std::filesystem::path &source,
         }
 
         // ---- output_stream ----
-        if (!app.contains("output_stream")) {
-            throw ParserException("No output_stream section found for app " + app_name);
-        }
-        if (!app["output_stream"].is_array()) {
-            throw ParserException("output_stream section for app " + app_name + " is not array!");
-        }
-
         print_message(CLI_LEVEL_JSON, "Parsing output_stream for app " + app_name);
         for (const auto &itm : app["output_stream"]) {
             auto file_path = resolve(itm.get<std::string>(), resolve_prefix);
@@ -124,17 +139,10 @@ capiocl::Parser::parse(const std::filesystem::path &source,
                         auto nm_resolved = resolve(nm.get<std::string>(), resolve_prefix);
                         streaming_names.push_back(nm_resolved);
                     }
-                } else {
-                    throw ParserException(
-                        "Missing streaming name/dirname, or name/dirname is not an array for app " +
-                        app_name);
                 }
 
                 // Commit rule. Optional in nature, hence no check required!
                 if (stream_item.contains("committed")) {
-                    if (!stream_item["committed"].is_string()) {
-                        throw ParserException("Error: invalid type for commit rule!");
-                    }
 
                     std::string committed = stream_item["committed"].get<std::string>();
                     auto pos              = committed.find(':');
@@ -151,10 +159,6 @@ capiocl::Parser::parse(const std::filesystem::path &source,
 
                         if (commit_rule == commit_rules::ON_CLOSE) {
                             n_close = std::stol(count_str);
-                        } else if (commit_rule == commit_rules::N_FILES) {
-                            n_files = std::stol(count_str);
-                        } else {
-                            throw ParserException("Invalid commit rule!");
                         }
                     } else {
                         commit_rule = committed;
@@ -162,45 +166,20 @@ capiocl::Parser::parse(const std::filesystem::path &source,
 
                     // file_deps
                     if (commit_rule == commit_rules::ON_FILE) {
-                        if (!stream_item.contains("file_deps") ||
-                            !stream_item["file_deps"].is_array()) {
-                            throw ParserException(
-                                "commit rule is on_file but no file_deps section found");
-                        }
                         for (const auto &dep : stream_item["file_deps"]) {
                             auto dep_resolved = resolve(dep.get<std::string>(), resolve_prefix);
                             file_deps.push_back(dep_resolved);
                         }
                     }
-
-                    // check commit rule is one of the available
-                    if (commit_rule != commit_rules::N_FILES &&
-                        commit_rule != commit_rules::ON_CLOSE &&
-                        commit_rule != commit_rules::ON_FILE &&
-                        commit_rule != commit_rules::ON_TERMINATION) {
-                        throw ParserException("Error: commit rule " + commit_rule +
-                                              " is not one of the allowed one!");
-                    }
                 }
 
                 // Firing rule. Optional in nature, hence no check required!
                 if (stream_item.contains("mode")) {
-                    if (!stream_item["mode"].is_string()) {
-                        throw ParserException("Error: invalid firing rule data type");
-                    }
                     mode = stream_item["mode"].get<std::string>();
-
-                    if (mode != fire_rules::UPDATE && mode != fire_rules::NO_UPDATE) {
-                        throw ParserException(
-                            "Error: fire rule is not one of the allowed ones for app: " + app_name);
-                    }
                 }
 
                 // n_files (optional)
-                if (stream_item.contains("n_files")) {
-                    if (!stream_item["n_files"].is_number_integer()) {
-                        throw ParserException("wrong type for n_files!");
-                    }
+                if (stream_item.contains("n_files") && !is_file) {
                     n_files = stream_item["n_files"].get<int64_t>();
                 }
 

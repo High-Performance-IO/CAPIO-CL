@@ -603,7 +603,7 @@ TEST(testCapioSerializerParser, testSerializeParseCAPIOCLV1) {
     auto [wf_name1, new_engine1] = capiocl::Parser::parse(path, resolve, true);
     EXPECT_EQ(new_engine1->getFileToStoreInMemory().size(), engine.size());
 
-    std::filesystem::remove(path);
+   // std::filesystem::remove(path);
 }
 
 TEST(testCapioSerializerParser, testSerializeParseCAPIOCLV1NcloseNfiles) {
@@ -689,10 +689,13 @@ TEST(testCapioSerializerParser, testParserException) {
             auto [wf_name, engine] = capiocl::Parser::parse(test);
         } catch (std::exception &e) {
             exception_catched = true;
-            EXPECT_TRUE(demangled_name(e) == "capiocl::ParserException");
+            auto demangled    = demangled_name(e);
+            capiocl::print_message(capiocl::CLI_LEVEL_INFO,
+                                   "Caught exception of type =" + demangled);
+            EXPECT_TRUE(demangled == "capiocl::ParserException");
             EXPECT_GT(std::string(e.what()).size(), 0);
         }
         EXPECT_TRUE(exception_catched);
-        capiocl::print_message(capiocl::CLI_LEVEL_WARNING);
+        capiocl::print_message(capiocl::CLI_LEVEL_INFO, "Test failed successfully\n\n");
     }
 }

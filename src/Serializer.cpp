@@ -57,15 +57,15 @@ void capiocl::Serializer::dump(const Engine &engine, const std::string &workflow
             if (entry.commit_rule == commit_rules::ON_CLOSE && entry.commit_on_close_count > 0) {
                 committed += ":" + std::to_string(entry.commit_on_close_count);
             }
-            if (entry.commit_rule == commit_rules::N_FILES &&
-                entry.directory_commit_file_count > 0) {
-                committed += ":" + std::to_string(entry.directory_commit_file_count);
+
+            if (!entry.is_file) {
+                streaming_item["n_files"] = entry.directory_commit_file_count;
             }
 
             streaming_item["file_deps"] = entry.file_dependencies;
             streaming_item["committed"] = committed;
             streaming_item["mode"]      = entry.fire_rule;
-            streaming_item["n_files"]   = entry.directory_commit_file_count;
+
 
             streaming.push_back(streaming_item);
         }
