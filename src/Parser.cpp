@@ -112,24 +112,22 @@ capiocl::Parser::parse(const std::filesystem::path &source,
 
                 // Commit rule (optional)
                 if (stream_item.contains("committed")) {
-                    std::string committed = stream_item["committed"].as<std::string>();
-                    auto pos              = committed.find(':');
+                    auto committed = stream_item["committed"].as<std::string>();
+                    auto pos       = committed.find(':');
                     if (pos != std::string::npos) {
-                        commit_rule           = committed.substr(0, pos);
-                        std::string count_str = committed.substr(pos + 1);
-                        try {
-                            size_t num_len;
-                            std::stoi(count_str, &num_len);
-                        } catch (...) {
-                            throw ParserException("commit rule argument is not an integer!");
-                        }
+                        // If we reach here, we are certain that the commit rule is on_close
+                        // as the json schema enforces the rule that the :n is allowed only for
+                        // the on_close commit rule.
 
-                        if (commit_rule == commit_rules::ON_CLOSE) {
-                            n_close = std::stol(count_str);
-                        }
-                    } else {
-                        commit_rule = committed;
+                        size_t num_len;
+                        std::string count_str = committed.substr(pos + 1);
+                        n_close               = std::stoi(count_str, &num_len);
+
+                        // clean up committed
+                        committed = committed.substr(0, pos);
                     }
+
+                    commit_rule = committed;
 
                     if (commit_rule == commit_rules::ON_FILE) {
                         for (const auto &dep : stream_item["file_deps"].array_range()) {
@@ -171,10 +169,7 @@ capiocl::Parser::parse(const std::filesystem::path &source,
     // ---- permanent ----
     if (doc.contains("permanent")) {
         for (const auto &item : doc["permanent"].array_range()) {
-            std::filesystem::path path(item.as<std::string>());
-            if (path.is_relative()) {
-                path = resolve_prefix / path;
-            }
+            std::filesystem::path path = resolve(item.as<std::string>(), resolve_prefix);
             engine->newFile(path);
             engine->setPermanent(path, true);
         }
@@ -183,10 +178,7 @@ capiocl::Parser::parse(const std::filesystem::path &source,
     // ---- exclude ----
     if (doc.contains("exclude")) {
         for (const auto &item : doc["exclude"].array_range()) {
-            std::filesystem::path path(item.as<std::string>());
-            if (path.is_relative()) {
-                path = resolve_prefix / path;
-            }
+            std::filesystem::path path = resolve(item.as<std::string>(), resolve_prefix);
             engine->newFile(path);
             engine->setExclude(path, true);
         }
