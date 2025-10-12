@@ -1,0 +1,37 @@
+name: "Release new version"
+on:
+  workflow_run:
+    workflows:
+      - "C++ Unit Tests"
+      - "Python Bindings Unit Tests"
+    branches:
+      - main
+    types:
+      - completed
+jobs:
+  github:
+    name: "Create GitHub Release"
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Get CAPIO-CL version"
+        run: echo "CAPIO_CL_VERSION=$(cat CMakeLists.txt | grep "        VERSION" | awk '{print $2}')" >> $GITHUB_ENV
+      - name: "Check tag existence"
+        uses: mukunku/tag-exists-action@v1.6.0
+        id: check-tag
+        with:
+          tag: ${{ env.CAPIO_CL_VERSION }}
+      - name: "Create Release"
+        id: create-release
+        uses: actions/create-release@v1
+        if: ${{ steps.check-tag.outputs.exists == 'false' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.CAPIO_CL_VERSION }}
+          release_name: ${{ env.CAPIO_CL_VERSION }}
+          draft: false
+          prerelease: false
