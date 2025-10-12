@@ -603,7 +603,7 @@ TEST(testCapioSerializerParser, testSerializeParseCAPIOCLV1) {
     auto [wf_name1, new_engine1] = capiocl::Parser::parse(path, resolve, true);
     EXPECT_EQ(new_engine1->getFileToStoreInMemory().size(), engine.size());
 
-   // std::filesystem::remove(path);
+    // std::filesystem::remove(path);
 }
 
 TEST(testCapioSerializerParser, testSerializeParseCAPIOCLV1NcloseNfiles) {

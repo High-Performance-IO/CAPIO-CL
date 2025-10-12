@@ -66,7 +66,6 @@ void capiocl::Serializer::dump(const Engine &engine, const std::string &workflow
             streaming_item["committed"] = committed;
             streaming_item["mode"]      = entry.fire_rule;
 
-
             streaming.push_back(streaming_item);
         }
 

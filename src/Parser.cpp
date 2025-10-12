@@ -1,8 +1,8 @@
+#include "capio_cl_json_schemas.hpp"
 #include "capiocl.hpp"
 #include <filesystem>
 #include <fstream>
 #include <nlohmann/json.hpp>
-
 #include <valijson/adapters/nlohmann_json_adapter.hpp>
 #include <valijson/schema.hpp>
 #include <valijson/schema_parser.hpp>
@@ -25,23 +25,26 @@ std::filesystem::path capiocl::Parser::resolve(std::filesystem::path path,
     return resolved;
 }
 
+valijson::Schema loadSchema(const unsigned char *data, unsigned int len) {
+    // Convert bytes → string → nlohmann::json
+    std::string schemaStr(reinterpret_cast<const char *>(data), len);
+    nlohmann::json schemaJson = nlohmann::json::parse(schemaStr);
+
+    // Build Valijson schema
+    valijson::Schema schema;
+    valijson::SchemaParser parser;
+    valijson::adapters::NlohmannJsonAdapter adapter(schemaJson);
+    parser.populateSchema(adapter, schema);
+
+    return schema;
+}
+
 void capiocl::Parser::validate_json(nlohmann::json doc) {
     nlohmann::json schema_doc;
-    valijson::Schema schema;
-    valijson::SchemaParser schema_parser;
     valijson::Validator validator;
-
-    std::ifstream schema_file("schema/v1.json");
-    if (!schema_file.is_open()) {
-        throw ParserException("Failed to open JSON schema!");
-    }
-    schema_file >> schema_doc;
-
-    valijson::adapters::NlohmannJsonAdapter schema_adapter(schema_doc);
-    schema_parser.populateSchema(schema_adapter, schema);
-
     valijson::adapters::NlohmannJsonAdapter target_adapter(doc);
     valijson::ValidationResults results;
+    valijson::Schema schema = loadSchema(v1_json, v1_json_len);
 
     bool is_valid;
 

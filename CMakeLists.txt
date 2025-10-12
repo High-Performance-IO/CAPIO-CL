@@ -80,6 +80,47 @@ if (BUILD_PYTHON_BINDINGS)
     FetchContent_MakeAvailable(pybind11)
 endif ()
 
+#####################################
+# Encode CAPIO-CL JSON Schemas
+#####################################
+set(CAPIOCL_JSON_SCHEMAS_DIRECTORY "${CMAKE_BINARY_DIR}/schemas")
+set(OUTPUT_HEADER "${CAPIOCL_JSON_SCHEMAS_DIRECTORY}/capio_cl_json_schemas.hpp")
+file(GLOB SCHEMA_FILES "${CMAKE_SOURCE_DIR}/schema/*.json")
+
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/schema*.json")
+
+file(WRITE ${OUTPUT_HEADER} "// Bundled CAPIO-CL encoded JSON schemas\n")
+file(APPEND ${OUTPUT_HEADER} "#pragma once\n\n")
+
+
+foreach (SCHEMA_FILE ${SCHEMA_FILES})
+
+    get_filename_component(SCHEMA_NAME ${SCHEMA_FILE} NAME_WE)
+    get_filename_component(SCHEMA_BASENAME ${SCHEMA_FILE} NAME)
+    message(STATUS "Bundling CAPIO-CL schema: ${SCHEMA_BASENAME}")
+    file(APPEND ${OUTPUT_HEADER} "// CAPIO-CL version: ${SCHEMA_NAME}\n")
+
+    # Generate an encoded version of jsons schemas to be bundled win the binary
+    # Run with the wording directory = the source schema folder to have variables
+    # that do not encode the full path in the schema variable name i.e.
+    # v1_json instead of _home_user_CAPIO-CL_schema_v1_json
+
+    execute_process(
+            COMMAND xxd -i ${SCHEMA_BASENAME}
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/schema
+            OUTPUT_VARIABLE HEXDATA
+            RESULT_VARIABLE RES
+    )
+    if (NOT RES EQUAL 0)
+        message(FATAL_ERROR "xxd failed for ${SCHEMA_FILE}")
+    endif ()
+
+    file(APPEND ${OUTPUT_HEADER} "${HEXDATA}\n\n")
+endforeach ()
+
+
+message(STATUS "Generated header: ${OUTPUT_HEADER}")
+
 
 #####################################
 # Sources and headers
@@ -94,6 +135,7 @@ target_include_directories(libcapio_cl PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${nlohmann_json_SOURCE_DIR}/include
+        ${CAPIOCL_JSON_SCHEMAS_DIRECTORY}
 )
 
 target_link_libraries(libcapio_cl
