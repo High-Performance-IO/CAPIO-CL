@@ -9,9 +9,114 @@ on:
       - completed
 
 jobs:
+
+  build-macos-ubuntu-wheels:
+    name: "Build python Wheels"
+    strategy:
+      matrix:
+        os: [ 'ubuntu-latest', 'macos-latest', 'macos-15-intel' ]
+        python: [ '3.10', '3.11', '3.12', '3.13', '3.14' ]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: "Set up Python"
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+
+      # Install platform build dependencies
+      - name: "Install system packages (Ubuntu)"
+        if: startsWith(matrix.on, 'ubuntu-')
+        run: sudo apt-get update && sudo apt-get install -y ninja-build g++ cmake
+
+      - name: "Setup Homebrew (macOS)"
+        if: startsWith(matrix.on, 'macos-')
+        uses: Homebrew/actions/setup-homebrew@main
+
+      - name: "Install system packages (macOS)"
+        if: startsWith(matrix.on, 'macos-')
+        run: brew install ninja gcc cmake
+
+      # Install Python build dependencies
+      - name: "Build and Install Python wheel"
+        run: |
+          mkdir -p /tmp/capio_cl_jsons
+          cp tests/jsons/*.json /tmp/capio_cl_jsons
+          python -m pip install --upgrade pip
+          python -m pip install -r build-requirements.txt
+
+          python -m build                               \
+              -Ccmake.define.ENABLE_COVERAGE=ON         \
+              -Ccmake.build-type=Debug                  \
+              -Ccmake.define.CAPIO_CL_BUILD_TESTS=OFF
+
+          pip install dist/*.whl
+
+      - name: "Upload artifact"
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ format('py_capio_cl_{0}_python_{1}.whl', matrix.os, matrix.python) }}
+          path: ./dist/*.whl
+          retention-days: 1
+          if-no-files-found: error
+
+  riscv-wheels:
+    name: "Build RiscV Ubuntu python wheels"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: [ '3.10', '3.11', '3.12', '3.13', '3.14' ]
+
+    env:
+      INSTALL_PREFIX: "/usr/local"
+      PYTHON_VERSION: "${{ matrix.python }}"
+
+    steps:
+      - name: "Checkout repository"
+        uses: actions/checkout@v4
+
+      - name: "Build and test inside RISC-V emulated environment (Debian based)"
+        uses: uraimo/run-on-arch-action@v2
+        with:
+          arch: riscv64
+          distro: ubuntu22.04
+          githubToken: ${{ github.token }}
+
+          install: |
+            apt-get update
+            DEBIAN_FRONTEND=noninteractive apt-get install -y \
+              python3 python3-pip python3-venv python3-wheel python3-setuptools \
+              g++ cmake ninja-build git xxd
+
+          run: |
+            set -eux
+            echo "🏗️ Building for RISC-V on Ubuntu 22.04"
+
+            python3 -m pip install --upgrade pip
+            python3 -m pip install -r build-requirements.txt
+
+            mkdir -p /tmp/capio_cl_jsons
+            cp tests/jsons/*.json /tmp/capio_cl_jsons
+
+            python3 -m build \
+              -Ccmake.define.ENABLE_COVERAGE=OFF \
+              -Ccmake.build-type=Release \
+              -Ccmake.define.CAPIO_CL_BUILD_TESTS=OFF
+
+      - name: "Upload built RISC-V wheel"
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: riscv-ubuntu-wheel-${{ matrix.python }}.whl
+          path: dist/*.whl
+
   github:
     name: "Create GitHub Release"
-    runs-on: ubuntu-22.04
+    needs: [ riscv-wheels, build-macos-ubuntu-wheels ]
+    runs-on: ubuntu-latest
     permissions:
       contents: write
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
@@ -28,6 +133,10 @@ jobs:
         with:
           tag: ${{ env.CAPIO_CL_VERSION }}
 
+      - name: "Download built wheel artifacts"
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
 
       - name: "Create GitHub Release"
         if: ${{ steps.check-tag.outputs.exists == 'false' }}
@@ -36,5 +145,6 @@ jobs:
           name: "v${{ env.CAPIO_CL_VERSION }}"
           tag_name: "v${{ env.CAPIO_CL_VERSION }}"
           generate_release_notes: true
+          files: dist/**/*.whl
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

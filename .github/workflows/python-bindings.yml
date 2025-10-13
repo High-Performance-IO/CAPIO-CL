@@ -82,16 +82,51 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
-  upload-to-codecov:
-    name: "Codecov report upload"
-    needs: [ "python-tests" ]
-    runs-on: ubuntu-22.04
+  riscv-tests:
+    name: "Build & Test on RISC-V (QEMU)"
+    strategy:
+      matrix:
+        python: [ '3.10', '3.11', '3.12', '3.13', '3.14' ]
+    runs-on: ubuntu-latest
+
+    env:
+      INSTALL_PREFIX: "/usr/local"
+      PYTHON_VERSION: "${{ matrix.python }}"
+
     steps:
-      - uses: actions/checkout@v4
-      - name: "Download artifacts"
-        uses: actions/download-artifact@v4
-      - name: "Upload coverage to Codecov"
-        uses: codecov/codecov-action@v4
+      - name: "Checkout repository"
+        uses: actions/checkout@v4
+
+      - name: "Build and test inside RISC-V emulated environment (Debian based)"
+        uses: uraimo/run-on-arch-action@v2
         with:
-          fail_ci_if_error: true
-          token: ${{ secrets.CODECOV_TOKEN }}
+          arch: riscv64
+          distro: ubuntu22.04
+          githubToken: ${{ github.token }}
+
+          install: |
+            apt-get update
+            DEBIAN_FRONTEND=noninteractive apt-get install -y \
+              python3 python3-pip python3-venv python3-wheel python3-setuptools \
+              g++ cmake ninja-build git xxd
+
+          run: |
+            set -eux
+            echo "🏗️ Building for RISC-V on Ubuntu 22.04"
+            
+            python3 -m pip install --upgrade pip
+            python3 -m pip install -r build-requirements.txt
+            
+            mkdir -p /tmp/capio_cl_jsons
+            cp tests/jsons/*.json /tmp/capio_cl_jsons
+            
+            python3 -m build \
+              -Ccmake.define.ENABLE_COVERAGE=OFF \
+              -Ccmake.build-type=Release \
+              -Ccmake.define.CAPIO_CL_BUILD_TESTS=OFF
+            
+            pip install dist/*.whl
+            python3 -m pip install -r test-requirements.txt
+            
+            echo "✅ Running unit tests"
+            pytest -v tests/python/test_* | tee pytest-riscv.log
