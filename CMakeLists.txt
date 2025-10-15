@@ -78,10 +78,12 @@ endif ()
 #####################################
 set(CAPIOCL_JSON_SCHEMAS_DIRECTORY "${CMAKE_BINARY_DIR}/schemas")
 set(OUTPUT_HEADER "${CAPIOCL_JSON_SCHEMAS_DIRECTORY}/capio_cl_json_schemas.hpp")
-file(GLOB SCHEMA_FILES "${CMAKE_SOURCE_DIR}/schema/*.json")
+file(GLOB SCHEMA_FILES "${CMAKE_CURRENT_SOURCE_DIR}/schema/*.json")
 
-set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/schema*.json")
+message(STATUS "Generating output header at ${OUTPUT_HEADER}")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/schema/*.json")
 
+file(MAKE_DIRECTORY ${CAPIOCL_JSON_SCHEMAS_DIRECTORY})
 file(WRITE ${OUTPUT_HEADER} "// Bundled CAPIO-CL encoded JSON schemas\n")
 file(APPEND ${OUTPUT_HEADER} "#pragma once\n\n")
 
@@ -89,11 +91,10 @@ foreach (SCHEMA_FILE ${SCHEMA_FILES})
     get_filename_component(SCHEMA_NAME ${SCHEMA_FILE} NAME_WE)
     get_filename_component(SCHEMA_BASENAME ${SCHEMA_FILE} NAME)
     message(STATUS "Bundling CAPIO-CL schema: ${SCHEMA_BASENAME}")
-    file(APPEND ${OUTPUT_HEADER} "// CAPIO-CL version: ${SCHEMA_NAME}\n")
 
     execute_process(
             COMMAND xxd -i ${SCHEMA_BASENAME}
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/schema
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/schema
             OUTPUT_VARIABLE HEXDATA
             RESULT_VARIABLE RES
     )
@@ -101,6 +102,7 @@ foreach (SCHEMA_FILE ${SCHEMA_FILES})
         message(FATAL_ERROR "xxd failed for ${SCHEMA_FILE}")
     endif ()
 
+    file(APPEND ${OUTPUT_HEADER} "// CAPIO-CL version: ${SCHEMA_NAME}\n")
     file(APPEND ${OUTPUT_HEADER} "${HEXDATA}\n\n")
 endforeach ()
 
