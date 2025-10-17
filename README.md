@@ -25,12 +25,11 @@ with **synchronization semantics** for files and directories.
 Designed to facilitate **transparent overlap between computation and I/O operations**, CAPIO-CL allows multiple 
 producer–consumer application modules to coordinate efficiently using a **JSON-based syntax**.
 
-For detailed documentation and examples, please visit:  
-👉 [https://capio.hpc4ai.it/docs/coord-language/](https://capio.hpc4ai.it/docs/coord-language/)
+For detailed documentation and examples, please visit: [https://capio.hpc4ai.it/docs/coord-language/](https://capio.hpc4ai.it/docs/coord-language/)
 
 ---
 
-## 📘 Overview
+## Overview
 
 The **CAPIO Coordination Language (CAPIO-CL)** allows applications to declare:
 - **Data objects**, **I/O dependencies**, and **access modes**
@@ -42,7 +41,7 @@ At runtime, CAPIO-CL’s parser and engine components analyze, track, and manage
 
 ---
 
-## ⚙️ Building
+## Building
 
 ### Requirements & dependencies
 - C++17 or greater
@@ -70,7 +69,7 @@ By default, this will:
 
 ---
 
-## 📦 Integration as a Subproject
+## Integration as a Subproject
 
 **CAPIO-CL** can be included directly into another CMake project using:
 
@@ -106,13 +105,13 @@ When included this way, tests and python bindings are **not built**, keeping int
 
 ---
 
-## 🐍 Python Bindings
+## Python Bindings
 
 CAPIO-CL now provides native **Python bindings** built using [pybind11](https://github.com/pybind/pybind11).  
 These bindings expose the core C++ APIs—such as `Engine`, `Parser`, directly 
 to Python, allowing the CAPIO-CL logic to be used within python projects.
 
-### 🔧 Building the Bindings
+### Building the Bindings
 You can build and install the Python bindings directly from the CAPIO-CL source tree using:
 
 ```bash
@@ -125,7 +124,7 @@ Now you will be able to directly import the package **py_capio_cl** in your proj
 
 ---
 
-## 🧩 API Snapshot
+## API Snapshot
 
 A simplified example of CAPIO-CL usage in C++:
 
