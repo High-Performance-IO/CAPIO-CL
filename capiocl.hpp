@@ -429,7 +429,7 @@ class Parser {
 };
 
 /**
- * Custom exception for errors occurring within the Parser component
+ * @brief Custom exception thrown when parsing a CAPIO-CL configuration file by @ref Parser
  */
 class ParserException : public std::exception {
     std::string message;
@@ -438,9 +438,18 @@ class ParserException : public std::exception {
     explicit ParserException(const std::string &msg) : message(msg) {
         print_message(CLI_LEVEL_ERROR, msg);
     }
+
+    /**
+     * Get the description of the error causing the exception
+     * @return
+     */
     const char *what() const noexcept override { return message.c_str(); }
 };
 
+/**
+ * @brief Dump the current loaded CAPIO-CL configuration from class @ref Engine
+ * to a CAPIO-CL configuration file.
+ */
 class Serializer {
   public:
     /**
