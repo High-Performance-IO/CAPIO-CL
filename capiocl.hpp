@@ -14,6 +14,7 @@
 #define HOST_NAME_MAX 1024
 #endif
 
+/// @brief Namespace containing all the CAPIO-CL related code
 namespace capiocl {
 class Serializer;
 
@@ -24,13 +25,13 @@ constexpr char CLI_LEVEL_WARNING[] = "[\033[1;33mCAPIO-CL\033[0m";
 constexpr char CLI_LEVEL_ERROR[]   = "[\033[1;31mCAPIO-CL\033[0m";
 constexpr char CLI_LEVEL_JSON[]    = "[\033[1;34mCAPIO-CL\033[0m";
 
-// CAPIO streaming semantics
-
+/// @brief Namespace for CAPIO-CL Firing Rules
 namespace fire_rules {
 constexpr char NO_UPDATE[] = "no_update";
 constexpr char UPDATE[]    = "update";
 } // namespace fire_rules
 
+/// @brief Namespace for CAPIO-CL Commit Rules
 namespace commit_rules {
 constexpr char ON_CLOSE[]       = "on_close";
 constexpr char ON_FILE[]        = "on_file";
@@ -60,12 +61,10 @@ inline void print_message(const std::string &message_type = "",
 
 /**
  * @brief Engine for managing CAPIO-CL configuration entries.
- *
  * The CapioCLEngine class stores and manages configuration rules for files
  * and directories as defined in the CAPIO-CL configuration file.
  * It maintains producers, consumers, commit rules, fire rules, and other
  * metadata associated with files or directories.
- *
  * Each entry in the configuration associates a path with:
  * - Producers and consumers
  * - Commit and fire rules
@@ -80,6 +79,8 @@ class Engine {
     std::string node_name;
     bool store_all_in_memory = false;
 
+    /// @brief Internal CAPIO-CL Engine storage entity. Each CapioCLEntry is an entry for a given
+    /// file handled by CAPIO-CL
     struct CapioCLEntry {
         std::vector<std::string> producers;
         std::vector<std::string> consumers;
@@ -125,9 +126,7 @@ class Engine {
     const auto *getLocations() const { return &_locations; }
 
   public:
-    /**
-     * Class constructor
-     */
+    /// @brief Class constructor
     explicit Engine() {
         node_name = std::string(1024, '\0');
         gethostname(node_name.data(), node_name.size());
@@ -142,7 +141,6 @@ class Engine {
 
     /**
      * @brief Check whether a file is contained in the configuration.
-     *
      * The lookup is performed by exact match or by regex globbing.
      *
      * @param file Path of the file to check.
@@ -188,9 +186,10 @@ class Engine {
 
     /**
      * @brief Add a new file dependency, when rule is commit_on_file
+     *As a side effect, the file identified by path, has the commit rule set to Commit on Files
      *
-     * @param path
-     * @param file_dependency
+     * @param path targeted file path
+     * @param file_dependency the new file for this the path is subject to commit rule
      */
     void addFileDependency(const std::filesystem::path &path,
                            std::filesystem::path &file_dependency);
@@ -278,8 +277,7 @@ class Engine {
 
     /**
      * @brief Set the dependencies of a file.
-     *
-     * Used for commit-on-file rules.
+     * This method as a side effect sets the commit rule to Commit on Files.
      *
      * @param path File path.
      * @param dependencies List of dependent files.
@@ -392,7 +390,7 @@ class Engine {
     /**
      * @brief Check if a file is stored in memory.
      *
-     * @param path File path.
+     * @param path File path to query
      * @return true if stored in memory, false otherwise.
      */
     bool isStoredInMemory(const std::filesystem::path &path);
@@ -400,18 +398,20 @@ class Engine {
     /**
      * @brief Check if file should remain on file system after workflow terminates
      *
-     * @param path
-     * @return
+     * @param path File path to query
+     * @return True if file should persist on storage after workflow termination.
      */
     bool isPermanent(const std::filesystem::path &path);
 
+    /**
+     * @brief Check for equality between two instances of  Engine
+     * @param other reference to another  Engine class instance
+     * @return true if both this instance and other are equivalent. false otherwise.
+     */
     bool operator==(const capiocl::Engine &other) const;
 };
 
-/**
- * @brief Contains the code to parse a JSON based CAPIO-CL configuration file
- *
- */
+/// @brief Contains the code to parse a JSON based CAPIO-CL configuration file
 class Parser {
   public:
     /**
@@ -429,7 +429,7 @@ class Parser {
 };
 
 /**
- * @brief Custom exception thrown when parsing a CAPIO-CL configuration file by @ref Parser
+ * @brief Custom exception thrown when parsing a CAPIO-CL configuration file by  Parser
  */
 class ParserException : public std::exception {
     std::string message;
@@ -446,14 +446,13 @@ class ParserException : public std::exception {
     const char *what() const noexcept override { return message.c_str(); }
 };
 
-/**
- * @brief Dump the current loaded CAPIO-CL configuration from class @ref Engine
- * to a CAPIO-CL configuration file.
- */
+/// @brief Dump the current loaded CAPIO-CL configuration from class  Engine to a CAPIO-CL
+/// configuration file.
 class Serializer {
   public:
     /**
-     * Dump the current configuration loaded into the Engine to a CAPIO-CL configuration file.
+     * @brief Dump the current configuration loaded into the Engine to a CAPIO-CL configuration
+     * file.
      *
      * @param engine instance of @class capiocl::Engine to dump
      * @param workflow_name Name of the current workflow
