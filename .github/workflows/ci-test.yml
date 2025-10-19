@@ -125,6 +125,19 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
+  build-documentation:
+    name: "Build Doxygen documentation"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Install packages"
+        run: |
+          sudo apt update
+          sudo apt install doxygen make graphviz
+      - name: "Run Doxygen"
+        working-directory: doxygen
+        run: make
+
   upload-to-codecov:
     name: "Codecov report upload"
     needs: [ "unit-tests" , "codespell-check" , "format-check" ]
