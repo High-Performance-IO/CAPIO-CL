@@ -10,8 +10,26 @@ on:
 
 jobs:
 
+  check-tag-existance:
+    name: "Check if tag exists"
+    runs-on: ubuntu-latest
+    outputs:
+      exists: ${{ steps.check-tag.outputs.exists }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Get CAPIO-CL version"
+        run: echo "CAPIO_CL_VERSION=$(grep -E 'VERSION [0-9]+\.[0-9]+\.[0-9]+' CMakeLists.txt | awk '{print $2}')" >> $GITHUB_ENV
+      - name: "Check if tag exists"
+        id: check-tag
+        uses: mukunku/tag-exists-action@v1.6.0
+        with:
+          tag: "v${{ env.CAPIO_CL_VERSION }}"
+
   build-macos-ubuntu-wheels:
     name: "Build python Wheels"
+    if: ${{ needs.check-tag-existance.outputs.exists == 'false' }}
+    needs:
+      - check-tag-existance
     strategy:
       matrix:
         os: [ 'ubuntu-latest', 'macos-latest', 'macos-15-intel' ]
@@ -65,6 +83,9 @@ jobs:
 
   riscv-wheels:
     name: "Build RiscV Ubuntu python wheels"
+    if: ${{ needs.check-tag-existance.outputs.exists == 'false' }}
+    needs:
+      - check-tag-existance
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -117,23 +138,14 @@ jobs:
 
   github:
     name: "Create GitHub Release"
+    if: ${{ needs.check-tag-existance.outputs.exists == 'false' && github.event.workflow_run.conclusion == 'success' }}
     needs: [ riscv-wheels, build-macos-ubuntu-wheels ]
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: "Get CAPIO-CL version"
-        run: echo "CAPIO_CL_VERSION=$(grep -E 'VERSION [0-9]+\.[0-9]+\.[0-9]+' CMakeLists.txt | awk '{print $2}')" >> $GITHUB_ENV
-
-      - name: "Check if tag exists"
-        id: check-tag
-        uses: mukunku/tag-exists-action@v1.6.0
-        with:
-          tag: ${{ env.CAPIO_CL_VERSION }}
 
       - name: "Download built wheel artifacts"
         uses: actions/download-artifact@v4
