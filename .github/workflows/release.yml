@@ -136,10 +136,31 @@ jobs:
           name: "${{ format('py_capio_cl_ubunturv64_python_{0}.whl', matrix.python) }}"
           path: "dist/${{ format('py_capio_cl_ubunturv64_python_{0}.whl', matrix.python) }}"
 
+  generate-documentation:
+    name: "Build documentation"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Install packages"
+        run: |
+          sudo apt update
+          sudo apt install doxygen make graphviz texlive
+      - name: "Run Doxygen"
+        working-directory: doxygen
+        run: make pdf
+      - name: "Upload pdf documentation"
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          path: ${{ format('dist/documentation_{0}.pdf', env.CAPIO_CL_VERSION ) }}
+          name: ${{ format('documentation_{0}.pdf', env.CAPIO_CL_VERSION ) }}
+
+
+
   github:
     name: "Create GitHub Release"
     if: ${{ needs.check-tag-existance.outputs.exists == 'false' && github.event.workflow_run.conclusion == 'success' }}
-    needs: [ riscv-wheels, build-macos-ubuntu-wheels ]
+    needs: [ riscv-wheels, build-macos-ubuntu-wheels, generate-documentation ]
     runs-on: ubuntu-latest
     permissions:
       contents: write
