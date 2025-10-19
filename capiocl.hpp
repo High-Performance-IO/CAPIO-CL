@@ -16,26 +16,36 @@
 
 /// @brief Namespace containing all the CAPIO-CL related code
 namespace capiocl {
-class Serializer;
 
+/// @brief Default workflow name for CAPIO-CL
 constexpr char CAPIO_CL_DEFAULT_WF_NAME[] = "CAPIO_CL";
 
+/// @brief CLI print constant
 constexpr char CLI_LEVEL_INFO[]    = "[\033[1;32mCAPIO-CL\033[0m";
+/// @brief CLI print constant
 constexpr char CLI_LEVEL_WARNING[] = "[\033[1;33mCAPIO-CL\033[0m";
+/// @brief CLI print constant
 constexpr char CLI_LEVEL_ERROR[]   = "[\033[1;31mCAPIO-CL\033[0m";
+/// @brief CLI print constant
 constexpr char CLI_LEVEL_JSON[]    = "[\033[1;34mCAPIO-CL\033[0m";
 
 /// @brief Namespace for CAPIO-CL Firing Rules
 namespace fire_rules {
+/// @brief FnU Streaming Rule
 constexpr char NO_UPDATE[] = "no_update";
+/// @brief FoC Streaming Rule
 constexpr char UPDATE[]    = "update";
 } // namespace fire_rules
 
 /// @brief Namespace for CAPIO-CL Commit Rules
 namespace commit_rules {
+/// @brief CoC Streaming Rule
 constexpr char ON_CLOSE[]       = "on_close";
+/// @brief CoF Streaming Rule
 constexpr char ON_FILE[]        = "on_file";
+/// @brief CnF Streaming Rule
 constexpr char N_FILES[]        = "on_n_files";
+/// @brief CoT Streaming Rule
 constexpr char ON_TERMINATION[] = "on_termination";
 } // namespace commit_rules
 
@@ -435,6 +445,10 @@ class ParserException : public std::exception {
     std::string message;
 
   public:
+    /**
+     * @brief Construct a new CAPIO-CL Exception
+     * @param msg Error Message that raised this exception
+     */
     explicit ParserException(const std::string &msg) : message(msg) {
         print_message(CLI_LEVEL_ERROR, msg);
     }
@@ -454,9 +468,9 @@ class Serializer {
      * @brief Dump the current configuration loaded into the Engine to a CAPIO-CL configuration
      * file.
      *
-     * @param engine instance of @class capiocl::Engine to dump
+     * @param engine instance of @ref capiocl::Engine to dump
      * @param workflow_name Name of the current workflow
-     * @param filename path of output file @param filename
+     * @param filename path of output file
      */
     static void dump(const Engine &engine, const std::string &workflow_name,
                      const std::filesystem::path &filename);

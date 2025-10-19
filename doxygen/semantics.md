@@ -1,4 +1,4 @@
-# Semantics of CAPIO-CL
+# Semantics of the CAPIO-CL coordination language
 
 In this section, we introduce the streaming semantics that allow a CAPIO-CL implementation to transform a batch,
 file-based workflow into an in-situ workflow (i.e., a workflow where all steps are executed concurrently). To establish
@@ -19,15 +19,15 @@ commit behaviors:
 - `Commit on Termination (CoT)`: Upon termination of a workflow step, all produced data files are committed to the file
   system, becoming ready for consumption by all subsequent steps. The following Gant diagram visually explains the CoT
   semantics:
-
-![The Commit on Termination rule](media/cot.png){ width=60% }
+  
+  ![The Commit on Termination rule](media/cot.png){ width=60% }
 
 - `Commit on Close (CoC)`: This behavior allows subsequent steps to initiate reading a file as soon as the producer step
   invokes a close operation on a given file, signaling that all I/O operations on that file are completed. It is also
   allowed to consider a file committed after `n` close operations are performed. The following Gant diagram visually
   explains the CoC semantics:
-
-![The Commit on Close rule](media/coc.png){ width=60% }
+  
+  ![The Commit on Close rule](media/coc.png){ width=60% }
 
 - `Commit on File (CoF)`: We can consider a file committed when another file has been committed. This proves beneficial
   when the number of `open()` and `close()` system calls operations for a given file is not statically known. Instead,
@@ -35,11 +35,12 @@ commit behaviors:
   This additional commit behavior introduces a dependency among files in the commit rule, expanding opportunities to
   leverage temporal parallelism for I/O operations across different workflow steps.The following Gant diagram visually
   explains the CoF semantics:
-
-![The Commit on File rule](media/cof.png){ width=60% }
+  
+  ![The Commit on File rule](media/cof.png){ width=60% }
 
 - `Commit on N-Files (CnF)`: The Commit on N-Files concept shifts the focus from individual file data streams to
   directories. Under the Commit on N-Files rule, a directory is considered committed once it contains at least N files.
+  
   ![The Commit on N-Files rule](media/cnf.png){ width=60% }
 
 ## Firing rule
@@ -57,14 +58,14 @@ The CAPIO coordination language defines two distinct firing rules:
   CAPIO-CL coordination language file with the keyword `mode` and value `update`.
   The following Gant diagram visually explains the CoC semantics:
 
-![The Fire on Commit rule](media/foc.png){ width=60% }
+  ![The Fire on Commit rule](media/foc.png){ width=60% }
 
 - `Fire no update` (FnU): file records already written by producer modules, can be consumed immediately: the file
   content is ready to be read as soon as data is written into the file. It is identified in the CAPIO-CL coordination
   language file with the keyword `mode` and value `no_update`.
   The following Gant diagram visually explains the CoC semantics:
 
-![The Fire no Update rule](media/fnu.png){ width=60% }
+  ![The Fire no Update rule](media/fnu.png){ width=60% }
 
 ## Consequences of streaming injection
 
