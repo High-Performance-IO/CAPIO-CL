@@ -76,7 +76,6 @@ endif ()
 #####################################
 # Encode CAPIO-CL JSON Schemas
 #####################################
-find_program(XXD_EXECUTABLE xxd)
 find_program(PYTHON_EXECUTABLE python3)
 
 set(CAPIOCL_JSON_SCHEMAS_DIRECTORY "${CMAKE_BINARY_DIR}/schemas")
@@ -95,31 +94,17 @@ foreach (SCHEMA_FILE ${SCHEMA_FILES})
     get_filename_component(SCHEMA_BASENAME ${SCHEMA_FILE} NAME)
     message(STATUS "Bundling CAPIO-CL schema: ${SCHEMA_BASENAME}")
 
-    if (XXD_EXECUTABLE)
-        message(STATUS "Using system xxd: ${XXD_EXECUTABLE}")
-        execute_process(
-                COMMAND ${XXD_EXECUTABLE} -i ${SCHEMA_BASENAME}
-                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/schema
-                OUTPUT_VARIABLE HEXDATA
-                RESULT_VARIABLE RES
-        )
-        if (NOT RES EQUAL 0)
-            message(FATAL_ERROR "xxd failed for ${SCHEMA_FILE}")
-        endif ()
-    else ()
-        if (NOT PYTHON_EXECUTABLE)
-            message(FATAL_ERROR "Unable to locate python3 package. either xxd or python3 packages are required to build CAPIO-CL")
-        endif ()
-        message(STATUS "xxd not found — using Python fallback: ${XXD_I_SCRIPT}")
-        execute_process(
-                COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/schema/bundler.py ${SCHEMA_BASENAME}
-                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/schema
-                OUTPUT_VARIABLE HEXDATA
-                RESULT_VARIABLE RES
-        )
-        if (NOT RES EQUAL 0)
-            message(FATAL_ERROR "Failed bundling for ${SCHEMA_FILE}")
-        endif ()
+    if (NOT PYTHON_EXECUTABLE)
+        message(FATAL_ERROR "Unable to locate python3 package. Python3 package is required to build CAPIO-CL")
+    endif ()
+    execute_process(
+            COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/schema/bundler.py ${SCHEMA_BASENAME}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/schema
+            OUTPUT_VARIABLE HEXDATA
+            RESULT_VARIABLE RES
+    )
+    if (NOT RES EQUAL 0)
+        message(FATAL_ERROR "Failed bundling for ${SCHEMA_FILE}: Error code is ${RES}")
     endif ()
 
 
