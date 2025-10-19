@@ -1,0 +1,4 @@
+generated/**
+.Doxyfile
+.README.md
+*.pdf
