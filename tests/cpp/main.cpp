@@ -584,7 +584,7 @@ TEST(testCapioSerializerParser, testSerializeParseCAPIOCLV1) {
     engine.addProducer(file_3_name, intermediate_name);
     engine.setExclude(file_3_name, true);
 
-    engine.setCommitRule(file_4_name, capiocl::commit_rules::N_FILES);
+    engine.setCommitRule(file_4_name, capiocl::commit_rules::ON_N_FILES);
     engine.setFireRule(file_4_name, capiocl::fire_rules::NO_UPDATE);
     engine.setDirectoryFileCount(file_4_name, 10);
     engine.addProducer(file_4_name, intermediate_name);

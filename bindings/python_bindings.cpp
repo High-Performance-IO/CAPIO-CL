@@ -19,7 +19,7 @@ PYBIND11_MODULE(_py_capio_cl, m) {
     py::module_ commit_rules            = m.def_submodule("commit_rules", "CAPIO-CL commit rules");
     commit_rules.attr("ON_CLOSE")       = py::str(capiocl::commit_rules::ON_CLOSE);
     commit_rules.attr("ON_FILE")        = py::str(capiocl::commit_rules::ON_FILE);
-    commit_rules.attr("N_FILES")        = py::str(capiocl::commit_rules::N_FILES);
+    commit_rules.attr("ON_N_FILES")     = py::str(capiocl::commit_rules::ON_N_FILES);
     commit_rules.attr("ON_TERMINATION") = py::str(capiocl::commit_rules::ON_TERMINATION);
 
     py::class_<capiocl::Engine>(
