@@ -86,7 +86,7 @@ For **file** entries (either files or globs):
 - `name`: The filenames to which the rule applies. The value of this keyword is an array of filenames.
 - `committed`: This keyword defines the “commit rule” associated with the files identified with the keywords name. Its
   value can be either:
-    - `on_close:N`: to express the CoC semantic, where N is an integer ≥ 1, or can be omitted if N=1;
+    - `on_close:N`: to express the CoC semantic, where N is an integer greater than 1, or can be omitted if N=1;
     - `on_termination`: to express the CoT semantic (default);
     - `on_file:filename`  to express the CoF semantic. `filename` is the file on which the commit rule will commit
       against.
@@ -104,8 +104,8 @@ inside the specified directory entry:
   dirname. Its value can be either:
     - `on_n_files`: to express the Commit on N Files commit rule. If this commit rule is chosen, then the keyword
       `n_files`
-      must be set to `N` (integer ≥ 1). The directory will be considered committed as soon as `N` files are committed
-      inside it.;
+      must be set to `N` (integer greater than 1). The directory will be considered committed as soon as `N` files are
+      committed inside it.;
     - `on_termination`: to express the CoT semantic (default);
     - `on_file`: to express the CoF semantic. In this case, the keyword `files_deps`, whose value is an array of
       filenames or directory names, defines the set of dependencies.

@@ -50,7 +50,7 @@ constexpr char ON_TERMINATION[] = "on_termination";
 } // namespace commit_rules
 
 /**
- * Print a message to standard out. Used to log messages related to the CAPIO-CL engine
+ * Print a message to standard out. Used to log messages related to the CAPIO-CL #Engine
  * @param message_type Type of message to print.
  * @param message_line
  */
@@ -89,7 +89,7 @@ class Engine {
     std::string node_name;
     bool store_all_in_memory = false;
 
-    /// @brief Internal CAPIO-CL Engine storage entity. Each CapioCLEntry is an entry for a given
+    /// @brief Internal CAPIO-CL #Engine storage entity. Each CapioCLEntry is an entry for a given
     /// file handled by CAPIO-CL
     struct CapioCLEntry {
         std::vector<std::string> producers;
@@ -105,16 +105,14 @@ class Engine {
         long directory_commit_file_count = 0;
     };
 
-    /**
-     * Hash map used to store the configuration from CAPIO-CL
-     */
+    /// @brief Hash map used to store the configuration from CAPIO-CL
     std::unordered_map<std::string, CapioCLEntry> _locations;
 
     /**
      * @brief Utility method to truncate a string to its last @p n characters. This is only used
      * within the print method
      *
-     * If the string is longer than @p n, it prefixes the result with "[..] ".
+     * If the string is longer than @p n, it prefixes the result with "[..]".
      *
      * @param str Input string.
      * @param n Number of characters to keep from the end.
@@ -130,7 +128,6 @@ class Engine {
   protected:
     /**
      * @brief Access the internal location map.
-     *
      * @return Pointer to the internal location mapping.
      */
     const auto *getLocations() const { return &_locations; }
@@ -144,9 +141,7 @@ class Engine {
         print_message(CLI_LEVEL_INFO, "Instance created");
     }
 
-    /**
-     * @brief Print the current CAPIO-CL configuration.
-     */
+    /// @brief Print the current CAPIO-CL configuration.
     void print() const;
 
     /**
@@ -205,10 +200,8 @@ class Engine {
                            std::filesystem::path &file_dependency);
 
     /**
-     * @brief Create a new CAPIO file entry.
-     *
-     * Commit and fire rules are automatically computed using the
-     * longest prefix match from the configuration.
+     * @brief Create a new CAPIO file entry. Commit and fire rules are automatically computed using
+     * the longest prefix match from the configuration.
      *
      * @param path Path of the new file.
      */
@@ -216,14 +209,12 @@ class Engine {
 
     /**
      * @brief Remove a file from the configuration.
-     *
      * @param path Path of the file to remove.
      */
     void remove(const std::filesystem::path &path);
 
     /**
      * @brief Set the commit rule of a file.
-     *
      * @param path File path.
      * @param commit_rule Commit rule string.
      */
@@ -231,7 +222,6 @@ class Engine {
 
     /**
      * @brief Set the fire rule of a file.
-     *
      * @param path File path.
      * @param fire_rule Fire rule string.
      */
@@ -239,7 +229,6 @@ class Engine {
 
     /**
      * @brief Mark a file as permanent or not.
-     *
      * @param path File path.
      * @param value true to mark permanent, false otherwise.
      */
@@ -247,7 +236,6 @@ class Engine {
 
     /**
      * @brief Mark a file as excluded or not.
-     *
      * @param path File path.
      * @param value true to exclude, false otherwise.
      */
@@ -255,23 +243,19 @@ class Engine {
 
     /**
      * @brief Mark a path as a directory.
-     *
      * @param path Path to mark.
      */
     void setDirectory(const std::filesystem::path &path);
 
     /**
      * @brief Mark a path as a file.
-     *
      * @param path Path to mark.
      */
     void setFile(const std::filesystem::path &path);
 
     /**
-     * @brief Set the commit-on-close counter.
-     *
-     * The file will be committed after @p num close operations.
-     *
+     * @brief Set the commit-on-close counter. The file will be committed after @p num close
+     * operations.
      * @param path File path.
      * @param num Number of close operations before commit.
      */
@@ -279,16 +263,14 @@ class Engine {
 
     /**
      * @brief Set the expected number of files in a directory.
-     *
      * @param path Directory path.
      * @param num Expected file count.
      */
     void setDirectoryFileCount(const std::filesystem::path &path, long num);
 
     /**
-     * @brief Set the dependencies of a file.
-     * This method as a side effect sets the commit rule to Commit on Files.
-     *
+     * @brief Set the dependencies of a file. This method as a side effect sets the commit rule to
+     * Commit on Files.
      * @param path File path.
      * @param dependencies List of dependent files.
      */
@@ -297,7 +279,6 @@ class Engine {
 
     /**
      * @brief Store the file in memory only.
-     *
      * @param path File path.
      */
     void setStoreFileInMemory(const std::filesystem::path &path);
@@ -309,14 +290,12 @@ class Engine {
 
     /**
      * @brief Store the file on the file system.
-     *
      * @param path File path.
      */
     void setStoreFileInFileSystem(const std::filesystem::path &path);
 
     /**
      * @brief Get the expected number of files in a directory.
-     *
      * @param path Directory path.
      * @return Expected file count.
      */
@@ -349,7 +328,6 @@ class Engine {
 
     /**
      * @brief Check if a process is a producer for a file.
-     *
      * @param path File path.
      * @param app_name Application name.
      * @return true if the process is a producer, false otherwise.
@@ -358,7 +336,6 @@ class Engine {
 
     /**
      * @brief Check if a process is a consumer for a file.
-     *
      * @param path File path.
      * @param app_name Application name.
      * @return true if the process is a consumer, false otherwise.
@@ -367,7 +344,6 @@ class Engine {
 
     /**
      * @brief Check if a file is firable, that is fire rule is no_update.
-     *
      * @param path File path.
      * @return true if the file is firable, false otherwise.
      */
@@ -375,7 +351,6 @@ class Engine {
 
     /**
      * @brief Check if a path refers to a file.
-     *
      * @param path File path.
      * @return true if the path is a file, false otherwise.
      */
@@ -383,7 +358,6 @@ class Engine {
 
     /**
      * @brief Check if a path is excluded.
-     *
      * @param path File path.
      * @return true if excluded, false otherwise.
      */
@@ -391,7 +365,6 @@ class Engine {
 
     /**
      * @brief Check if a path is a directory.
-     *
      * @param path Directory path.
      * @return true if directory, false otherwise.
      */
@@ -399,7 +372,6 @@ class Engine {
 
     /**
      * @brief Check if a file is stored in memory.
-     *
      * @param path File path to query
      * @return true if stored in memory, false otherwise.
      */
@@ -407,15 +379,14 @@ class Engine {
 
     /**
      * @brief Check if file should remain on file system after workflow terminates
-     *
      * @param path File path to query
      * @return True if file should persist on storage after workflow termination.
      */
     bool isPermanent(const std::filesystem::path &path);
 
     /**
-     * @brief Check for equality between two instances of  Engine
-     * @param other reference to another  Engine class instance
+     * @brief Check for equality between two instances of #Engine
+     * @param other reference to another #Engine class instance
      * @return true if both this instance and other are equivalent. false otherwise.
      */
     bool operator==(const capiocl::Engine &other) const;
@@ -427,11 +398,12 @@ class Parser {
     /**
      * @brief Perform the parsing of the capio_server configuration file
      *
-     * @param source
-     * @param resolve_prefix
+     * @param source Input CAPIO-CL Json configuration File
+     * @param resolve_prefix If paths are found to be relative, they are appended to this path
      * @param store_only_in_memory Set to true to set all files to be stored in memory
-     * @return Tuple with workflow name and CapioCLEngine instance with the information provided by
+     * @return Tuple with workflow name and #Engine instance with the information provided by
      * the config file
+     * @throw ParserException
      */
     static std::tuple<std::string, Engine *> parse(const std::filesystem::path &source,
                                                    const std::filesystem::path &resolve_prefix = "",
@@ -439,7 +411,7 @@ class Parser {
 };
 
 /**
- * @brief Custom exception thrown when parsing a CAPIO-CL configuration file by  Parser
+ * @brief Custom exception thrown when parsing a CAPIO-CL configuration file by #Parser
  */
 class ParserException : public std::exception {
     std::string message;
@@ -465,8 +437,8 @@ class ParserException : public std::exception {
 class Serializer {
   public:
     /**
-     * @brief Dump the current configuration loaded into the Engine to a CAPIO-CL configuration
-     * file.
+     * @brief Dump the current configuration loaded into an instance of  #Engine to a CAPIO-CL
+     * configuration file.
      *
      * @param engine instance of @ref capiocl::Engine to dump
      * @param workflow_name Name of the current workflow
