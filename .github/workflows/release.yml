@@ -144,7 +144,13 @@ jobs:
       - name: "Install packages"
         run: |
           sudo apt update
-          sudo apt install doxygen make graphviz texlive
+          sudo apt install wget make graphviz texlive
+      - name: "Install Doxygen 1.14.0"
+        run: |
+          wget https://www.doxygen.nl/files/doxygen-1.14.0.linux.bin.tar.gz
+          tar -xzf doxygen-1.14.0.linux.bin.tar.gz
+          sudo mv doxygen-1.14.0/bin/doxygen /usr/local/bin/doxygen
+          doxygen --version
       - name: "Run Doxygen"
         working-directory: doxygen
         run: make pdf
