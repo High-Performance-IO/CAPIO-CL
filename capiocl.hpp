@@ -44,7 +44,7 @@ constexpr char ON_CLOSE[]       = "on_close";
 /// @brief CoF Streaming Rule
 constexpr char ON_FILE[]        = "on_file";
 /// @brief CnF Streaming Rule
-constexpr char N_FILES[]        = "on_n_files";
+constexpr char ON_N_FILES[]     = "on_n_files";
 /// @brief CoT Streaming Rule
 constexpr char ON_TERMINATION[] = "on_termination";
 } // namespace commit_rules

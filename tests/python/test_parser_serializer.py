@@ -42,8 +42,8 @@ def test_serialize_parse_py_capio_cl_v1(tmp_path):
         engine.addProducer(file3, name)
     engine.setExclude(file3, True)
 
-    # File 4: directory with 10 files, N_FILES commit rule
-    engine.setCommitRule(file4, py_capio_cl.commit_rules.N_FILES)
+    # File 4: directory with 10 files, ON_N_FILES commit rule
+    engine.setCommitRule(file4, py_capio_cl.commit_rules.ON_N_FILES)
     engine.setFireRule(file4, py_capio_cl.fire_rules.NO_UPDATE)
     engine.setDirectoryFileCount(file4, 10)
     engine.addProducer(file4, intermediate)

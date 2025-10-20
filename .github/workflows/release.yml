@@ -138,13 +138,16 @@ jobs:
 
   generate-documentation:
     name: "Build documentation"
+    needs:
+      - check-tag-existance
+    if: ${{ needs.check-tag-existance.outputs.exists == 'false' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: "Install packages"
         run: |
           sudo apt update
-          sudo apt install wget make graphviz texlive
+          sudo apt install wget make graphviz texlive texlive-latex-extra
       - name: "Install Doxygen 1.14.0"
         run: |
           wget https://www.doxygen.nl/files/doxygen-1.14.0.linux.bin.tar.gz
