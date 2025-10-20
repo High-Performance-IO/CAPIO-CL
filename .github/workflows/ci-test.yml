@@ -125,6 +125,25 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
+  build-documentation:
+    name: "Build Doxygen documentation"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Install packages"
+        run: |
+          sudo apt update
+          sudo apt install make graphviz wget
+      - name: "Install Doxygen 1.14.0"
+        run: |
+            wget https://www.doxygen.nl/files/doxygen-1.14.0.linux.bin.tar.gz
+            tar -xzf doxygen-1.14.0.linux.bin.tar.gz
+            sudo mv doxygen-1.14.0/bin/doxygen /usr/local/bin/doxygen
+            doxygen --version
+      - name: "Run Doxygen"
+        working-directory: doxygen
+        run: make
+
   upload-to-codecov:
     name: "Codecov report upload"
     needs: [ "unit-tests" , "codespell-check" , "format-check" ]
