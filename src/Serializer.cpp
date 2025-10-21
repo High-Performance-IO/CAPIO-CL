@@ -51,7 +51,10 @@ void capiocl::Serializer::dump(const Engine &engine, const std::string &workflow
             streaming_item[name_kind]     = jsoncons::json::array({path});
 
             if (entry.commit_rule == commit_rules::ON_CLOSE && entry.commit_on_close_count > 0) {
-                committed += ":" + std::to_string(entry.commit_on_close_count);
+                auto rule = entry.commit_rule + ":" + std::to_string(entry.commit_on_close_count);
+                streaming_item["committed"] = rule;
+            } else {
+                streaming_item["committed"] = entry.commit_rule;
             }
 
             if (!entry.is_file) {
@@ -66,8 +69,7 @@ void capiocl::Serializer::dump(const Engine &engine, const std::string &workflow
             }
             streaming_item["file_deps"] = file_deps_str;
 
-            streaming_item["committed"] = committed;
-            streaming_item["mode"]      = entry.fire_rule;
+            streaming_item["mode"] = entry.fire_rule;
 
             streaming.push_back(streaming_item);
         }

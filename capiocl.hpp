@@ -95,14 +95,20 @@ class Engine {
         std::vector<std::string> producers;
         std::vector<std::string> consumers;
         std::vector<std::filesystem::path> file_dependencies;
-        std::string commit_rule          = commit_rules::ON_TERMINATION;
-        std::string fire_rule            = fire_rules::UPDATE;
-        bool permanent                   = false;
-        bool excluded                    = false;
-        bool is_file                     = true;
-        bool store_in_memory             = false;
-        long commit_on_close_count       = 0;
-        long directory_commit_file_count = 0;
+        std::string commit_rule;
+        std::string fire_rule;
+        bool permanent;
+        bool excluded;
+        bool is_file;
+        bool store_in_memory;
+        long commit_on_close_count;
+        long directory_commit_file_count;
+
+        /// @brief Default constructor with default CAPIO-CL defaults
+        CapioCLEntry()
+            : commit_rule(commit_rules::ON_TERMINATION), fire_rule(fire_rules::UPDATE),
+              permanent(false), excluded(false), is_file(true), store_in_memory(false),
+              commit_on_close_count(0), directory_commit_file_count(0) {}
     };
 
     /// @brief Hash map used to store the configuration from CAPIO-CL
@@ -124,6 +130,12 @@ class Engine {
         }
         return str;
     }
+
+    /**
+     * @brief Insert a new empty default file in #_capio_cl_entries
+     * @param path File path name
+     */
+    void _newFile(const std::filesystem::path &path) const;
 
   public:
     /// @brief Class constructor
@@ -164,7 +176,7 @@ class Engine {
     void add(std::filesystem::path &path, std::vector<std::string> &producers,
              std::vector<std::string> &consumers, const std::string &commit_rule,
              const std::string &fire_rule, bool permanent, bool exclude,
-             std::vector<std::filesystem::path> &dependencies) const;
+             std::vector<std::filesystem::path> &dependencies);
 
     /**
      * @brief Add a new producer to a file entry.
@@ -198,7 +210,7 @@ class Engine {
      *
      * @param path Path of the new file.
      */
-    void newFile(const std::filesystem::path &path) const;
+    void newFile(const std::filesystem::path &path);
 
     /**
      * @brief Remove a file from the configuration.

@@ -91,18 +91,19 @@ capiocl::Parser::parse(const std::filesystem::path &source,
                 bool is_file = true;
                 std::vector<std::filesystem::path> streaming_names;
                 std::vector<std::filesystem::path> file_deps;
-                std::string commit_rule = commit_rules::ON_TERMINATION;
-                std::string mode        = fire_rules::UPDATE;
-                long int n_close        = 0;
-                int64_t n_files         = 0;
+                std::string commit_rule;
+                std::string fire_rule;
+                long int n_close = 0;
+                int64_t n_files  = 0;
 
-                // name or dirname
                 if (stream_item.contains("name")) {
                     for (const auto &nm : stream_item["name"].array_range()) {
                         auto nm_resolved = resolve(nm.as<std::string>(), resolve_prefix);
                         streaming_names.push_back(nm_resolved);
                     }
-                } else if (stream_item.contains("dirname")) {
+                } else {
+                    // At this point we have dirname, as either name or dirname is required
+                    // This is checked by the JSON schema validation phase
                     is_file = false;
                     for (const auto &nm : stream_item["dirname"].array_range()) {
                         auto nm_resolved = resolve(nm.as<std::string>(), resolve_prefix);
@@ -135,11 +136,15 @@ capiocl::Parser::parse(const std::filesystem::path &source,
                             file_deps.push_back(dep_resolved);
                         }
                     }
+                } else {
+                    commit_rule = commit_rules::ON_TERMINATION;
                 }
 
                 // Firing rule (optional)
                 if (stream_item.contains("mode")) {
-                    mode = stream_item["mode"].as<std::string>();
+                    fire_rule = stream_item["mode"].as<std::string>();
+                } else {
+                    fire_rule = fire_rules::NO_UPDATE;
                 }
 
                 // n_files (optional)
@@ -158,7 +163,7 @@ capiocl::Parser::parse(const std::filesystem::path &source,
                     }
 
                     engine->setCommitRule(path, commit_rule);
-                    engine->setFireRule(path, mode);
+                    engine->setFireRule(path, fire_rule);
                     engine->setCommitedCloseNumber(path, n_close);
                     engine->setFileDeps(path, file_deps);
                 }
@@ -193,6 +198,8 @@ capiocl::Parser::parse(const std::filesystem::path &source,
                 std::string file_str = f.as<std::string>();
                 engine->setStoreFileInMemory(file_str);
             }
+        } else {
+            print_message(CLI_LEVEL_INFO, "No MEM storage section found");
         }
 
         if (storage.contains("fs")) {
@@ -200,7 +207,11 @@ capiocl::Parser::parse(const std::filesystem::path &source,
                 std::string file_str = f.as<std::string>();
                 engine->setStoreFileInFileSystem(file_str);
             }
+        } else {
+            print_message(CLI_LEVEL_INFO, "No FS storage section found");
         }
+    } else {
+        print_message(CLI_LEVEL_INFO, "No storage section found");
     }
 
     // ---- Store only in memory ----

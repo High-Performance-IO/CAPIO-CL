@@ -123,39 +123,7 @@ void capiocl::Engine::print() const {
     print_message(CLI_LEVEL_JSON, "");
 }
 
-bool capiocl::Engine::contains(const std::filesystem::path &file) const {
-    for (auto &[fst, snd] : _capio_cl_entries) {
-        if (fnmatch(fst.c_str(), file.c_str(), FNM_PATHNAME) == 0) {
-            return true;
-        }
-    }
-    return false;
-}
-size_t capiocl::Engine::size() const { return this->_capio_cl_entries.size(); }
-
-void capiocl::Engine::add(std::filesystem::path &path, std::vector<std::string> &producers,
-                          std::vector<std::string> &consumers, const std::string &commit_rule,
-                          const std::string &fire_rule, bool permanent, bool exclude,
-                          std::vector<std::filesystem::path> &dependencies) const {
-    if (path.empty()) {
-        return;
-    }
-
-    if (_capio_cl_entries.find(path) == _capio_cl_entries.end()) {
-        CapioCLEntry entry;
-        entry.producers         = producers;
-        entry.consumers         = consumers;
-        entry.commit_rule       = commit_rule;
-        entry.fire_rule         = fire_rule;
-        entry.permanent         = permanent;
-        entry.excluded          = exclude;
-        entry.file_dependencies = dependencies;
-        _capio_cl_entries.emplace(path, entry);
-    }
-}
-
-void capiocl::Engine::newFile(const std::filesystem::path &path) const {
-
+void capiocl::Engine::_newFile(const std::filesystem::path &path) const {
     if (path.empty()) {
         return;
     }
@@ -176,17 +144,49 @@ void capiocl::Engine::newFile(const std::filesystem::path &path) const {
 
         if (matchSize > 0) {
             const auto &data = _capio_cl_entries.at(matchKey);
-            _capio_cl_entries.emplace(
-                path, CapioCLEntry{data.producers, data.consumers, data.file_dependencies,
-                                   data.commit_rule, data.fire_rule, data.permanent, data.excluded,
-                                   data.is_file, data.store_in_memory || store_all_in_memory,
-                                   data.commit_on_close_count, data.directory_commit_file_count});
 
+            // Duplicate CapioCLEntry object and register it to new resolved path
+            // This is achieved by not using & operator
+            CapioCLEntry entry    = data;
+            entry.store_in_memory = data.store_in_memory || store_all_in_memory;
+            _capio_cl_entries.emplace(path, std::move(entry));
         } else {
             _capio_cl_entries.emplace(path, CapioCLEntry());
         }
     }
 }
+
+bool capiocl::Engine::contains(const std::filesystem::path &file) const {
+    for (auto &[fst, snd] : _capio_cl_entries) {
+        if (fnmatch(fst.c_str(), file.c_str(), FNM_PATHNAME) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+size_t capiocl::Engine::size() const { return this->_capio_cl_entries.size(); }
+
+void capiocl::Engine::add(std::filesystem::path &path, std::vector<std::string> &producers,
+                          std::vector<std::string> &consumers, const std::string &commit_rule,
+                          const std::string &fire_rule, bool permanent, bool exclude,
+                          std::vector<std::filesystem::path> &dependencies) {
+    if (path.empty()) {
+        return;
+    }
+
+    this->_newFile(path);
+
+    CapioCLEntry &entry     = _capio_cl_entries.at(path);
+    entry.producers         = producers;
+    entry.consumers         = consumers;
+    entry.commit_rule       = commit_rule;
+    entry.fire_rule         = fire_rule;
+    entry.permanent         = permanent;
+    entry.excluded          = exclude;
+    entry.file_dependencies = dependencies;
+}
+
+void capiocl::Engine::newFile(const std::filesystem::path &path) { this->_newFile(path); }
 
 long capiocl::Engine::getDirectoryFileCount(const std::filesystem::path &path) const {
 
@@ -197,7 +197,7 @@ long capiocl::Engine::getDirectoryFileCount(const std::filesystem::path &path) c
     if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
         return itm->second.directory_commit_file_count;
     }
-    this->newFile(path);
+    this->_newFile(path);
     return getDirectoryFileCount(path);
 }
 
@@ -268,7 +268,7 @@ void capiocl::Engine::setCommitRule(const std::filesystem::path &path,
         itm->second.commit_rule = commit_rule;
         return;
     }
-    this->newFile(path);
+    this->_newFile(path);
     this->setCommitRule(path, commit_rule);
 }
 
@@ -282,7 +282,7 @@ std::string capiocl::Engine::getCommitRule(const std::filesystem::path &path) co
         return itm->second.commit_rule;
     }
 
-    this->newFile(path);
+    this->_newFile(path);
     return getCommitRule(path);
 }
 
@@ -296,7 +296,7 @@ std::string capiocl::Engine::getFireRule(const std::filesystem::path &path) cons
         return itm->second.fire_rule;
     }
 
-    this->newFile(path);
+    this->_newFile(path);
     return getFireRule(path);
 }
 
@@ -310,7 +310,7 @@ void capiocl::Engine::setFireRule(const std::filesystem::path &path, const std::
         itm->second.fire_rule = fire_rule;
         return;
     }
-    this->newFile(path);
+    this->_newFile(path);
     setFireRule(path, fire_rule);
 }
 
@@ -324,7 +324,7 @@ bool capiocl::Engine::isFirable(const std::filesystem::path &path) const {
         return itm->second.fire_rule == fire_rules::NO_UPDATE;
     }
 
-    this->newFile((path));
+    this->_newFile((path));
     return isFirable(path);
 }
 
@@ -338,7 +338,7 @@ void capiocl::Engine::setPermanent(const std::filesystem::path &path, bool value
         itm->second.permanent = value;
         return;
     }
-    this->newFile(path);
+    this->_newFile(path);
     setPermanent(path, value);
 }
 
@@ -352,7 +352,7 @@ bool capiocl::Engine::isPermanent(const std::filesystem::path &path) const {
         return itm->second.permanent;
     }
 
-    this->newFile(path);
+    this->_newFile(path);
     return isPermanent(path);
 }
 
@@ -366,7 +366,7 @@ void capiocl::Engine::setExclude(const std::filesystem::path &path, const bool v
         itm->second.excluded = value;
         return;
     }
-    this->newFile(path);
+    this->_newFile(path);
     setExclude(path, value);
 }
 
@@ -380,7 +380,7 @@ void capiocl::Engine::setDirectory(const std::filesystem::path &path) {
         itm->second.is_file = false;
         return;
     }
-    this->newFile(path);
+    this->_newFile(path);
     setDirectory(path);
 }
 
@@ -394,7 +394,7 @@ void capiocl::Engine::setFile(const std::filesystem::path &path) {
         itm->second.is_file = true;
         return;
     }
-    this->newFile(path);
+    this->_newFile(path);
     setFile(path);
 }
 
@@ -407,7 +407,7 @@ bool capiocl::Engine::isFile(const std::filesystem::path &path) const {
     if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
         return itm->second.is_file;
     }
-    this->newFile(path);
+    this->_newFile(path);
     return isPermanent(path);
 }
 
@@ -430,7 +430,7 @@ void capiocl::Engine::setCommitedCloseNumber(const std::filesystem::path &path, 
         itm->second.commit_on_close_count = num;
         return;
     }
-    this->newFile(path);
+    this->_newFile(path);
     setCommitedCloseNumber(path, num);
 }
 
@@ -445,7 +445,7 @@ void capiocl::Engine::setDirectoryFileCount(const std::filesystem::path &path, c
         itm->second.directory_commit_file_count = num;
         return;
     }
-    this->newFile(path);
+    this->_newFile(path);
     this->setDirectoryFileCount(path, num);
 }
 
@@ -478,7 +478,7 @@ bool capiocl::Engine::isConsumer(const std::filesystem::path &path,
         }
     }
 
-    this->newFile(path);
+    this->_newFile(path);
     return false;
 }
 
@@ -491,7 +491,7 @@ std::vector<std::string> capiocl::Engine::getProducers(const std::filesystem::pa
     if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
         return itm->second.producers;
     }
-    this->newFile(path);
+    this->_newFile(path);
     return getProducers(path);
 }
 
@@ -510,7 +510,7 @@ bool capiocl::Engine::isProducer(const std::filesystem::path &path,
         }
     }
 
-    this->newFile(path);
+    this->_newFile(path);
     return false;
 }
 
@@ -533,7 +533,7 @@ void capiocl::Engine::setFileDeps(const std::filesystem::path &path,
         itm->second.file_dependencies = dependencies;
         return;
     }
-    this->newFile(path);
+    this->_newFile(path);
     setFileDeps(path, dependencies);
 }
 
@@ -548,7 +548,7 @@ long capiocl::Engine::getCommitCloseCount(
         return itm->second.commit_on_close_count;
     }
 
-    this->newFile(path);
+    this->_newFile(path);
     return getCommitCloseCount(path);
 }
 
@@ -570,7 +570,7 @@ void capiocl::Engine::setStoreFileInMemory(const std::filesystem::path &path) {
         itm->second.store_in_memory = true;
         return;
     }
-    this->newFile(path);
+    this->_newFile(path);
     setStoreFileInMemory(path);
 }
 
@@ -591,7 +591,7 @@ void capiocl::Engine::setStoreFileInFileSystem(const std::filesystem::path &path
         itm->second.store_in_memory = false;
         return;
     }
-    this->newFile(path);
+    this->_newFile(path);
     setStoreFileInFileSystem(path);
 }
 
@@ -605,7 +605,7 @@ bool capiocl::Engine::isStoredInMemory(const std::filesystem::path &path) const 
         return itm->second.store_in_memory;
     }
 
-    this->newFile(path);
+    this->_newFile(path);
     return isStoredInMemory(path);
 }
 
@@ -639,7 +639,7 @@ bool capiocl::Engine::isExcluded(const std::filesystem::path &path) const {
         return itm->second.excluded;
     }
 
-    this->newFile(path);
+    this->_newFile(path);
     return isExcluded(path);
 }
 

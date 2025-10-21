@@ -674,12 +674,38 @@ TEST(testCapioSerializerParser, testParserResolveAbsolute) {
     EXPECT_TRUE(engine->contains("/tmp/file3"));
 }
 
+TEST(testCapioSerializerParser, testNoStorageSection) {
+    const std::filesystem::path json_path("/tmp/capio_cl_jsons/V1_test24.json");
+    auto [wf_name, engine] = capiocl::Parser::parse(json_path, "/tmp");
+    EXPECT_TRUE(wf_name == "test");
+    EXPECT_TRUE(engine->contains("/tmp/file"));
+    EXPECT_TRUE(engine->contains("/tmp/file1"));
+}
+
 template <typename T> std::string demangled_name(const T &obj) {
     int status;
     const char *mangled = typeid(obj).name();
     std::unique_ptr<char, void (*)(void *)> demangled(
         abi::__cxa_demangle(mangled, nullptr, nullptr, &status), std::free);
     return status == 0 ? demangled.get() : mangled;
+}
+
+TEST(testCapioSerializerParser, testFailedDump) {
+    const std::filesystem::path json_path("/tmp/capio_cl_jsons/V1_test24.json");
+    auto [wf_name, engine] = capiocl::Parser::parse(json_path, "/tmp");
+    bool exception_catched = false;
+
+    try {
+        capiocl::Serializer::dump(*engine, wf_name, "/");
+    } catch (std::exception &e) {
+        exception_catched = true;
+        auto demangled    = demangled_name(e);
+        capiocl::print_message(capiocl::CLI_LEVEL_INFO, "Caught exception of type =" + demangled);
+        EXPECT_TRUE(demangled == "capiocl::ParserException");
+        EXPECT_GT(std::string(e.what()).size(), 0);
+    }
+
+    EXPECT_TRUE(exception_catched);
 }
 
 TEST(testCapioSerializerParser, testParserException) {
