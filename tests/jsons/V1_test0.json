@@ -18,8 +18,14 @@
           ],
           "committed": "on_termination",
           "mode": "no_update"
+        },
+        {
+          "name": [
+            "/tmp/file1"
+          ]
         }
       ]
     }
-  ]
+  ],
+  "storage": {}
 }

@@ -161,8 +161,8 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          path: ${{ format('dist/documentation_{0}.pdf', env.CAPIO_CL_VERSION ) }}
-          name: ${{ format('documentation_{0}.pdf', env.CAPIO_CL_VERSION ) }}
+          path: "documentation*.pdf"
+          name: "documentation.pdf"
 
 
 
