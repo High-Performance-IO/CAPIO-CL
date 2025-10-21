@@ -106,7 +106,7 @@ class Engine {
     };
 
     /// @brief Hash map used to store the configuration from CAPIO-CL
-    std::unordered_map<std::string, CapioCLEntry> _locations;
+    mutable std::unordered_map<std::string, CapioCLEntry> _capio_cl_entries;
 
     /**
      * @brief Utility method to truncate a string to its last @p n characters. This is only used
@@ -124,13 +124,6 @@ class Engine {
         }
         return str;
     }
-
-  protected:
-    /**
-     * @brief Access the internal location map.
-     * @return Pointer to the internal location mapping.
-     */
-    const auto *getLocations() const { return &_locations; }
 
   public:
     /// @brief Class constructor
@@ -151,7 +144,7 @@ class Engine {
      * @param file Path of the file to check.
      * @return true if the file is contained, false otherwise.
      */
-    bool contains(const std::filesystem::path &file);
+    bool contains(const std::filesystem::path &file) const;
 
     /// @brief return the number of entries in the current configuration
     size_t size() const;
@@ -171,7 +164,7 @@ class Engine {
     void add(std::filesystem::path &path, std::vector<std::string> &producers,
              std::vector<std::string> &consumers, const std::string &commit_rule,
              const std::string &fire_rule, bool permanent, bool exclude,
-             std::vector<std::filesystem::path> &dependencies);
+             std::vector<std::filesystem::path> &dependencies) const;
 
     /**
      * @brief Add a new producer to a file entry.
@@ -205,13 +198,13 @@ class Engine {
      *
      * @param path Path of the new file.
      */
-    void newFile(const std::filesystem::path &path);
+    void newFile(const std::filesystem::path &path) const;
 
     /**
      * @brief Remove a file from the configuration.
      * @param path Path of the file to remove.
      */
-    void remove(const std::filesystem::path &path);
+    void remove(const std::filesystem::path &path) const;
 
     /**
      * @brief Set the commit rule of a file.
@@ -299,32 +292,32 @@ class Engine {
      * @param path Directory path.
      * @return Expected file count.
      */
-    long getDirectoryFileCount(const std::filesystem::path &path);
+    long getDirectoryFileCount(const std::filesystem::path &path) const;
 
     /// @brief Get the commit rule of a file.
-    std::string getCommitRule(const std::filesystem::path &path);
+    std::string getCommitRule(const std::filesystem::path &path) const;
 
     /// @brief Get the fire rule of a file.
-    std::string getFireRule(const std::filesystem::path &path);
+    std::string getFireRule(const std::filesystem::path &path) const;
 
     /// @brief Get the producers of a file.
-    std::vector<std::string> getProducers(const std::filesystem::path &path);
+    std::vector<std::string> getProducers(const std::filesystem::path &path) const;
 
     /// @brief Get the consumers of a file.
-    std::vector<std::string> getConsumers(const std::filesystem::path &path);
+    std::vector<std::string> getConsumers(const std::filesystem::path &path) const;
 
     /// @brief Get the commit-on-close counter for a file.
-    long getCommitCloseCount(std::filesystem::path::iterator::reference path);
+    long getCommitCloseCount(const std::filesystem::path::iterator::reference &path) const;
 
     /// @brief Get file dependencies.
     std::vector<std::filesystem::path>
-    getCommitOnFileDependencies(const std::filesystem::path &path);
+    getCommitOnFileDependencies(const std::filesystem::path &path) const;
 
     /// @brief Get the list of files stored in memory.
-    std::vector<std::string> getFileToStoreInMemory();
+    std::vector<std::string> getFileToStoreInMemory() const;
 
     /// @brief Get the home node of a file.
-    std::string getHomeNode(const std::filesystem::path &path);
+    std::string getHomeNode(const std::filesystem::path &path) const;
 
     /**
      * @brief Check if a process is a producer for a file.
@@ -332,7 +325,7 @@ class Engine {
      * @param app_name Application name.
      * @return true if the process is a producer, false otherwise.
      */
-    bool isProducer(const std::filesystem::path &path, const std::string &app_name);
+    bool isProducer(const std::filesystem::path &path, const std::string &app_name) const;
 
     /**
      * @brief Check if a process is a consumer for a file.
@@ -340,56 +333,56 @@ class Engine {
      * @param app_name Application name.
      * @return true if the process is a consumer, false otherwise.
      */
-    bool isConsumer(const std::filesystem::path &path, const std::string &app_name);
+    bool isConsumer(const std::filesystem::path &path, const std::string &app_name) const;
 
     /**
      * @brief Check if a file is firable, that is fire rule is no_update.
      * @param path File path.
      * @return true if the file is firable, false otherwise.
      */
-    bool isFirable(const std::filesystem::path &path);
+    bool isFirable(const std::filesystem::path &path) const;
 
     /**
      * @brief Check if a path refers to a file.
      * @param path File path.
      * @return true if the path is a file, false otherwise.
      */
-    bool isFile(const std::filesystem::path &path);
+    bool isFile(const std::filesystem::path &path) const;
 
     /**
      * @brief Check if a path is excluded.
      * @param path File path.
      * @return true if excluded, false otherwise.
      */
-    bool isExcluded(const std::filesystem::path &path);
+    bool isExcluded(const std::filesystem::path &path) const;
 
     /**
      * @brief Check if a path is a directory.
      * @param path Directory path.
      * @return true if directory, false otherwise.
      */
-    bool isDirectory(const std::filesystem::path &path);
+    bool isDirectory(const std::filesystem::path &path) const;
 
     /**
      * @brief Check if a file is stored in memory.
      * @param path File path to query
      * @return true if stored in memory, false otherwise.
      */
-    bool isStoredInMemory(const std::filesystem::path &path);
+    bool isStoredInMemory(const std::filesystem::path &path) const;
 
     /**
      * @brief Check if file should remain on file system after workflow terminates
      * @param path File path to query
      * @return True if file should persist on storage after workflow termination.
      */
-    bool isPermanent(const std::filesystem::path &path);
+    bool isPermanent(const std::filesystem::path &path) const;
 
     /**
      * @brief Check for equality between two instances of #Engine
      * @param other reference to another #Engine class instance
      * @return true if both this instance and other are equivalent. false otherwise.
      */
-    bool operator==(const capiocl::Engine &other) const;
+    bool operator==(const Engine &other) const;
 };
 
 /// @brief Contains the code to parse a JSON based CAPIO-CL configuration file

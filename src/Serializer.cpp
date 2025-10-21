@@ -8,7 +8,7 @@ void capiocl::Serializer::dump(const Engine &engine, const std::string &workflow
     jsoncons::json doc;
     doc["name"] = workflow_name;
 
-    const auto *files = engine.getLocations();
+    const auto files = engine._capio_cl_entries;
 
     std::unordered_map<std::string, std::vector<std::string>> app_inputs;
     std::unordered_map<std::string, std::vector<std::string>> app_outputs;
@@ -21,7 +21,7 @@ void capiocl::Serializer::dump(const Engine &engine, const std::string &workflow
     jsoncons::json storage  = jsoncons::json::object();
     jsoncons::json io_graph = jsoncons::json::array();
 
-    for (const auto &[path, entry] : *files) {
+    for (const auto &[path, entry] : files) {
         if (entry.permanent) {
             permanent.push_back(path);
         }
@@ -43,7 +43,7 @@ void capiocl::Serializer::dump(const Engine &engine, const std::string &workflow
         jsoncons::json streaming = jsoncons::json::array();
 
         for (const auto &path : outputs) {
-            const auto &entry = files->at(path);
+            const auto &entry = files.at(path);
 
             jsoncons::json streaming_item = jsoncons::json::object();
             std::string committed         = entry.commit_rule;

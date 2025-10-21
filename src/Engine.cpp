@@ -47,7 +47,7 @@ void capiocl::Engine::print() const {
     print_message(CLI_LEVEL_JSON, line);
 
     // Iterate over _locations
-    for (auto &itm : _locations) {
+    for (auto &itm : _capio_cl_entries) {
         std::string color_preamble =
             itm.second.store_in_memory ? "\033[38;5;034m" : "\033[38;5;172m";
         std::string color_post = "\033[0m";
@@ -123,25 +123,25 @@ void capiocl::Engine::print() const {
     print_message(CLI_LEVEL_JSON, "");
 }
 
-bool capiocl::Engine::contains(const std::filesystem::path &file) {
-    for (auto &[fst, snd] : _locations) {
+bool capiocl::Engine::contains(const std::filesystem::path &file) const {
+    for (auto &[fst, snd] : _capio_cl_entries) {
         if (fnmatch(fst.c_str(), file.c_str(), FNM_PATHNAME) == 0) {
             return true;
         }
     }
     return false;
 }
-size_t capiocl::Engine::size() const { return this->_locations.size(); }
+size_t capiocl::Engine::size() const { return this->_capio_cl_entries.size(); }
 
 void capiocl::Engine::add(std::filesystem::path &path, std::vector<std::string> &producers,
                           std::vector<std::string> &consumers, const std::string &commit_rule,
                           const std::string &fire_rule, bool permanent, bool exclude,
-                          std::vector<std::filesystem::path> &dependencies) {
+                          std::vector<std::filesystem::path> &dependencies) const {
     if (path.empty()) {
         return;
     }
 
-    if (_locations.find(path) == _locations.end()) {
+    if (_capio_cl_entries.find(path) == _capio_cl_entries.end()) {
         CapioCLEntry entry;
         entry.producers         = producers;
         entry.consumers         = consumers;
@@ -150,23 +150,23 @@ void capiocl::Engine::add(std::filesystem::path &path, std::vector<std::string> 
         entry.permanent         = permanent;
         entry.excluded          = exclude;
         entry.file_dependencies = dependencies;
-        _locations.emplace(path, entry);
+        _capio_cl_entries.emplace(path, entry);
     }
 }
 
-void capiocl::Engine::newFile(const std::filesystem::path &path) {
+void capiocl::Engine::newFile(const std::filesystem::path &path) const {
 
     if (path.empty()) {
         return;
     }
 
-    if (_locations.find(path) == _locations.end()) {
+    if (_capio_cl_entries.find(path) == _capio_cl_entries.end()) {
         std::string commit = commit_rules::ON_TERMINATION;
         std::string fire   = fire_rules::UPDATE;
 
         std::string matchKey;
         size_t matchSize = 0;
-        for (const auto &[filename, data] : _locations) {
+        for (const auto &[filename, data] : _capio_cl_entries) {
             if (const bool match = fnmatch(filename.c_str(), path.c_str(), FNM_PATHNAME) == 0;
                 match && filename.length() > matchSize) {
                 matchSize = filename.length();
@@ -175,26 +175,26 @@ void capiocl::Engine::newFile(const std::filesystem::path &path) {
         }
 
         if (matchSize > 0) {
-            const auto &data = _locations.at(matchKey);
-            _locations.emplace(
+            const auto &data = _capio_cl_entries.at(matchKey);
+            _capio_cl_entries.emplace(
                 path, CapioCLEntry{data.producers, data.consumers, data.file_dependencies,
                                    data.commit_rule, data.fire_rule, data.permanent, data.excluded,
                                    data.is_file, data.store_in_memory || store_all_in_memory,
                                    data.commit_on_close_count, data.directory_commit_file_count});
 
         } else {
-            _locations.emplace(path, CapioCLEntry());
+            _capio_cl_entries.emplace(path, CapioCLEntry());
         }
     }
 }
 
-long capiocl::Engine::getDirectoryFileCount(const std::filesystem::path &path) {
+long capiocl::Engine::getDirectoryFileCount(const std::filesystem::path &path) const {
 
     if (path.empty()) {
         return 0;
     }
 
-    if (const auto itm = _locations.find(path); itm != _locations.end()) {
+    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
         return itm->second.directory_commit_file_count;
     }
     this->newFile(path);
@@ -209,7 +209,7 @@ void capiocl::Engine::addProducer(const std::filesystem::path &path, std::string
 
     producer.erase(remove_if(producer.begin(), producer.end(), isspace), producer.end());
 
-    if (const auto itm = _locations.find(path); itm != _locations.end()) {
+    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
         auto &vec = itm->second.producers;
         if (std::find(vec.begin(), vec.end(), producer) == vec.end()) {
             vec.emplace_back(producer);
@@ -227,7 +227,7 @@ void capiocl::Engine::addConsumer(const std::filesystem::path &path, std::string
     }
 
     consumer.erase(remove_if(consumer.begin(), consumer.end(), isspace), consumer.end());
-    if (const auto itm = _locations.find(path); itm != _locations.end()) {
+    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
         auto &vec = itm->second.consumers;
         if (std::find(vec.begin(), vec.end(), consumer) == vec.end()) {
             vec.emplace_back(consumer);
@@ -245,7 +245,7 @@ void capiocl::Engine::addFileDependency(const std::filesystem::path &path,
         return;
     }
 
-    if (const auto itm = _locations.find(path); itm != _locations.end()) {
+    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
         auto &vec = itm->second.file_dependencies;
         if (std::find(vec.begin(), vec.end(), file_dependency) == vec.end()) {
             vec.emplace_back(file_dependency);
@@ -264,7 +264,7 @@ void capiocl::Engine::setCommitRule(const std::filesystem::path &path,
         return;
     }
 
-    if (const auto itm = _locations.find(path); itm != _locations.end()) {
+    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
         itm->second.commit_rule = commit_rule;
         return;
     }
@@ -272,13 +272,13 @@ void capiocl::Engine::setCommitRule(const std::filesystem::path &path,
     this->setCommitRule(path, commit_rule);
 }
 
-std::string capiocl::Engine::getCommitRule(const std::filesystem::path &path) {
+std::string capiocl::Engine::getCommitRule(const std::filesystem::path &path) const {
 
     if (path.empty()) {
         return commit_rules::ON_TERMINATION;
     }
 
-    if (const auto itm = _locations.find(path); itm != _locations.end()) {
+    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
         return itm->second.commit_rule;
     }
 
@@ -286,13 +286,13 @@ std::string capiocl::Engine::getCommitRule(const std::filesystem::path &path) {
     return getCommitRule(path);
 }
 
-std::string capiocl::Engine::getFireRule(const std::filesystem::path &path) {
+std::string capiocl::Engine::getFireRule(const std::filesystem::path &path) const {
 
     if (path.empty()) {
         return fire_rules::NO_UPDATE;
     }
 
-    if (const auto itm = _locations.find(path); itm != _locations.end()) {
+    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
         return itm->second.fire_rule;
     }
 
@@ -306,7 +306,7 @@ void capiocl::Engine::setFireRule(const std::filesystem::path &path, const std::
         return;
     }
 
-    if (const auto itm = _locations.find(path); itm != _locations.end()) {
+    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
         itm->second.fire_rule = fire_rule;
         return;
     }
@@ -314,13 +314,13 @@ void capiocl::Engine::setFireRule(const std::filesystem::path &path, const std::
     setFireRule(path, fire_rule);
 }
 
-bool capiocl::Engine::isFirable(const std::filesystem::path &path) {
+bool capiocl::Engine::isFirable(const std::filesystem::path &path) const {
 
     if (path.empty()) {
         return true;
     }
 
-    if (const auto itm = _locations.find(path); itm != _locations.end()) {
+    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
         return itm->second.fire_rule == fire_rules::NO_UPDATE;
     }
 
@@ -334,7 +334,7 @@ void capiocl::Engine::setPermanent(const std::filesystem::path &path, bool value
         return;
     }
 
-    if (const auto itm = _locations.find(path); itm != _locations.end()) {
+    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
         itm->second.permanent = value;
         return;
     }
@@ -342,13 +342,13 @@ void capiocl::Engine::setPermanent(const std::filesystem::path &path, bool value
     setPermanent(path, value);
 }
 
-bool capiocl::Engine::isPermanent(const std::filesystem::path &path) {
+bool capiocl::Engine::isPermanent(const std::filesystem::path &path) const {
 
     if (path.empty()) {
         return true;
     }
 
-    if (const auto itm = _locations.find(path); itm != _locations.end()) {
+    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
         return itm->second.permanent;
     }
 
@@ -362,7 +362,7 @@ void capiocl::Engine::setExclude(const std::filesystem::path &path, const bool v
         return;
     }
 
-    if (const auto itm = _locations.find(path); itm != _locations.end()) {
+    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
         itm->second.excluded = value;
         return;
     }
@@ -376,7 +376,7 @@ void capiocl::Engine::setDirectory(const std::filesystem::path &path) {
         return;
     }
 
-    if (const auto itm = _locations.find(path); itm != _locations.end()) {
+    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
         itm->second.is_file = false;
         return;
     }
@@ -390,7 +390,7 @@ void capiocl::Engine::setFile(const std::filesystem::path &path) {
         return;
     }
 
-    if (const auto itm = _locations.find(path); itm != _locations.end()) {
+    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
         itm->second.is_file = true;
         return;
     }
@@ -398,20 +398,20 @@ void capiocl::Engine::setFile(const std::filesystem::path &path) {
     setFile(path);
 }
 
-bool capiocl::Engine::isFile(const std::filesystem::path &path) {
+bool capiocl::Engine::isFile(const std::filesystem::path &path) const {
 
     if (path.empty()) {
         return true;
     }
 
-    if (const auto itm = _locations.find(path); itm != _locations.end()) {
+    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
         return itm->second.is_file;
     }
     this->newFile(path);
     return isPermanent(path);
 }
 
-bool capiocl::Engine::isDirectory(const std::filesystem::path &path) {
+bool capiocl::Engine::isDirectory(const std::filesystem::path &path) const {
 
     if (path.empty()) {
         return true;
@@ -426,7 +426,7 @@ void capiocl::Engine::setCommitedCloseNumber(const std::filesystem::path &path, 
         return;
     }
 
-    if (const auto itm = _locations.find(path); itm != _locations.end()) {
+    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
         itm->second.commit_on_close_count = num;
         return;
     }
@@ -434,13 +434,13 @@ void capiocl::Engine::setCommitedCloseNumber(const std::filesystem::path &path, 
     setCommitedCloseNumber(path, num);
 }
 
-void capiocl::Engine::setDirectoryFileCount(const std::filesystem::path &path, long num) {
+void capiocl::Engine::setDirectoryFileCount(const std::filesystem::path &path, const long num) {
 
     if (path.empty()) {
         return;
     }
 
-    if (const auto itm = _locations.find(path); itm != _locations.end()) {
+    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
         this->setDirectory(path);
         itm->second.directory_commit_file_count = num;
         return;
@@ -449,26 +449,27 @@ void capiocl::Engine::setDirectoryFileCount(const std::filesystem::path &path, l
     this->setDirectoryFileCount(path, num);
 }
 
-void capiocl::Engine::remove(const std::filesystem::path &path) {
-    if (const auto itm = _locations.find(path); itm == _locations.end()) {
+void capiocl::Engine::remove(const std::filesystem::path &path) const {
+    if (const auto itm = _capio_cl_entries.find(path); itm == _capio_cl_entries.end()) {
         return;
     }
-    _locations.erase(path);
+    _capio_cl_entries.erase(path);
 }
 
-std::vector<std::string> capiocl::Engine::getConsumers(const std::filesystem::path &path) {
-    if (const auto itm = _locations.find(path); itm != _locations.end()) {
+std::vector<std::string> capiocl::Engine::getConsumers(const std::filesystem::path &path) const {
+    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
         return itm->second.consumers;
     }
     return {};
 }
 
-bool capiocl::Engine::isConsumer(const std::filesystem::path &path, const std::string &app_name) {
+bool capiocl::Engine::isConsumer(const std::filesystem::path &path,
+                                 const std::string &app_name) const {
     if (path.empty()) {
         return true;
     }
 
-    for (const auto &[pattern, entry] : _locations) {
+    for (const auto &[pattern, entry] : _capio_cl_entries) {
         if (fnmatch(pattern.c_str(), path.c_str(), FNM_PATHNAME) == 0) {
             const auto &consumers = entry.consumers;
             if (std::find(consumers.begin(), consumers.end(), app_name) != consumers.end()) {
@@ -481,25 +482,26 @@ bool capiocl::Engine::isConsumer(const std::filesystem::path &path, const std::s
     return false;
 }
 
-std::vector<std::string> capiocl::Engine::getProducers(const std::filesystem::path &path) {
+std::vector<std::string> capiocl::Engine::getProducers(const std::filesystem::path &path) const {
 
     if (path.empty()) {
         return {};
     }
 
-    if (const auto itm = _locations.find(path); itm != _locations.end()) {
+    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
         return itm->second.producers;
     }
     this->newFile(path);
     return getProducers(path);
 }
 
-bool capiocl::Engine::isProducer(const std::filesystem::path &path, const std::string &app_name) {
+bool capiocl::Engine::isProducer(const std::filesystem::path &path,
+                                 const std::string &app_name) const {
     if (path.empty()) {
         return true;
     }
 
-    for (const auto &[pattern, entry] : _locations) {
+    for (const auto &[pattern, entry] : _capio_cl_entries) {
         if (fnmatch(pattern.c_str(), path.c_str(), FNM_PATHNAME) == 0) {
             const auto &producers = entry.producers;
             if (std::find(producers.begin(), producers.end(), app_name) != producers.end()) {
@@ -527,7 +529,7 @@ void capiocl::Engine::setFileDeps(const std::filesystem::path &path,
         newFile(itm);
     }
 
-    if (const auto itm = _locations.find(path); itm != _locations.end()) {
+    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
         itm->second.file_dependencies = dependencies;
         return;
     }
@@ -535,13 +537,14 @@ void capiocl::Engine::setFileDeps(const std::filesystem::path &path,
     setFileDeps(path, dependencies);
 }
 
-long capiocl::Engine::getCommitCloseCount(std::filesystem::path::iterator::reference path) {
+long capiocl::Engine::getCommitCloseCount(
+    const std::filesystem::path::iterator::reference &path) const {
 
     if (path.empty()) {
         return 0;
     }
 
-    if (const auto itm = _locations.find(path); itm != _locations.end()) {
+    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
         return itm->second.commit_on_close_count;
     }
 
@@ -550,8 +553,8 @@ long capiocl::Engine::getCommitCloseCount(std::filesystem::path::iterator::refer
 }
 
 std::vector<std::filesystem::path>
-capiocl::Engine::getCommitOnFileDependencies(const std::filesystem::path &path) {
-    if (const auto itm = _locations.find(path); itm != _locations.end()) {
+capiocl::Engine::getCommitOnFileDependencies(const std::filesystem::path &path) const {
+    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
         return itm->second.file_dependencies;
     }
     return {};
@@ -563,7 +566,7 @@ void capiocl::Engine::setStoreFileInMemory(const std::filesystem::path &path) {
         return;
     }
 
-    if (const auto itm = _locations.find(path); itm != _locations.end()) {
+    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
         itm->second.store_in_memory = true;
         return;
     }
@@ -573,7 +576,7 @@ void capiocl::Engine::setStoreFileInMemory(const std::filesystem::path &path) {
 
 void capiocl::Engine::setAllStoreInMemory() {
     this->store_all_in_memory = true;
-    for (const auto &[fst, snd] : _locations) {
+    for (const auto &[fst, snd] : _capio_cl_entries) {
         this->setStoreFileInMemory(fst);
     }
 }
@@ -584,7 +587,7 @@ void capiocl::Engine::setStoreFileInFileSystem(const std::filesystem::path &path
         return;
     }
 
-    if (const auto itm = _locations.find(path); itm != _locations.end()) {
+    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
         itm->second.store_in_memory = false;
         return;
     }
@@ -592,13 +595,13 @@ void capiocl::Engine::setStoreFileInFileSystem(const std::filesystem::path &path
     setStoreFileInFileSystem(path);
 }
 
-bool capiocl::Engine::isStoredInMemory(const std::filesystem::path &path) {
+bool capiocl::Engine::isStoredInMemory(const std::filesystem::path &path) const {
 
     if (path.empty()) {
         return true;
     }
 
-    if (const auto itm = _locations.find(path); itm != _locations.end()) {
+    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
         return itm->second.store_in_memory;
     }
 
@@ -606,10 +609,10 @@ bool capiocl::Engine::isStoredInMemory(const std::filesystem::path &path) {
     return isStoredInMemory(path);
 }
 
-std::vector<std::string> capiocl::Engine::getFileToStoreInMemory() {
+std::vector<std::string> capiocl::Engine::getFileToStoreInMemory() const {
     std::vector<std::string> files;
 
-    for (const auto &[path, file] : _locations) {
+    for (const auto &[path, file] : _capio_cl_entries) {
         if (file.store_in_memory) {
             files.push_back(path);
         }
@@ -618,21 +621,21 @@ std::vector<std::string> capiocl::Engine::getFileToStoreInMemory() {
     return files;
 }
 
-std::string capiocl::Engine::getHomeNode(const std::filesystem::path &path) {
+std::string capiocl::Engine::getHomeNode(const std::filesystem::path &path) const {
 
-    if (const auto location = _locations.find(path); location == _locations.end()) {
+    if (const auto location = _capio_cl_entries.find(path); location == _capio_cl_entries.end()) {
         return node_name;
     }
     return node_name;
 }
 
-bool capiocl::Engine::isExcluded(const std::filesystem::path &path) {
+bool capiocl::Engine::isExcluded(const std::filesystem::path &path) const {
 
     if (path.empty()) {
         return true;
     }
 
-    if (const auto itm = _locations.find(path); itm != _locations.end()) {
+    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
         return itm->second.excluded;
     }
 
@@ -641,17 +644,17 @@ bool capiocl::Engine::isExcluded(const std::filesystem::path &path) {
 }
 
 bool capiocl::Engine::operator==(const capiocl::Engine &other) const {
-    const auto &other_locations = other.getLocations();
+    const auto &other_entries = other._capio_cl_entries;
 
-    if (this->_locations.size() != other_locations->size()) {
+    if (this->_capio_cl_entries.size() != other_entries.size()) {
         return false;
     }
 
-    for (const auto &[this_path, this_itm] : this->_locations) {
-        if (other_locations->find(this_path) == other_locations->end()) {
+    for (const auto &[this_path, this_itm] : this->_capio_cl_entries) {
+        if (other_entries.find(this_path) == other_entries.end()) {
             return false;
         }
-        auto other_itm = other_locations->at(this_path);
+        auto other_itm = other_entries.at(this_path);
 
         if (this_itm.commit_rule != other_itm.commit_rule ||
             this_itm.fire_rule != other_itm.fire_rule ||
