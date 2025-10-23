@@ -486,14 +486,13 @@ class Parser {
                                                    bool store_only_in_memory = false);
 };
 
-
 /**
  * @brief Custom exception thrown when serializing an instance of #Engine
  */
 class SerializerException : public std::exception {
     std::string message;
 
-public:
+  public:
     /**
      * @brief Construct a new CAPIO-CL Exception
      * @param msg Error Message that raised this exception

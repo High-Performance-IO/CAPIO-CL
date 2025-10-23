@@ -701,7 +701,7 @@ TEST(testCapioSerializerParser, testFailedDump) {
         exception_catched = true;
         auto demangled    = demangled_name(e);
         capiocl::print_message(capiocl::CLI_LEVEL_INFO, "Caught exception of type =" + demangled);
-        EXPECT_TRUE(demangled == "capiocl::ParserException");
+        EXPECT_TRUE(demangled == "capiocl::SerializerException");
         EXPECT_GT(std::string(e.what()).size(), 0);
     }
 
