@@ -739,6 +739,7 @@ TEST(testCapioSerializerParser, testParserException) {
         JSON_DIR / "V1_test21.json",
         JSON_DIR / "V1_test22.json",
         JSON_DIR / "V1_test23.json",
+        JSON_DIR / "V1_test25.json",
     };
 
     for (const auto &test : test_filenames) {
