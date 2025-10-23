@@ -56,7 +56,9 @@ void capiocl::Serializer::available_serializers::serialize_v1(
                 } else {
                     const auto msg = "Commit rule is not ON_CLOSE but close count > 0";
                     print_message(CLI_LEVEL_WARNING, msg);
-                    streaming_item["committed"] = entry.commit_rule;
+                    print_message(CLI_LEVEL_WARNING, "Setting commit rule = ON_CLOSE");
+                    streaming_item["committed"] = std::string(commit_rules::ON_CLOSE) + ":" +
+                                                  std::to_string(entry.commit_on_close_count);
                 }
             } else {
                 streaming_item["committed"] = entry.commit_rule;

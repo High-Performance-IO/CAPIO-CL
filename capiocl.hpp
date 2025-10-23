@@ -64,15 +64,15 @@ struct CAPIO_CL_VERSION {
  */
 inline void print_message(const std::string &message_type = "",
                           const std::string &message_line = "") {
-    static std::string node_name;
-    if (node_name.empty()) {
-        node_name.reserve(HOST_NAME_MAX);
-        gethostname(node_name.data(), HOST_NAME_MAX);
+    static std::string *node_name = nullptr;
+    if (node_name == nullptr) {
+        node_name = new std::string(" ", HOST_NAME_MAX);
+        gethostname(node_name->data(), HOST_NAME_MAX);
     }
     if (message_type.empty()) {
         std::cout << std::endl;
     } else {
-        std::cout << message_type << " " << node_name.c_str() << "] " << message_line << std::endl
+        std::cout << message_type << " " << node_name->c_str() << "] " << message_line << std::endl
                   << std::flush;
     }
 }
