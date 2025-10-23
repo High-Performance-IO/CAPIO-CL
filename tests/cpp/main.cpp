@@ -483,6 +483,15 @@ TEST(testCapioClEngine, testEqualDifferentProducers) {
     engine2.addConsumer("A", stepB);
     EXPECT_FALSE(engine1 == engine2);
 }
+TEST(testCapioClEngine, testStoreAllInMemory) {
+    capiocl::Engine engine;
+    engine.setAllStoreInMemory();
+
+    engine.newFile("A*");
+    EXPECT_TRUE(engine.isStoredInMemory("A*"));
+    engine.newFile("A.B");
+    EXPECT_TRUE(engine.isStoredInMemory("A*"));
+}
 
 TEST(testCapioClEngine, testFileDependenciesDifferences) {
     capiocl::Engine engine1, engine2;
@@ -664,6 +673,34 @@ TEST(testCapioSerializerParser, testSerializeParseCAPIOCLV1FileDeps) {
     std::filesystem::remove(path);
 }
 
+TEST(testCapioSerializerParser, testSerializeCommitOnCloseCountNoCommitRule) {
+    const std::filesystem::path path("./config.json");
+    const std::string workflow_name = "demo";
+    const std::string file_1_name   = "file1.txt";
+    std::string producer_name = "_first", consumer_name = "_last";
+
+    capiocl::Engine engine;
+
+    engine.newFile(file_1_name);
+    engine.addProducer(file_1_name, producer_name);
+    engine.setCommitRule(file_1_name, capiocl::commit_rules::ON_TERMINATION);
+    engine.setCommitedCloseNumber(file_1_name, 10);
+
+    engine.print();
+    capiocl::Serializer::dump(engine, workflow_name, path);
+
+    std::filesystem::path resolve = "";
+    auto [wf_name, new_engine]    = capiocl::Parser::parse(path, resolve);
+
+    EXPECT_TRUE(wf_name == workflow_name);
+    EXPECT_FALSE(engine == *new_engine);
+    capiocl::print_message("", "");
+    engine.setCommitRule(file_1_name, capiocl::commit_rules::ON_CLOSE);
+    EXPECT_TRUE(engine == *new_engine);
+
+    std::filesystem::remove(path);
+}
+
 TEST(testCapioSerializerParser, testParserResolveAbsolute) {
     const std::filesystem::path json_path("/tmp/capio_cl_jsons/V1_test0.json");
     auto [wf_name, engine] = capiocl::Parser::parse(json_path, "/tmp");
@@ -701,7 +738,25 @@ TEST(testCapioSerializerParser, testFailedDump) {
         exception_catched = true;
         auto demangled    = demangled_name(e);
         capiocl::print_message(capiocl::CLI_LEVEL_INFO, "Caught exception of type =" + demangled);
-        EXPECT_TRUE(demangled == "capiocl::ParserException");
+        EXPECT_TRUE(demangled == "capiocl::SerializerException");
+        EXPECT_GT(std::string(e.what()).size(), 0);
+    }
+
+    EXPECT_TRUE(exception_catched);
+}
+
+TEST(testCapioSerializerParser, testFailedDumpVersion) {
+    const std::filesystem::path json_path("/tmp/capio_cl_jsons/V1_test24.json");
+    auto [wf_name, engine] = capiocl::Parser::parse(json_path, "/tmp");
+    bool exception_catched = false;
+
+    try {
+        capiocl::Serializer::dump(*engine, wf_name, "test.json", "1234.5678");
+    } catch (std::exception &e) {
+        exception_catched = true;
+        auto demangled    = demangled_name(e);
+        capiocl::print_message(capiocl::CLI_LEVEL_INFO, "Caught exception of type =" + demangled);
+        EXPECT_TRUE(demangled == "capiocl::SerializerException");
         EXPECT_GT(std::string(e.what()).size(), 0);
     }
 
@@ -739,6 +794,7 @@ TEST(testCapioSerializerParser, testParserException) {
         JSON_DIR / "V1_test21.json",
         JSON_DIR / "V1_test22.json",
         JSON_DIR / "V1_test23.json",
+        JSON_DIR / "V1_test25.json",
     };
 
     for (const auto &test : test_filenames) {

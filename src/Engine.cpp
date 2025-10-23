@@ -23,9 +23,9 @@ void capiocl::Engine::print() const {
 
     print_message(CLI_LEVEL_JSON, "|" + std::string(134, ' ') + "|");
 
-    print_message(CLI_LEVEL_JSON,
-                  "|     File color legend:     \033[48;5;034m  \033[0m File stored in memory" +
-                      std::string(82, ' ') + "|");
+    std::string msg = "|     File color legend:     \033[48;5;034m  \033[0m File stored in memory";
+    msg += std::string(82, ' ') + "|";
+    print_message(CLI_LEVEL_JSON, msg);
 
     print_message(
         CLI_LEVEL_JSON,
@@ -61,9 +61,9 @@ void capiocl::Engine::print() const {
         }
 
         std::ostringstream base_line;
-        base_line << "|   " << color_preamble << kind << color_post << "  | " << color_preamble
-                  << name_trunc << color_post << std::setfill(' ')
-                  << std::setw(20 - name_trunc.length()) << "| ";
+        base_line << "|   " << color_preamble << kind << color_post << "  | " << color_preamble;
+        base_line << name_trunc << color_post << std::setfill(' ');
+        base_line << std::setw(20 - name_trunc.length()) << "| ";
 
         auto producers = itm.second.producers;
         auto consumers = itm.second.consumers;
@@ -142,17 +142,22 @@ void capiocl::Engine::_newFile(const std::filesystem::path &path) const {
             }
         }
 
+        CapioCLEntry entry;
         if (matchSize > 0) {
             const auto &data = _capio_cl_entries.at(matchKey);
 
             // Duplicate CapioCLEntry object and register it to new resolved path
             // This is achieved by not using & operator
-            CapioCLEntry entry    = data;
-            entry.store_in_memory = data.store_in_memory || store_all_in_memory;
-            _capio_cl_entries.emplace(path, std::move(entry));
+            entry = data;
+            if (store_all_in_memory) {
+                entry.store_in_memory = true;
+            } else {
+                entry.store_in_memory = data.store_in_memory;
+            }
         } else {
-            _capio_cl_entries.emplace(path, CapioCLEntry());
+            entry.store_in_memory = store_all_in_memory;
         }
+        _capio_cl_entries.emplace(path, std::move(entry));
     }
 }
 
@@ -213,8 +218,10 @@ void capiocl::Engine::addProducer(const std::filesystem::path &path, std::string
         auto &vec = itm->second.producers;
         if (std::find(vec.begin(), vec.end(), producer) == vec.end()) {
             vec.emplace_back(producer);
+            return;
+        } else {
+            return;
         }
-        return;
     }
     this->newFile(path);
     this->addProducer(path, producer);

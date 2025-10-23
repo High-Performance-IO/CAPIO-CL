@@ -22,6 +22,9 @@ PYBIND11_MODULE(_py_capio_cl, m) {
     commit_rules.attr("ON_N_FILES")     = py::str(capiocl::commit_rules::ON_N_FILES);
     commit_rules.attr("ON_TERMINATION") = py::str(capiocl::commit_rules::ON_TERMINATION);
 
+    py::module_ VERSION = m.def_submodule("VERSION", "CAPIO-CL version");
+    VERSION.attr("V1")  = py::str(capiocl::CAPIO_CL_VERSION::V1);
+
     py::class_<capiocl::Engine>(
         m, "Engine", "The main CAPIO-CL engine for managing data communication and I/O operations.")
         .def(py::init<>())
@@ -71,8 +74,8 @@ PYBIND11_MODULE(_py_capio_cl, m) {
         .def(pybind11::self == pybind11::self);
 
     py::class_<capiocl::Parser>(m, "Parser", "The CAPIO-CL Parser component.")
-        .def("parse", &capiocl::Parser::parse, py::arg("resolve_prefix") = "",
-             py::arg("store_only_in_memory") = false)
+        .def_static("parse", &capiocl::Parser::parse, py::arg("source"),
+                    py::arg("resolve_prefix") = "", py::arg("store_only_in_memory") = false)
         .def("__str__",
              [](const capiocl::Parser &e) {
                  return "<Parser repr at " + std::to_string(reinterpret_cast<uintptr_t>(&e)) + ">";
@@ -83,7 +86,8 @@ PYBIND11_MODULE(_py_capio_cl, m) {
 
     py::class_<capiocl::Serializer>(m, "Serializer", "The CAPIO-CL Serializer component.")
         .def(py::init<>())
-        .def("dump", &capiocl::Serializer::dump)
+        .def_static("dump", &capiocl::Serializer::dump, py::arg("engine"), py::arg("workflow_name"),
+                    py::arg("filename"), py::arg("version") = capiocl::CAPIO_CL_VERSION::V1)
         .def("__str__",
              [](const capiocl::Serializer &e) {
                  return "<Serializer repr at " + std::to_string(reinterpret_cast<uintptr_t>(&e)) +

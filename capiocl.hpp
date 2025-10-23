@@ -5,6 +5,8 @@
 #include <cstring>
 #include <filesystem>
 #include <iostream>
+#include <jsoncons/basic_json.hpp>
+#include <jsoncons_ext/jsonschema/jsonschema.hpp>
 #include <string>
 #include <unistd.h>
 #include <unordered_map>
@@ -49,6 +51,12 @@ constexpr char ON_N_FILES[]     = "on_n_files";
 constexpr char ON_TERMINATION[] = "on_termination";
 } // namespace commit_rules
 
+/// @brief Available versions of CAPIO-CL language
+struct CAPIO_CL_VERSION {
+    /// @brief Release 1.0 of CAPIO-CL
+    static constexpr char V1[] = "1.0";
+};
+
 /**
  * Print a message to standard out. Used to log messages related to the CAPIO-CL #Engine
  * @param message_type Type of message to print.
@@ -56,15 +64,15 @@ constexpr char ON_TERMINATION[] = "on_termination";
  */
 inline void print_message(const std::string &message_type = "",
                           const std::string &message_line = "") {
-    static std::string node_name;
-    if (node_name.empty()) {
-        node_name.reserve(HOST_NAME_MAX);
-        gethostname(node_name.data(), HOST_NAME_MAX);
+    static std::string *node_name = nullptr;
+    if (node_name == nullptr) {
+        node_name = new std::string(" ", HOST_NAME_MAX);
+        gethostname(node_name->data(), HOST_NAME_MAX);
     }
     if (message_type.empty()) {
         std::cout << std::endl;
     } else {
-        std::cout << message_type << " " << node_name.c_str() << "] " << message_line << std::endl
+        std::cout << message_type << " " << node_name->c_str() << "] " << message_line << std::endl
                   << std::flush;
     }
 }
@@ -397,24 +405,6 @@ class Engine {
     bool operator==(const Engine &other) const;
 };
 
-/// @brief Contains the code to parse a JSON based CAPIO-CL configuration file
-class Parser {
-  public:
-    /**
-     * @brief Perform the parsing of the capio_server configuration file
-     *
-     * @param source Input CAPIO-CL Json configuration File
-     * @param resolve_prefix If paths are found to be relative, they are appended to this path
-     * @param store_only_in_memory Set to true to set all files to be stored in memory
-     * @return Tuple with workflow name and #Engine instance with the information provided by
-     * the config file
-     * @throw ParserException
-     */
-    static std::tuple<std::string, Engine *> parse(const std::filesystem::path &source,
-                                                   const std::filesystem::path &resolve_prefix = "",
-                                                   bool store_only_in_memory = false);
-};
-
 /**
  * @brief Custom exception thrown when parsing a CAPIO-CL configuration file by #Parser
  */
@@ -434,23 +424,122 @@ class ParserException : public std::exception {
      * Get the description of the error causing the exception
      * @return
      */
-    const char *what() const noexcept override { return message.c_str(); }
+    [[nodiscard]] const char *what() const noexcept override { return message.c_str(); }
 };
 
-/// @brief Dump the current loaded CAPIO-CL configuration from class  Engine to a CAPIO-CL
+/// @brief Contains the code to parse a JSON based CAPIO-CL configuration file
+class Parser {
+
+    /// @brief Available parsers for CAPIO-CL
+    struct available_parsers {
+        /**
+         * Parser for the V1 Specification of the CAPIO-CL language
+         * @param source Path of CAPIO-CL configuration file
+         * @param resolve_prefix Prefix to prepend to path if found to be relative
+         * @param store_only_in_memory Flag to set to returned instance of #Engine if required to
+         * store all files in memory
+         * @return Tuple of woorkflow name and associated Engine.
+         */
+        static std::tuple<std::string, Engine *>
+        parse_v1(const std::filesystem::path &source, const std::filesystem::path &resolve_prefix,
+                 bool store_only_in_memory);
+    };
+
+    /**
+     * Load a json Schema into memory from a byte encoded array castable to a const char[]
+     * @param data Array of byte encoded json Schema
+     * @param len Size of #data
+     * @return The generated
+     */
+    static jsoncons::jsonschema::json_schema<jsoncons::json> loadSchema(const unsigned char *data,
+                                                                        unsigned int len);
+
+  protected:
+    /**
+     * Resolve (if relative) a path to an absolute one using the provided prefix
+     * @param path Path to resolve
+     * @param prefix Prefix
+     * @return Absolute path constructed from path
+     */
+    static std::filesystem::path resolve(std::filesystem::path path,
+                                         const std::filesystem::path &prefix);
+
+  public:
+    /**
+     * Validate a CAPIO-CL configuration file according to the JSON schema of the language
+     * @param doc The loaded CAPIO-CL configuration file
+     */
+    static void validate_json(const jsoncons::json &doc);
+
+    /**
+     * @brief Perform the parsing of the capio_server configuration file
+     *
+     * @param source Input CAPIO-CL Json configuration File
+     * @param resolve_prefix If paths are found to be relative, they are appended to this path
+     * @param store_only_in_memory Set to true to set all files to be stored in memory
+     * @return Tuple with workflow name and #Engine instance with the information provided by
+     * the config file
+     * @throw ParserException
+     */
+    static std::tuple<std::string, Engine *> parse(const std::filesystem::path &source,
+                                                   const std::filesystem::path &resolve_prefix = "",
+                                                   bool store_only_in_memory = false);
+};
+
+/**
+ * @brief Custom exception thrown when serializing an instance of #Engine
+ */
+class SerializerException : public std::exception {
+    std::string message;
+
+  public:
+    /**
+     * @brief Construct a new CAPIO-CL Exception
+     * @param msg Error Message that raised this exception
+     */
+    explicit SerializerException(const std::string &msg) : message(msg) {
+        print_message(CLI_LEVEL_ERROR, msg);
+    }
+
+    /**
+     * Get the description of the error causing the exception
+     * @return
+     */
+    [[nodiscard]] const char *what() const noexcept override { return message.c_str(); }
+};
+
+/// @brief Dump the current loaded CAPIO-CL configuration from class #Engine to a CAPIO-CL
 /// configuration file.
 class Serializer {
+
+    /// @brief Available serializers for CAPIO-CL
+    struct available_serializers {
+        /**
+         * @brief Dump the current configuration loaded into an instance of  #Engine to a CAPIO-CL
+         * VERSION 1 configuration file.
+         *
+         * @param engine instance of Engine to dump
+         * @param workflow_name Name of the current workflow
+         * @param filename path of output file
+         * @throws SerializerException
+         */
+        static void serialize_v1(const Engine &engine, const std::string &workflow_name,
+                                 const std::filesystem::path &filename);
+    };
+
   public:
     /**
      * @brief Dump the current configuration loaded into an instance of  #Engine to a CAPIO-CL
      * configuration file.
      *
-     * @param engine instance of @ref capiocl::Engine to dump
+     * @param engine instance of Engine to dump
      * @param workflow_name Name of the current workflow
      * @param filename path of output file
+     * @param version Version of CAPIO-CL used to generate configuration files.
      */
     static void dump(const Engine &engine, const std::string &workflow_name,
-                     const std::filesystem::path &filename);
+                     const std::filesystem::path &filename,
+                     const std::string &version = CAPIO_CL_VERSION::V1);
 };
 } // namespace capiocl
 
