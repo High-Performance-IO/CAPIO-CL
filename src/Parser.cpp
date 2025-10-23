@@ -45,16 +45,23 @@ void validate_json(const jsoncons::json &doc) {
 std::tuple<std::string, capiocl::Engine *>
 capiocl::Parser::parse(const std::filesystem::path &source,
                        const std::filesystem::path &resolve_prefix, bool store_only_in_memory) {
+
+    if (source.empty()) {
+        throw capiocl::ParserException("Empty source file name!");
+    }
+
     std::ifstream file(source);
     if (!file.is_open()) {
         throw capiocl::ParserException("Failed to open file!");
     }
     std::string CAPIO_CL_version;
-
-    if (jsoncons::json doc = jsoncons::json::parse(file); !doc.contains("version")) {
-        CAPIO_CL_version = "1.0";
-    } else {
-        CAPIO_CL_version = doc["version"].as<std::string>();
+    {
+        jsoncons::json doc = jsoncons::json::parse(file);
+        if (!doc.contains("version")) {
+            CAPIO_CL_version = "1.0";
+        } else {
+            CAPIO_CL_version = doc["version"].as<std::string>();
+        }
     }
 
     file.close();

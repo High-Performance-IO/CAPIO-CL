@@ -7,10 +7,6 @@ parse_v1(const std::filesystem::path &source, const std::filesystem::path &resol
     std::string workflow_name = capiocl::CAPIO_CL_DEFAULT_WF_NAME;
     auto engine               = new capiocl::Engine();
 
-    if (source.empty()) {
-        throw capiocl::ParserException("Empty source file name!");
-    }
-
     // ---- Load JSON ----
     std::ifstream file(source);
 
