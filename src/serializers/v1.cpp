@@ -49,9 +49,15 @@ void capiocl::Serializer::available_serializers::serialize_v1(
             const char *name_kind         = entry.is_file ? "name" : "dirname";
             streaming_item[name_kind]     = jsoncons::json::array({path});
 
-            if (entry.commit_rule == commit_rules::ON_CLOSE && entry.commit_on_close_count > 0) {
-                auto rule = entry.commit_rule + ":" + std::to_string(entry.commit_on_close_count);
-                streaming_item["committed"] = rule;
+            if (entry.commit_on_close_count > 0) {
+                if (entry.commit_rule == commit_rules::ON_CLOSE) {
+                    const auto close_count      = std::to_string(entry.commit_on_close_count);
+                    streaming_item["committed"] = entry.commit_rule + ":" + close_count;
+                } else {
+                    const auto msg = "Commit rule is not ON_CLOSE but close count > 0";
+                    print_message(CLI_LEVEL_WARNING, msg);
+                    streaming_item["committed"] = entry.commit_rule;
+                }
             } else {
                 streaming_item["committed"] = entry.commit_rule;
             }

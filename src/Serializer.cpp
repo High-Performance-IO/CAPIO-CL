@@ -9,7 +9,7 @@ void capiocl::Serializer::dump(const Engine &engine, const std::string &workflow
         print_message(CLI_LEVEL_INFO, "Serializing engine with V1 specification");
         available_serializers::serialize_v1(engine, workflow_name, filename);
     } else {
-        const auto message = " CAPIO-CL version: " + version + " does not provide a serializer";
+        const auto message = "No serializer available for CAPIO-CL version: " + version;
         throw SerializerException(message);
     }
 }
