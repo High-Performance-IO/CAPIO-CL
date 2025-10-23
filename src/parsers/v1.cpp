@@ -1,30 +1,30 @@
-#ifndef CAPIO_CL_V1_HPP
-#define CAPIO_CL_V1_HPP
+#include "capiocl.hpp"
+#include <fstream>
 
-inline std::tuple<std::string, capiocl::Engine *>
-parse_v1(const std::filesystem::path &source, const std::filesystem::path &resolve_prefix,
-         bool store_only_in_memory) {
-    std::string workflow_name = capiocl::CAPIO_CL_DEFAULT_WF_NAME;
-    auto engine               = new capiocl::Engine();
+std::tuple<std::string, capiocl::Engine *>
+capiocl::Parser::available_parsers::parse_v1(const std::filesystem::path &source,
+                                             const std::filesystem::path &resolve_prefix,
+                                             bool store_only_in_memory) {
+    std::string workflow_name = CAPIO_CL_DEFAULT_WF_NAME;
+    auto engine               = new Engine();
 
     // ---- Load JSON ----
     std::ifstream file(source);
 
     jsoncons::json doc = jsoncons::json::parse(file);
-    validate_json(doc);
+    Parser::validate_json(doc);
 
     // ---- workflow name ----
     workflow_name = doc["name"].as<std::string>();
-    capiocl::print_message(capiocl::CLI_LEVEL_JSON,
-                           "Parsing configuration for workflow: " + workflow_name);
+    print_message(CLI_LEVEL_JSON, "Parsing configuration for workflow: " + workflow_name);
 
     // ---- IO_Graph ----
     for (const auto &app : doc["IO_Graph"].array_range()) {
         std::string app_name = app["name"].as<std::string>();
-        capiocl::print_message(capiocl::CLI_LEVEL_JSON, "Parsing config for app " + app_name);
+        print_message(CLI_LEVEL_JSON, "Parsing config for app " + app_name);
 
         // ---- input_stream ----
-        capiocl::print_message(capiocl::CLI_LEVEL_JSON, "Parsing input_stream for app " + app_name);
+        print_message(CLI_LEVEL_JSON, "Parsing input_stream for app " + app_name);
         for (const auto &itm : app["input_stream"].array_range()) {
             auto file_path = resolve(itm.as<std::string>(), resolve_prefix);
             engine->newFile(file_path);
@@ -32,8 +32,7 @@ parse_v1(const std::filesystem::path &source, const std::filesystem::path &resol
         }
 
         // ---- output_stream ----
-        capiocl::print_message(capiocl::CLI_LEVEL_JSON,
-                               "Parsing output_stream for app " + app_name);
+        print_message(CLI_LEVEL_JSON, "Parsing output_stream for app " + app_name);
         for (const auto &itm : app["output_stream"].array_range()) {
             auto file_path = resolve(itm.as<std::string>(), resolve_prefix);
             engine->newFile(file_path);
@@ -42,8 +41,7 @@ parse_v1(const std::filesystem::path &source, const std::filesystem::path &resol
 
         // ---- streaming ----
         if (app.contains("streaming")) {
-            capiocl::print_message(capiocl::CLI_LEVEL_JSON,
-                                   "Parsing streaming for app " + app_name);
+            print_message(CLI_LEVEL_JSON, "Parsing streaming for app " + app_name);
             for (const auto &stream_item : app["streaming"].array_range()) {
                 bool is_file = true;
                 std::vector<std::filesystem::path> streaming_names;
@@ -87,21 +85,21 @@ parse_v1(const std::filesystem::path &source, const std::filesystem::path &resol
 
                     commit_rule = committed;
 
-                    if (commit_rule == capiocl::commit_rules::ON_FILE) {
+                    if (commit_rule == commit_rules::ON_FILE) {
                         for (const auto &dep : stream_item["file_deps"].array_range()) {
                             auto dep_resolved = resolve(dep.as<std::string>(), resolve_prefix);
                             file_deps.push_back(dep_resolved);
                         }
                     }
                 } else {
-                    commit_rule = capiocl::commit_rules::ON_TERMINATION;
+                    commit_rule = commit_rules::ON_TERMINATION;
                 }
 
                 // Firing rule (optional)
                 if (stream_item.contains("mode")) {
                     fire_rule = stream_item["mode"].as<std::string>();
                 } else {
-                    fire_rule = capiocl::fire_rules::NO_UPDATE;
+                    fire_rule = fire_rules::NO_UPDATE;
                 }
 
                 // n_files (optional)
@@ -156,7 +154,7 @@ parse_v1(const std::filesystem::path &source, const std::filesystem::path &resol
                 engine->setStoreFileInMemory(file_str);
             }
         } else {
-            capiocl::print_message(capiocl::CLI_LEVEL_INFO, "No MEM storage section found");
+            print_message(CLI_LEVEL_INFO, "No MEM storage section found");
         }
 
         if (storage.contains("fs")) {
@@ -165,19 +163,17 @@ parse_v1(const std::filesystem::path &source, const std::filesystem::path &resol
                 engine->setStoreFileInFileSystem(file_str);
             }
         } else {
-            capiocl::print_message(capiocl::CLI_LEVEL_INFO, "No FS storage section found");
+            print_message(CLI_LEVEL_INFO, "No FS storage section found");
         }
     } else {
-        capiocl::print_message(capiocl::CLI_LEVEL_INFO, "No storage section found");
+        print_message(CLI_LEVEL_INFO, "No storage section found");
     }
 
     // ---- Store only in memory ----
     if (store_only_in_memory) {
-        capiocl::print_message(capiocl::CLI_LEVEL_INFO, "Storing all files in memory");
+        print_message(CLI_LEVEL_INFO, "Storing all files in memory");
         engine->setAllStoreInMemory();
     }
 
     return {workflow_name, engine};
-}
-
-#endif // CAPIO_CL_V1_HPP
+};
