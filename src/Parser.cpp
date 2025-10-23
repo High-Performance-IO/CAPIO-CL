@@ -46,16 +46,17 @@ std::tuple<std::string, capiocl::Engine *>
 capiocl::Parser::parse(const std::filesystem::path &source,
                        const std::filesystem::path &resolve_prefix, bool store_only_in_memory) {
     std::ifstream file(source);
+    if (!file.is_open()) {
+        throw capiocl::ParserException("Failed to open file!");
+    }
     std::string CAPIO_CL_version;
-    {
-        jsoncons::json doc = jsoncons::json::parse(file);
 
-        if (!doc.contains("version")) {
-            CAPIO_CL_version = "1.0";
-        }
-
+    if (jsoncons::json doc = jsoncons::json::parse(file); !doc.contains("version")) {
+        CAPIO_CL_version = "1.0";
+    } else {
         CAPIO_CL_version = doc["version"].as<std::string>();
     }
+
     file.close();
     print_message(CLI_LEVEL_INFO, "Parsing CAPIO-CL config file for version: " + CAPIO_CL_version);
 

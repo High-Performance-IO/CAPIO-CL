@@ -13,9 +13,6 @@ parse_v1(const std::filesystem::path &source, const std::filesystem::path &resol
 
     // ---- Load JSON ----
     std::ifstream file(source);
-    if (!file.is_open()) {
-        throw capiocl::ParserException("Failed to open file!");
-    }
 
     jsoncons::json doc = jsoncons::json::parse(file);
     validate_json(doc);
