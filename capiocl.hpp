@@ -52,7 +52,7 @@ constexpr char ON_TERMINATION[] = "on_termination";
 } // namespace commit_rules
 
 /// @brief Available versions of CAPIO-CL language
-struct CAPIO_CL_VERSION {
+struct CAPIO_CL_VERSION final {
     /// @brief Release 1.0 of CAPIO-CL
     static constexpr char V1[] = "1.0";
 };
@@ -92,14 +92,14 @@ inline void print_message(const std::string &message_type = "",
  * - Regex matchers for globbing
  * - Storage policy (in-memory or on filesystem)
  */
-class Engine {
+class Engine final {
     friend class Serializer;
     std::string node_name;
     bool store_all_in_memory = false;
 
     /// @brief Internal CAPIO-CL #Engine storage entity. Each CapioCLEntry is an entry for a given
     /// file handled by CAPIO-CL
-    struct CapioCLEntry {
+    struct CapioCLEntry final {
         std::vector<std::string> producers;
         std::vector<std::string> consumers;
         std::vector<std::filesystem::path> file_dependencies;
@@ -408,7 +408,7 @@ class Engine {
 /**
  * @brief Custom exception thrown when parsing a CAPIO-CL configuration file by #Parser
  */
-class ParserException : public std::exception {
+class ParserException final : public std::exception {
     std::string message;
 
   public:
@@ -428,7 +428,7 @@ class ParserException : public std::exception {
 };
 
 /// @brief Contains the code to parse a JSON based CAPIO-CL configuration file
-class Parser {
+class Parser final {
 
     /// @brief Available parsers for CAPIO-CL
     struct available_parsers {
@@ -487,7 +487,7 @@ class Parser {
 /**
  * @brief Custom exception thrown when serializing an instance of #Engine
  */
-class SerializerException : public std::exception {
+class SerializerException final : public std::exception {
     std::string message;
 
   public:
@@ -508,7 +508,7 @@ class SerializerException : public std::exception {
 
 /// @brief Dump the current loaded CAPIO-CL configuration from class #Engine to a CAPIO-CL
 /// configuration file.
-class Serializer {
+class Serializer final {
 
     /// @brief Available serializers for CAPIO-CL
     struct available_serializers {
