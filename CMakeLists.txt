@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.15)
 project(CAPIO-CL
         LANGUAGES CXX
         DESCRIPTION "Cross-Application Programmable IO - Coordination Language"
-        VERSION 1.1.0
+        VERSION 1.1.1
 )
 
 set(CMAKE_CXX_STANDARD 17)
@@ -76,7 +76,6 @@ endif ()
 #####################################
 # Encode CAPIO-CL JSON Schemas
 #####################################
-find_program(PYTHON_EXECUTABLE python3)
 
 set(CAPIOCL_JSON_SCHEMAS_DIRECTORY "${CMAKE_BINARY_DIR}/schemas")
 set(OUTPUT_HEADER "${CAPIOCL_JSON_SCHEMAS_DIRECTORY}/capio_cl_json_schemas.hpp")
@@ -94,9 +93,6 @@ foreach (SCHEMA_FILE ${SCHEMA_FILES})
     get_filename_component(SCHEMA_BASENAME ${SCHEMA_FILE} NAME)
     message(STATUS "Bundling CAPIO-CL schema: ${SCHEMA_BASENAME}")
 
-    if (NOT PYTHON_EXECUTABLE)
-        message(FATAL_ERROR "Unable to locate python3 package. Python3 package is required to build CAPIO-CL")
-    endif ()
     execute_process(
             COMMAND bash -c "echo 'constexpr char schema_${SCHEMA_NAME}[] = R\"(' && cat ${SCHEMA_BASENAME} && echo ')\";'"
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/schema
