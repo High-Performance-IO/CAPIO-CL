@@ -8,7 +8,7 @@ docs:
 
 pdf: docs
 	cd generated/latex && $(MAKE)
-	cp generated/latex/refman.pdf documentation_$(VERSION).pdf
+	cp generated/latex/refman.pdf documentation.pdf
 
 clean:
 	rm -rf generated *.pdf .Doxyfile .README.md

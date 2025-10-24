@@ -17,6 +17,7 @@
 ![ARM](https://img.shields.io/badge/ARM-121212?logo=arm&logoColor=0091BD)
 ![RISC-V](https://img.shields.io/badge/RISC--V-121212?logo=riscv&logoColor=F9A825)
 
+[![Download Documentation](https://img.shields.io/badge/Read-Documentation-brown?logo=readthedocs&logoColor=white)](https://github.com/High-Performance-IO/CAPIO-CL/releases/latest/download/documentation.pdf)
 [![DOI](https://img.shields.io/badge/DOI-10.1007%2Fs10766--025--00789--0-%23cc5500?logo=doi&logoColor=white&labelColor=2b2b2b)](https://doi.org/10.1007/s10766-025-00789-0)
 
 **CAPIO-CL** is a novel I/O coordination language that enables users to annotate file-based workflow data dependencies
