@@ -448,11 +448,9 @@ class Parser {
     /**
      * Load a json Schema into memory from a byte encoded array castable to a const char[]
      * @param data Array of byte encoded json Schema
-     * @param len Size of #data
      * @return The generated
      */
-    static jsoncons::jsonschema::json_schema<jsoncons::json> loadSchema(const unsigned char *data,
-                                                                        unsigned int len);
+    static jsoncons::jsonschema::json_schema<jsoncons::json> loadSchema(const char *data);
 
   protected:
     /**
