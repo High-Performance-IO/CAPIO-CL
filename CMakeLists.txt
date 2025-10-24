@@ -27,12 +27,15 @@ include(GNUInstallDirs)
 option(CAPIO_CL_BUILD_TESTS "Build CAPIO-CL test suite" ON)
 option(BUILD_PYTHON_BINDINGS "Build python bindings for CAPIO-CL" ON)
 option(ENABLE_COVERAGE "Enable code coverage collection" FALSE)
+option(BUILD_UTILS "Build CAPIO-CL utility binaries" ON)
 
 # Disable tests when included as a subproject
 if (NOT PROJECT_IS_TOP_LEVEL)
     set(CAPIO_CL_BUILD_TESTS OFF)
     set(BUILD_PYTHON_BINDINGS OFF)
+    set(BUILD_UTILS OFF)
     message(STATUS "CAPIO-CL included as subproject → tests disabled")
+    message(STATUS "CAPIO-CL included as subproject → CAPIO-CL utilities disabled")
     message(STATUS "CAPIO-CL included as subproject → python bindings disabled")
 endif ()
 
@@ -128,6 +131,39 @@ target_include_directories(libcapio_cl PUBLIC
 
 # jsoncons is header-only, no linking required
 target_link_libraries(libcapio_cl PUBLIC)
+
+
+#####################################
+# CAPIO-CL Utilities
+#####################################
+
+if (BUILD_UTILS)
+
+    FetchContent_Declare(
+            args
+            GIT_REPOSITORY https://github.com/Taywee/args.git
+            GIT_TAG 6.4.7
+    )
+
+    set(ARGS_BUILD_EXAMPLE OFF CACHE INTERNAL "")
+    set(ARGS_BUILD_UNITTESTS OFF CACHE INTERNAL "")
+    FetchContent_MakeAvailable(args)
+
+    add_executable(capiocl_utils
+            utilities/capiocl-utils.cpp
+            ${CAPIO_SRC}
+            ${CAPIO_CL_HEADERS})
+
+    target_include_directories(capiocl_utils PUBLIC
+            ${CMAKE_CURRENT_SOURCE_DIR}
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+            ${jsoncons_SOURCE_DIR}/include
+            ${CAPIOCL_JSON_SCHEMAS_DIRECTORY}
+            ${args_SOURCE_DIR}
+    )
+
+    target_link_libraries(capiocl_utils PUBLIC)
+endif (BUILD_UTILS)
 
 #####################################
 # Install rules
