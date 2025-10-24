@@ -20,16 +20,12 @@ std::filesystem::path capiocl::Parser::resolve(std::filesystem::path path,
     return resolved;
 }
 
-jsoncons::jsonschema::json_schema<jsoncons::json>
-capiocl::Parser::loadSchema(const unsigned char *data, unsigned int len) {
-    std::string schemaStr(reinterpret_cast<const char *>(data), len);
-    jsoncons::json schemaJson = jsoncons::json::parse(schemaStr);
-
-    return jsoncons::jsonschema::make_json_schema(schemaJson);
+jsoncons::jsonschema::json_schema<jsoncons::json> capiocl::Parser::loadSchema(const char *data) {
+    return jsoncons::jsonschema::make_json_schema(jsoncons::json::parse(data));
 }
 
 void capiocl::Parser::validate_json(const jsoncons::json &doc) {
-    jsoncons::jsonschema::json_schema<jsoncons::json> schema = loadSchema(v1_json, v1_json_len);
+    jsoncons::jsonschema::json_schema<jsoncons::json> schema = loadSchema(schema_v1);
     try {
         // throws jsoncons::jsonschema::validation_error on failure
         [[maybe_unused]] auto status = schema.validate(doc);

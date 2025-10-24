@@ -98,7 +98,7 @@ foreach (SCHEMA_FILE ${SCHEMA_FILES})
         message(FATAL_ERROR "Unable to locate python3 package. Python3 package is required to build CAPIO-CL")
     endif ()
     execute_process(
-            COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/schema/bundler.py ${SCHEMA_BASENAME}
+            COMMAND bash -c "echo 'constexpr char schema_${SCHEMA_NAME}[] = R\"(' && cat ${SCHEMA_BASENAME} && echo ')\";'"
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/schema
             OUTPUT_VARIABLE HEXDATA
             RESULT_VARIABLE RES
