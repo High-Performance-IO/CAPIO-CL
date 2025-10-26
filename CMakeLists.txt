@@ -164,6 +164,7 @@ endif ()
 #####################################
 
 if (BUILD_UTILS)
+    find_package(Curses REQUIRED)
 
     FetchContent_Declare(
             args
@@ -186,9 +187,10 @@ if (BUILD_UTILS)
             ${jsoncons_SOURCE_DIR}/include
             ${CAPIOCL_JSON_SCHEMAS_DIRECTORY}
             ${args_SOURCE_DIR}
+            ${CURSES_INCLUDE_DIR}
     )
 
-    target_link_libraries(capiocl_utils PUBLIC)
+    target_link_libraries(capiocl_utils PUBLIC ${CURSES_LIBRARIES})
 endif (BUILD_UTILS)
 
 #####################################
