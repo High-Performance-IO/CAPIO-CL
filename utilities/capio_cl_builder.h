@@ -36,6 +36,10 @@ constexpr char HELP_MESSAGE_COMMANDS[] =
     "  set exclude <file>             Exclude <file> from workflow output\n"
     "  set directory <file>           Mark <file> as directory\n"
     "  set file <file>                Mark <file> as regular file\n"
+    "  set committed <file> <rule>    Set commit rule for file\n"
+    "  set fire <file> <rule>         Set fire rule for file\n"
+    "  set close <file> <count>       Set number of close for commit_on_close:N\n"
+    "  set nfiles <file> <count>      Set number of files inside directory\n"
     "\n"
     "Unset Commands:\n"
     "  unset permanent <file>         Remove 'permanent' flag from <file>\n"
@@ -54,41 +58,37 @@ class CaptureBuf : public std::stringbuf {
         return out;
     }
 };
-inline void render_ansi_to_window(WINDOW *win, const std::string &text, int start_y, int start_x) {
+
+inline void render_ansi_to_window(WINDOW *pad, const std::string &text, int start_y, int start_x) {
     // Regex to match ANSI escape sequences (like color codes)
     static const std::regex ansi_regex("\x1B\\[[0-9;?]*[ -/]*[@-~]");
     static const std::regex remove_capio_cl_pre(R"(\[CAPIO-CL [^\]]*\])");
+    static const std::regex remove_first_capiocl_row(".*Composition of expected CAPIO FS:.*\\n?");
 
     std::string clean = std::regex_replace(text, ansi_regex, "");
-    clean = std::regex_replace(clean, remove_capio_cl_pre, "");
+    clean             = std::regex_replace(clean, remove_capio_cl_pre, "");
+    clean             = std::regex_replace(clean, remove_first_capiocl_row, "");
 
     int y = start_y;
     int x = start_x;
-    int maxy, maxx;
-    getmaxyx(win, maxy, maxx);
 
     for (char c : clean) {
         if (c == '\n') {
             y++;
             x = start_x;
         } else {
-            mvwaddch(win, y, x, c);
+            mvwaddch(pad, y, x, c);
             x++;
         }
 
-        // Handle wrapping and scrolling
-        if (x >= maxx - 1) {
+        // Let pad grow naturally; no wrapping limit
+        if (x >= 1000) { // arbitrary max pad width safety cap
             x = start_x;
             y++;
         }
-        if (y >= maxy - 1) {
-            wscrl(win, 1);
-            y = maxy - 2;
-        }
     }
-
-    wrefresh(win);
 }
+
 
 inline void print_top_text(WINDOW *top, const std::string &title, const std::string &text) {
     werase(top);
@@ -192,6 +192,22 @@ inline std::tuple<bool, std::string> handle_set_command(std::vector<std::string>
     } else if (target == "file") {
         const std::string &target_file = args[1];
         engine.setFile(target_file);
+    } else if (target == "commit") {
+        const std::string &target_file = args[1];
+        const std::string &rule        = args[2];
+        engine.setCommitRule(target_file, rule);
+    } else if (target == "fire") {
+        const std::string &target_file = args[1];
+        const std::string &rule        = args[2];
+        engine.setFireRule(target_file, rule);
+    } else if (target == "close") {
+        const std::string &target_file = args[1];
+        const auto &count              = std::stoi(args[2]);
+        engine.setCommitedCloseNumber(target_file, count);
+    } else if (target == "nfiles") {
+        const std::string &target_file = args[1];
+        const auto &count              = std::stoi(args[2]);
+        engine.setDirectoryFileCount(target_file, count);
     } else {
         error_message  = "Unknown subcommand for set: " + args[1];
         error_occurred = true;
@@ -262,12 +278,13 @@ inline void capio_cl_builder() {
                                                                       capiocl::Engine &)>
         command_handlers;
 
-    command_handlers["add"]   = &handle_add_command;
-    command_handlers["save"]  = &handle_save_command;
-    command_handlers["print"] = &handle_print_command;
-    command_handlers["help"]  = &handle_help_command;
-    command_handlers["set"]   = &handle_set_command;
-    command_handlers["unset"] = &handle_unset_command;
+    command_handlers["add"]    = &handle_add_command;
+    command_handlers["save"]   = &handle_save_command;
+    command_handlers["print"]  = &handle_print_command;
+    command_handlers["help"]   = &handle_help_command;
+    command_handlers["set"]    = &handle_set_command;
+    command_handlers["unset"]  = &handle_unset_command;
+    command_handlers["delete"] = &handle_delete_command;
 
     while (!terminate) {
 

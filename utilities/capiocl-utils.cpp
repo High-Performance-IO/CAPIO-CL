@@ -35,7 +35,7 @@ std::vector<std::string> split(const std::string &str, const char delimiter) {
 #endif
 
 int main(int argc, char **argv) {
-    std::cout << capio_cl_header_help << std::endl;
+
     args::ArgumentParser parser(
         "CAPIO-CL Utilities",
         "Developed by Marco Edoardo Santimaria \n marcoedoardo.santimaria@unito.it");
@@ -60,6 +60,18 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    if (builder) {
+
+#ifdef _INTERACTIVE_BUILDER
+        capio_cl_builder();
+        exit(EXIT_SUCCESS);
+#else
+        std::cout << "Interactive builder is not available!" << std::endl;
+#endif
+    }
+
+    std::cout << capio_cl_header_help << std::endl;
+
     if (validate) {
         const std::string path = args::get(validate);
         try {
@@ -79,14 +91,5 @@ int main(int argc, char **argv) {
                      "\t+=============================================+"
                   << std::endl;
         return 0;
-    }
-
-    if (builder) {
-
-#ifdef _INTERACTIVE_BUILDER
-        capio_cl_builder();
-#else
-        std::cout << "Interactive builder is not available!" << std::endl;
-#endif
     }
 }
