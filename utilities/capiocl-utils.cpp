@@ -1,5 +1,6 @@
 #include <args.hxx>
 #include <iostream>
+#include <ncurses.h>
 
 #include "capiocl.hpp"
 
@@ -16,6 +17,55 @@ constexpr char capio_cl_header_help[] = R"(
 
                         CAPIO-CL Utilities
 )";
+
+std::vector<std::string> split(const std::string &str, const char delimiter) {
+    std::vector<std::string> result;
+    std::stringstream ss(str);
+    std::string token;
+
+    while (std::getline(ss, token, delimiter)) {
+        result.push_back(token);
+    }
+
+    return result;
+}
+
+void capio_cl_builder() {
+    bool terminate = false;
+
+    capiocl::Engine engine;
+
+    while (!terminate) {
+        std::cout << "command> ";
+        std::string input;
+        getline(std::cin, input);
+
+        auto args           = split(input, ' ');
+        const auto &command = args[0];
+
+        if (command == "exit") {
+            terminate = true;
+        } else if (command == "help") {
+            std::cout << "Command availables:" << std::endl
+                      << "\thelp: Show this menu" << std::endl
+                      << "\texit: Exit from CAPIO-CL builder" << std::endl;
+        } else if (command == "save") {
+            if (args.size() < 2) {
+                std::cerr << "Please enter output filename. Args size: " << args.size()
+                          << std::endl;
+                continue;
+            }
+            capiocl::Serializer::dump(engine, "TODO:WORKFLOW_NAME", args[1]);
+        } else if (command == "add") {
+            if (args.size() < 2) {
+                std::cerr << "Please enter input filename. Args size: " << args.size();
+                continue;
+            }
+            engine.newFile(args[1]);
+        }
+    }
+    std::cout << "Bye!" << std::endl;
+}
 
 int main(int argc, char **argv) {
     std::cout << capio_cl_header_help << std::endl;
@@ -47,7 +97,7 @@ int main(int argc, char **argv) {
         const std::string path = args::get(validate);
         try {
             auto parsed = capiocl::Parser::parse(path);
-        } catch (const capiocl::ParserException &e) {
+        } catch (...) {
             std::cerr << std::endl
                       << "\t+==================================================+\n"
                          "\t|\033[0;31m   Input File is NOT a VALID configuration file \033[0m  |\n"
@@ -65,6 +115,6 @@ int main(int argc, char **argv) {
     }
 
     if (builder) {
-        std::cout << "Starting CAPIO-CL builder..." << std::endl;
+        capio_cl_builder();
     }
 }
