@@ -29,6 +29,7 @@ option(BUILD_PYTHON_BINDINGS "Build python bindings for CAPIO-CL" OFF)
 option(ENABLE_COVERAGE "Enable code coverage collection" FALSE)
 option(ENABLE_COVERAGE_PIPELINE "Add dedicated target to execute and collect coverage" OFF)
 option(BUILD_UTILS "Build CAPIO-CL utility binaries" OFF)
+option(ADD_BUILDER "Add ncurses based builder" ON)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_compile_options(-O0 -g)
@@ -164,7 +165,11 @@ endif ()
 #####################################
 
 if (BUILD_UTILS)
-    find_package(Curses REQUIRED)
+    find_package(Curses)
+
+    if (NOT CURSES_FOUND)
+        message(FATAL_ERROR "ncurses not found. If you do not need the interactive builder, add -DADD_BUILDER=FALSE to cmake")
+    endif ()
 
     FetchContent_Declare(
             args
@@ -180,6 +185,11 @@ if (BUILD_UTILS)
             utilities/capiocl-utils.cpp
             ${CAPIO_SRC}
             ${CAPIO_CL_HEADERS})
+
+    if (ADD_BUILDER)
+        add_compile_definitions(capiocl_utils _INTERACTIVE_BUILDER)
+    endif ()
+
 
     target_include_directories(capiocl_utils PUBLIC
             ${CMAKE_CURRENT_SOURCE_DIR}
