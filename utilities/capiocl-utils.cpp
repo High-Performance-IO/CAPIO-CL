@@ -1,6 +1,10 @@
 #include <args.hxx>
+#include <atomic>
+#include <chrono>
 #include <iostream>
 #include <ncurses.h>
+#include <string>
+#include <thread>
 
 #include "capiocl.hpp"
 
@@ -30,41 +34,78 @@ std::vector<std::string> split(const std::string &str, const char delimiter) {
     return result;
 }
 
-void capio_cl_builder() {
-    bool terminate = false;
-
-    capiocl::Engine engine;
-
-    while (!terminate) {
-        std::cout << "command> ";
-        std::string input;
-        getline(std::cin, input);
-
-        auto args           = split(input, ' ');
-        const auto &command = args[0];
-
-        if (command == "exit") {
-            terminate = true;
-        } else if (command == "help") {
-            std::cout << "Command availables:" << std::endl
-                      << "\thelp: Show this menu" << std::endl
-                      << "\texit: Exit from CAPIO-CL builder" << std::endl;
-        } else if (command == "save") {
-            if (args.size() < 2) {
-                std::cerr << "Please enter output filename. Args size: " << args.size()
-                          << std::endl;
-                continue;
-            }
-            capiocl::Serializer::dump(engine, "TODO:WORKFLOW_NAME", args[1]);
-        } else if (command == "add") {
-            if (args.size() < 2) {
-                std::cerr << "Please enter input filename. Args size: " << args.size();
-                continue;
-            }
-            engine.newFile(args[1]);
+class Printer {
+  public:
+    void run(WINDOW *win, std::atomic<bool> &running) {
+        int counter = 0;
+        while (running) {
+            // Print a line on the right side
+            wprintw(win, "Right side output: %d\n", counter++);
+            wrefresh(win);
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
     }
-    std::cout << "Bye!" << std::endl;
+};
+
+void capio_cl_builder() {
+    initscr();   // Start ncurses
+    cbreak();    // Disable line buffering
+    noecho();    // Don’t echo typed characters
+    curs_set(1); // Show the cursor
+
+    int height, width;
+    getmaxyx(stdscr, height, width);
+
+    int left_width  = width / 2;
+    int right_width = width - left_width;
+
+    // Create two windows
+    WINDOW *left  = newwin(height, left_width, 0, 0);
+    WINDOW *right = newwin(height, right_width, 0, left_width);
+
+    // Draw borders
+    box(left, 0, 0);
+    box(right, 0, 0);
+    mvwprintw(left, 0, 2, " Console ");
+    mvwprintw(right, 0, 2, " Output ");
+    wrefresh(left);
+    wrefresh(right);
+
+    std::atomic<bool> running(true);
+    Printer printer;
+    std::thread printer_thread([&] { printer.run(right, running); });
+
+    // Interactive input on the left
+    char input[256];
+    int row = 1;
+    while (true) {
+        mvwprintw(left, row, 2, "> ");
+        wrefresh(left);
+
+        wgetnstr(left, input, sizeof(input) - 1);
+
+        std::string cmd(input);
+        if (cmd == "quit" || cmd == "exit") {
+            break;
+        }
+
+        row++;
+        if (row >= height - 1) {
+            werase(left);
+            box(left, 0, 0);
+            mvwprintw(left, 0, 2, " Console ");
+            row = 1;
+        }
+
+        mvwprintw(left, row, 2, "You typed: %s", input);
+        wrefresh(left);
+        row++;
+    }
+
+    running = false;
+    printer_thread.join();
+
+    endwin(); // Restore terminal
 }
 
 int main(int argc, char **argv) {
