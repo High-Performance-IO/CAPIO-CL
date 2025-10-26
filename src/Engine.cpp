@@ -35,7 +35,7 @@ void capiocl::Engine::print() const {
     print_message(CLI_LEVEL_JSON, "|" + std::string(134, '=') + "|");
 
     std::string line = "|======|===================|===================|====================";
-    line += "|========|============|============|===========|=========|==========|";
+    line += "|====================|============|===========|=========|==========|";
     print_message(CLI_LEVEL_JSON, line);
 
     line = "| Kind | Filename          | Producer step     | Consumer step      |  ";

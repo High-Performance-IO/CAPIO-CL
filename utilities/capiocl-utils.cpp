@@ -34,80 +34,202 @@ std::vector<std::string> split(const std::string &str, const char delimiter) {
     return result;
 }
 
-class Printer {
+// ----------------- Helper: capture std::cout -----------------
+class CaptureBuf : public std::stringbuf {
   public:
-    void run(WINDOW *win, std::atomic<bool> &running) {
-        int counter = 0;
-        while (running) {
-            // Print a line on the right side
-            wprintw(win, "Right side output: %d\n", counter++);
-            wrefresh(win);
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        }
+    std::string get_and_clear() {
+        std::string out = str();
+        str(""); // clear
+        return out;
     }
 };
 
+// ----------------- Helper: render ANSI text in ncurses -----------------
+void render_ansi_to_window(WINDOW *win, const std::string &text, int start_y, int start_x) {
+    static bool colors_init = false;
+    if (!colors_init) {
+        start_color();
+        use_default_colors();
+        init_pair(30, COLOR_BLACK, -1);
+        init_pair(31, COLOR_RED, -1);
+        init_pair(32, COLOR_GREEN, -1);
+        init_pair(33, COLOR_YELLOW, -1);
+        init_pair(34, COLOR_BLUE, -1);
+        init_pair(35, COLOR_MAGENTA, -1);
+        init_pair(36, COLOR_CYAN, -1);
+        init_pair(37, COLOR_WHITE, -1);
+        colors_init = true;
+    }
+
+    int y       = start_y;
+    int x       = start_x;
+    int attr_on = 0;
+
+    auto set_color = [&](int code) {
+        if (code == 0) {
+            if (attr_on != 0) {
+                wattroff(win, COLOR_PAIR(attr_on));
+                attr_on = 0;
+            }
+            return;
+        }
+        if (code >= 30 && code <= 37) {
+            if (attr_on != 0) {
+                wattroff(win, COLOR_PAIR(attr_on));
+            }
+            wattron(win, COLOR_PAIR(code));
+            attr_on = code;
+        }
+    };
+
+    for (size_t i = 0; i < text.size();) {
+        if (i + 2 < text.size() && text[i] == '\x1b' && text[i + 1] == '[') {
+            size_t mpos = text.find('m', i + 2);
+            if (mpos == std::string::npos) {
+                break;
+            }
+            std::string seq = text.substr(i + 2, mpos - (i + 2));
+            std::stringstream ss(seq);
+            std::string tok;
+            while (getline(ss, tok, ';')) {
+                if (!tok.empty()) {
+                    set_color(std::atoi(tok.c_str()));
+                }
+            }
+            i = mpos + 1;
+            continue;
+        }
+
+        if (text[i] == '\n') {
+            y++;
+            x = start_x;
+            int maxy, maxx;
+            getmaxyx(win, maxy, maxx);
+            if (y >= maxy - 1) {
+                wscrl(win, 1);
+                y = maxy - 2;
+            }
+            ++i;
+            continue;
+        }
+
+        // Printable char
+        mvwaddch(win, y, x, text[i]);
+        ++x;
+        int maxy, maxx;
+        getmaxyx(win, maxy, maxx);
+        if (x >= maxx - 1) {
+            x = start_x;
+            y++;
+            if (y >= maxy - 1) {
+                wscrl(win, 1);
+                y = maxy - 2;
+            }
+        }
+        ++i;
+    }
+}
+
+// ----------------- Main function -----------------
 void capio_cl_builder() {
-    initscr();   // Start ncurses
-    cbreak();    // Disable line buffering
-    noecho();    // Don’t echo typed characters
-    curs_set(1); // Show the cursor
+    initscr();
+    cbreak();
+    noecho();
+    curs_set(1);
 
     int height, width;
     getmaxyx(stdscr, height, width);
 
-    int left_width  = width / 2;
-    int right_width = width - left_width;
+    // Stack windows vertically
+    int cli_height = 6;
+    int top_height = height - cli_height;
 
-    // Create two windows
-    WINDOW *left  = newwin(height, left_width, 0, 0);
-    WINDOW *right = newwin(height, right_width, 0, left_width);
+    WINDOW *top = newwin(top_height, width, 0, 0);
+    WINDOW *cli = newwin(cli_height, width, top_height, 0);
 
-    // Draw borders
-    box(left, 0, 0);
-    box(right, 0, 0);
-    mvwprintw(left, 0, 2, " Console ");
-    mvwprintw(right, 0, 2, " Output ");
-    wrefresh(left);
-    wrefresh(right);
+    scrollok(top, TRUE);
+    scrollok(cli, TRUE);
 
-    std::atomic<bool> running(true);
-    Printer printer;
-    std::thread printer_thread([&] { printer.run(right, running); });
+    box(top, 0, 0);
+    box(cli, 0, 0);
+    mvwprintw(top, 0, 2, " Engine Output ");
+    mvwprintw(cli, 0, 2, " CAPIO-CL Builder ");
+    wrefresh(top);
+    wrefresh(cli);
 
-    // Interactive input on the left
+    capiocl::Engine engine;
+    bool terminate = false;
     char input[256];
-    int row = 1;
-    while (true) {
-        mvwprintw(left, row, 2, "> ");
-        wrefresh(left);
 
-        wgetnstr(left, input, sizeof(input) - 1);
+    while (!terminate) {
+        // Prompt in bottom window
+        werase(cli);
+        box(cli, 0, 0);
+        mvwprintw(cli, 0, 2, " CAPIO-CL Builder ");
+        mvwprintw(cli, 2, 2, "command> ");
+        wmove(cli, 2, 11);
+        echo();
+        wrefresh(cli);
 
-        std::string cmd(input);
-        if (cmd == "quit" || cmd == "exit") {
-            break;
+        wgetnstr(cli, input, sizeof(input) - 1);
+        noecho();
+
+        std::string line(input);
+        auto args = split(line, ' ');
+        if (args.empty()) {
+            continue;
+        }
+        const std::string &command = args[0];
+
+        if (command == "exit") {
+            terminate = true;
+        } else if (command == "help") {
+            mvwprintw(cli, 4, 2,
+                      "Commands:\n"
+                      "\thelp - Show this menu\n"
+                      "\texit - Quit CAPIO-CL builder\n"
+                      "\tsave <file> - Save workflow\n"
+                      "\tadd <file>  - Add new file\n");
+        } else if (command == "save") {
+            if (args.size() < 2) {
+                mvwprintw(cli, 4, 2, "Error: missing filename\n");
+            } else {
+                capiocl::Serializer::dump(engine, "TODO:WORKFLOW_NAME", args[1]);
+            }
+        } else if (command == "add") {
+            if (args.size() < 2) {
+                mvwprintw(cli, 4, 2, "Error: missing filename\n");
+            } else {
+                engine.newFile(args[1]);
+            }
+        } else {
+            mvwprintw(cli, 4, 2, "Unknown command: %s\n", command.c_str());
         }
 
-        row++;
-        if (row >= height - 1) {
-            werase(left);
-            box(left, 0, 0);
-            mvwprintw(left, 0, 2, " Console ");
-            row = 1;
-        }
+        // Capture engine output and render with ANSI colors
+        CaptureBuf cap;
+        std::streambuf *old_buf = std::cout.rdbuf(&cap);
+        engine.print();
+        std::cout.flush();
+        std::cout.rdbuf(old_buf);
 
-        mvwprintw(left, row, 2, "You typed: %s", input);
-        wrefresh(left);
-        row++;
+        std::string out = cap.get_and_clear();
+
+        werase(top);
+        box(top, 0, 0);
+        mvwprintw(top, 0, 2, " Engine Output ");
+        render_ansi_to_window(top, out, 1, 2);
+        wrefresh(top);
+
+        // Clear CLI after each command
+        werase(cli);
+        box(cli, 0, 0);
+        mvwprintw(cli, 0, 2, " CAPIO-CL Builder ");
+        wrefresh(cli);
     }
 
-    running = false;
-    printer_thread.join();
-
-    endwin(); // Restore terminal
+    endwin();
 }
-
 int main(int argc, char **argv) {
     std::cout << capio_cl_header_help << std::endl;
     args::ArgumentParser parser(
