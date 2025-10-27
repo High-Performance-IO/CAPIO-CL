@@ -586,6 +586,7 @@ TEST(testCapioSerializerParser, testSerializeParseCAPIOCLV1) {
     std::string producer_name = "_first", consumer_name = "_last", intermediate_name = "_middle";
 
     capiocl::Engine engine;
+    engine.setWorkflowName(workflow_name);
     engine.addProducer(file_1_name, producer_name);
     engine.addConsumer(file_1_name, intermediate_name);
     engine.addProducer(file_2_name, intermediate_name);
@@ -614,7 +615,7 @@ TEST(testCapioSerializerParser, testSerializeParseCAPIOCLV1) {
 
     engine.print();
 
-    capiocl::Serializer::dump(engine, workflow_name, path);
+    capiocl::Serializer::dump(engine, path);
 
     std::filesystem::path resolve = "";
     auto new_engine               = capiocl::Parser::parse(path, resolve);
@@ -636,13 +637,14 @@ TEST(testCapioSerializerParser, testSerializeParseCAPIOCLV1NcloseNfiles) {
     std::string producer_name = "_first", consumer_name = "_last";
 
     capiocl::Engine engine;
+    engine.setWorkflowName(workflow_name);
 
     engine.setDirectory(file_1_name);
     engine.setDirectoryFileCount(file_1_name, 10);
     engine.addProducer(file_1_name, producer_name);
     engine.addConsumer(file_1_name, consumer_name);
 
-    capiocl::Serializer::dump(engine, workflow_name, path);
+    capiocl::Serializer::dump(engine, path);
 
     std::filesystem::path resolve = "";
     auto new_engine               = capiocl::Parser::parse(path, resolve);
@@ -662,6 +664,7 @@ TEST(testCapioSerializerParser, testSerializeParseCAPIOCLV1FileDeps) {
     std::string producer_name = "_first", consumer_name = "_last";
 
     capiocl::Engine engine;
+    engine.setWorkflowName(workflow_name);
 
     engine.newFile(file_1_name);
     engine.newFile(file_2_name);
@@ -675,7 +678,7 @@ TEST(testCapioSerializerParser, testSerializeParseCAPIOCLV1FileDeps) {
     engine.setFileDeps(file_3_name, {file_1_name, file_2_name});
 
     engine.print();
-    capiocl::Serializer::dump(engine, workflow_name, path);
+    capiocl::Serializer::dump(engine, path);
 
     std::filesystem::path resolve = "";
     auto new_engine               = capiocl::Parser::parse(path, resolve);
@@ -694,6 +697,7 @@ TEST(testCapioSerializerParser, testSerializeCommitOnCloseCountNoCommitRule) {
     std::string producer_name = "_first", consumer_name = "_last";
 
     capiocl::Engine engine;
+    engine.setWorkflowName(workflow_name);
 
     engine.newFile(file_1_name);
     engine.addProducer(file_1_name, producer_name);
@@ -701,7 +705,7 @@ TEST(testCapioSerializerParser, testSerializeCommitOnCloseCountNoCommitRule) {
     engine.setCommitedCloseNumber(file_1_name, 10);
 
     engine.print();
-    capiocl::Serializer::dump(engine, workflow_name, path);
+    capiocl::Serializer::dump(engine, path);
 
     std::filesystem::path resolve = "";
     auto new_engine               = capiocl::Parser::parse(path, resolve);
@@ -747,7 +751,7 @@ TEST(testCapioSerializerParser, testFailedDump) {
     bool exception_catched = false;
 
     try {
-        capiocl::Serializer::dump(*engine, engine->getWorkflowName(), "/");
+        capiocl::Serializer::dump(*engine, "/");
     } catch (std::exception &e) {
         exception_catched = true;
         auto demangled    = demangled_name(e);
@@ -765,7 +769,7 @@ TEST(testCapioSerializerParser, testFailedDumpVersion) {
     bool exception_catched = false;
 
     try {
-        capiocl::Serializer::dump(*engine, engine->getWorkflowName(), "1234.5678");
+        capiocl::Serializer::dump(*engine, "test.json", "1234.5678");
     } catch (std::exception &e) {
         exception_catched = true;
         auto demangled    = demangled_name(e);
