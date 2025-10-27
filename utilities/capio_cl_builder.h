@@ -50,15 +50,6 @@ constexpr char HELP_MESSAGE_COMMANDS[] =
     "\n"
     "=====================================================================\n";
 
-class CaptureBuf : public std::stringbuf {
-  public:
-    std::string get_and_clear() {
-        std::string out = str();
-        str(""); // clear
-        return out;
-    }
-};
-
 inline void render_ansi_to_window(WINDOW *pad, const std::string &text, int start_y, int start_x) {
     // Regex to match ANSI escape sequences (like color codes)
     static const std::regex ansi_regex("\x1B\\[[0-9;?]*[ -/]*[@-~]");
@@ -89,7 +80,6 @@ inline void render_ansi_to_window(WINDOW *pad, const std::string &text, int star
     }
 }
 
-
 inline void print_top_text(WINDOW *top, const std::string &title, const std::string &text) {
     werase(top);
     box(top, 0, 0);
@@ -99,15 +89,6 @@ inline void print_top_text(WINDOW *top, const std::string &title, const std::str
 
     wrefresh(top);
     doupdate();
-}
-
-inline void print_server_state(WINDOW *top, capiocl::Engine engine) {
-    CaptureBuf cap;
-    std::streambuf *old_buf = std::cout.rdbuf(&cap);
-    engine.print();
-    std::cout.flush();
-    std::cout.rdbuf(old_buf);
-    print_top_text(top, " Engine Output ", cap.get_and_clear());
 }
 
 inline std::tuple<bool, std::string> handle_add_command(std::vector<std::string> &args,
@@ -242,6 +223,129 @@ inline std::tuple<bool, std::string> handle_delete_command(std::vector<std::stri
     return {false, ""};
 }
 
+inline void draw_engine_table(WINDOW *top, const capiocl::Engine &engine) {
+    werase(top);
+    box(top, 0, 0);
+    mvwprintw(top, 0, 2, " CAPIO-CL Engine State ");
+
+    int win_height, win_width;
+    getmaxyx(top, win_height, win_width);
+
+    std::vector<std::string> headers = {"File", "Producers", "Consumers", "Stored", "Commit",
+                                        "Fire", "Excluded",  "Permanent", "N_files"};
+
+    std::vector min_widths   = {12, 18, 18, 18, 10, 7, 9, 10, 8};
+    std::vector dynamic_cols = {0};
+
+    int total_fixed = 0;
+    for (size_t i = 0; i < headers.size(); ++i) {
+        if (std::find(dynamic_cols.begin(), dynamic_cols.end(), i) == dynamic_cols.end()) {
+            total_fixed += min_widths[i] + 1;
+        }
+    }
+
+    //  dynamic columns
+    int available    = std::max(0, win_width - 4 - total_fixed); // borders & padding
+    int base_dynamic = 0;
+    for (auto idx : dynamic_cols) {
+        base_dynamic += min_widths[idx];
+    }
+
+    int extra_per_col = available > base_dynamic ? available - base_dynamic : 0;
+    int extra_each    = extra_per_col / (int) dynamic_cols.size();
+
+    std::vector<int> col_widths = min_widths;
+    for (auto idx : dynamic_cols) {
+        col_widths[idx] += extra_each;
+    }
+
+    struct Row {
+        std::string file, stored, producers, consumers, commit, fire;
+        bool excluded, permanent;
+        long nfiles;
+    };
+
+    std::vector<Row> rows;
+
+    for (const auto &file : engine.getFiles()) {
+        Row row;
+        row.file   = file;
+        row.stored = engine.isStoredInMemory(file) ? "MEM" : "FS";
+
+        std::ostringstream prod, cons;
+        for (auto &p : engine.getProducers(file)) {
+            prod << p << " ";
+        }
+        for (auto &c : engine.getConsumers(file)) {
+            cons << c << " ";
+        }
+        row.producers = prod.str();
+        row.consumers = cons.str();
+
+        row.commit    = engine.getCommitRule(file);
+        row.fire      = engine.getFireRule(file);
+        row.excluded  = engine.isExcluded(file);
+        row.permanent = engine.isPermanent(file);
+        row.nfiles    = engine.getCommitCloseCount(file);
+
+        rows.push_back(row);
+    }
+
+    int y = 1;
+    int x = 2;
+
+    // ---- HEADER ----
+    wattron(top, A_BOLD | A_REVERSE);
+    for (size_t i = 0; i < headers.size(); ++i) {
+        mvwprintw(top, y, x, "%-*.*s", col_widths[i], col_widths[i], headers[i].c_str());
+        x += col_widths[i] + 1;
+    }
+    wattroff(top, A_BOLD | A_REVERSE);
+
+    y++;
+
+    // ---- ROWS ----
+    int visible_rows = win_height - 3;
+    int row_idx      = 0;
+    for (auto &r : rows) {
+        if (y >= win_height - 1) {
+            break;
+        }
+
+        if (row_idx % 2 == 0) {
+            wattron(top, A_DIM);
+        } else {
+            wattroff(top, A_DIM);
+        }
+
+        x                               = 2;
+        std::vector<std::string> values = {r.file,
+                                           r.producers,
+                                           r.consumers,
+                                           r.commit,
+                                           r.fire,
+                                           r.stored,
+                                           r.excluded ? "yes" : "no",
+                                           r.permanent ? "yes" : "no",
+                                           std::to_string(r.nfiles)};
+
+        for (size_t i = 0; i < values.size(); ++i) {
+            std::string v = values[i];
+            if ((int) v.size() > col_widths[i]) {
+                v = v.substr(0, col_widths[i] - 1) + "…";
+            }
+            mvwprintw(top, y, x, "%-*.*s", col_widths[i], col_widths[i], v.c_str());
+            x += col_widths[i] + 1;
+        }
+
+        y++;
+        row_idx++;
+    }
+
+    wattroff(top, A_DIM);
+    wrefresh(top);
+}
+
 inline void capio_cl_builder() {
     initscr();
     cbreak();
@@ -272,7 +376,7 @@ inline void capio_cl_builder() {
     bool terminate = false;
     char input[256];
 
-    print_server_state(top, engine);
+    draw_engine_table(top, engine);
 
     std::unordered_map<std::string, std::tuple<bool, std::string> (*)(std::vector<std::string> &,
                                                                       capiocl::Engine &)>
@@ -327,7 +431,7 @@ inline void capio_cl_builder() {
             error_message += HELP_MESSAGE_COMMANDS;
             print_top_text(top, " Error ", error_message);
         } else {
-            print_server_state(top, engine);
+            draw_engine_table(top, engine);
         }
 
         werase(cli);

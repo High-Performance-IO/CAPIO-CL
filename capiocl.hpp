@@ -330,6 +330,9 @@ class Engine final {
      */
     long getDirectoryFileCount(const std::filesystem::path &path) const;
 
+    /// @brief Get files for which an entry exists in current Engine instance
+    std::vector<std::string> getFiles() const;
+
     /// @brief Get the commit rule of a file.
     std::string getCommitRule(const std::filesystem::path &path) const;
 
