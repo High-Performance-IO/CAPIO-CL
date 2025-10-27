@@ -231,8 +231,8 @@ inline void draw_engine_table(WINDOW *top, const capiocl::Engine &engine) {
     int win_height, win_width;
     getmaxyx(top, win_height, win_width);
 
-    std::vector<std::string> headers = {"File", "Producers", "Consumers", "Stored", "Commit",
-                                        "Fire", "Excluded",  "Permanent", "N_files"};
+    std::vector<std::string> headers = {"File", "Producers", "Consumers", "Commit", "Fire",
+                                        "Store", "Excluded",  "Permanent", "N_files"};
 
     std::vector min_widths   = {12, 18, 18, 18, 10, 7, 9, 10, 8};
     std::vector dynamic_cols = {0};
@@ -295,28 +295,25 @@ inline void draw_engine_table(WINDOW *top, const capiocl::Engine &engine) {
     int x = 2;
 
     // ---- HEADER ----
-    wattron(top, A_BOLD | A_REVERSE);
+    wattron(top, COLOR_PAIR(1) | A_BOLD);
     for (size_t i = 0; i < headers.size(); ++i) {
         mvwprintw(top, y, x, "%-*.*s", col_widths[i], col_widths[i], headers[i].c_str());
         x += col_widths[i] + 1;
     }
-    wattroff(top, A_BOLD | A_REVERSE);
+    wattroff(top, COLOR_PAIR(1) | A_BOLD);
 
     y++;
 
     // ---- ROWS ----
-    int visible_rows = win_height - 3;
-    int row_idx      = 0;
+    int row_idx = 0;
     for (auto &r : rows) {
         if (y >= win_height - 1) {
             break;
         }
 
-        if (row_idx % 2 == 0) {
-            wattron(top, A_DIM);
-        } else {
-            wattroff(top, A_DIM);
-        }
+        // Alternate background colors
+        int pair_id = (row_idx % 2 == 0) ? 2 : 3;
+        wattron(top, COLOR_PAIR(pair_id));
 
         x                               = 2;
         std::vector<std::string> values = {r.file,
@@ -338,6 +335,7 @@ inline void draw_engine_table(WINDOW *top, const capiocl::Engine &engine) {
             x += col_widths[i] + 1;
         }
 
+        wattroff(top, COLOR_PAIR(pair_id));
         y++;
         row_idx++;
     }
@@ -348,9 +346,15 @@ inline void draw_engine_table(WINDOW *top, const capiocl::Engine &engine) {
 
 inline void capio_cl_builder() {
     initscr();
+    start_color();
+    use_default_colors();
     cbreak();
     noecho();
     curs_set(1);
+
+    init_pair(1, COLOR_WHITE, COLOR_BLACK);
+    init_pair(2, COLOR_YELLOW, COLOR_BLACK);
+    init_pair(3, COLOR_RED, COLOR_BLACK);
 
     int height, width;
     getmaxyx(stdscr, height, width);
@@ -368,7 +372,7 @@ inline void capio_cl_builder() {
     box(top, 0, 0);
     box(cli, 0, 0);
     mvwprintw(top, 0, 2, " Engine Output ");
-    mvwprintw(cli, 0, 2, " CAPIO-CL Builder ");
+    mvwprintw(cli, 0, 2, " Command interface ");
     wrefresh(top);
     wrefresh(cli);
 
@@ -397,9 +401,9 @@ inline void capio_cl_builder() {
 
         werase(cli);
         box(cli, 0, 0);
-        mvwprintw(cli, 0, 2, " CAPIO-CL Builder ");
-        mvwprintw(cli, 2, 2, "command> ");
-        wmove(cli, 2, 11);
+        mvwprintw(cli, 0, 2, " Command ");
+        mvwprintw(cli, 2, 2, "> ");
+        wmove(cli, 2, 4);
         echo();
         wrefresh(cli);
 

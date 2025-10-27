@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
     if (validate) {
         const std::string path = args::get(validate);
         try {
-            auto parsed = capiocl::Parser::parse(path);
+            capiocl::Parser::parse(path);
         } catch (...) {
             std::cerr << std::endl
                       << "\t+==================================================+\n"
