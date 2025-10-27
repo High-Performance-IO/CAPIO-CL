@@ -35,9 +35,9 @@ void capiocl::Parser::validate_json(const jsoncons::json &doc) {
     }
 }
 
-std::tuple<std::string, capiocl::Engine *>
-capiocl::Parser::parse(const std::filesystem::path &source,
-                       const std::filesystem::path &resolve_prefix, bool store_only_in_memory) {
+capiocl::Engine *capiocl::Parser::parse(const std::filesystem::path &source,
+                                        const std::filesystem::path &resolve_prefix,
+                                        bool store_only_in_memory) {
 
     if (source.empty()) {
         throw ParserException("Empty source file name!");

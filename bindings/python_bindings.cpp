@@ -66,6 +66,8 @@ PYBIND11_MODULE(_py_capio_cl, m) {
         .def("isStoredInMemory", &capiocl::Engine::isStoredInMemory)
         .def("isPermanent", &capiocl::Engine::isPermanent)
         .def("setAllStoreInMemory", &capiocl::Engine::setAllStoreInMemory)
+        .def("getWorkflowName", &capiocl::Engine::getWorkflowName)
+        .def("setWorkflowName", &capiocl::Engine::setWorkflowName)
         .def("__str__", &capiocl::Engine::print)
         .def("__repr__",
              [](const capiocl::Engine &e) {
@@ -86,8 +88,8 @@ PYBIND11_MODULE(_py_capio_cl, m) {
 
     py::class_<capiocl::Serializer>(m, "Serializer", "The CAPIO-CL Serializer component.")
         .def(py::init<>())
-        .def_static("dump", &capiocl::Serializer::dump, py::arg("engine"), py::arg("workflow_name"),
-                    py::arg("filename"), py::arg("version") = capiocl::CAPIO_CL_VERSION::V1)
+        .def_static("dump", &capiocl::Serializer::dump, py::arg("engine"), py::arg("filename"),
+                    py::arg("version") = capiocl::CAPIO_CL_VERSION::V1)
         .def("__str__",
              [](const capiocl::Serializer &e) {
                  return "<Serializer repr at " + std::to_string(reinterpret_cast<uintptr_t>(&e)) +

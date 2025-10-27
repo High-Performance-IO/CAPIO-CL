@@ -3,9 +3,9 @@
 #include <iostream>
 
 void capiocl::Serializer::available_serializers::serialize_v1(
-    const Engine &engine, const std::string &workflow_name, const std::filesystem::path &filename) {
+    const Engine &engine, const std::filesystem::path &filename) {
     jsoncons::json doc;
-    doc["name"] = workflow_name;
+    doc["name"] = engine.getWorkflowName();
 
     const auto files = engine._capio_cl_entries;
 

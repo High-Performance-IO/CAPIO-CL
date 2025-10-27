@@ -17,6 +17,7 @@ def test_serialize_parse_py_capio_cl_v1(tmp_path):
     intermediate = "_middle"
 
     engine = py_capio_cl.Engine()
+    engine.setWorkflowName(workflow_name)
 
     # producer/consumer graph
     engine.addProducer(file1, producer)
@@ -51,15 +52,15 @@ def test_serialize_parse_py_capio_cl_v1(tmp_path):
     engine.print()
 
     # Serialize
-    py_capio_cl.Serializer.dump(engine, workflow_name, path)
+    py_capio_cl.Serializer.dump(engine, path)
 
     # Parse back
-    wf_name, new_engine = py_capio_cl.Parser.parse(path)
+    new_engine = py_capio_cl.Parser.parse(path)
 
-    assert wf_name == workflow_name
+    assert new_engine.getWorkflowName() == workflow_name
 
     # Parse with memory flag
-    wf_name1, new_engine1 = py_capio_cl.Parser.parse(path, store_only_in_memory=True)
+    new_engine1 = py_capio_cl.Parser.parse(path, store_only_in_memory=True)
     assert len(new_engine1.getFileToStoreInMemory()) == engine.size()
 
     # cleanup
@@ -69,8 +70,8 @@ def test_serialize_parse_py_capio_cl_v1(tmp_path):
 def test_parser_resolve_absolute():
     json_path = "/tmp/capio_cl_jsons/V1_test0.json"
 
-    wf_name, engine = py_capio_cl.Parser.parse(str(json_path), "/tmp")
-    assert wf_name == "test"
+    engine = py_capio_cl.Parser.parse(str(json_path), "/tmp")
+    assert engine.getWorkflowName() == "test"
     for f in ["/tmp/file", "/tmp/file1", "/tmp/file2", "/tmp/file3"]:
         assert engine.contains(f)
 
