@@ -17,6 +17,7 @@ def test_serialize_parse_py_capio_cl_v1(tmp_path):
     intermediate = "_middle"
 
     engine = py_capio_cl.Engine()
+    engine.setWorkflowName(workflow_name)
 
     # producer/consumer graph
     engine.addProducer(file1, producer)
@@ -51,15 +52,15 @@ def test_serialize_parse_py_capio_cl_v1(tmp_path):
     engine.print()
 
     # Serialize
-    py_capio_cl.Serializer.dump(engine, workflow_name, path)
+    py_capio_cl.Serializer.dump(engine, path)
 
     # Parse back
-    wf_name, new_engine = py_capio_cl.Parser.parse(path)
+    new_engine = py_capio_cl.Parser.parse(path)
 
-    assert wf_name == workflow_name
+    assert new_engine.getWorkflowName() == workflow_name
 
     # Parse with memory flag
-    wf_name1, new_engine1 = py_capio_cl.Parser.parse(path, store_only_in_memory=True)
+    new_engine1 = py_capio_cl.Parser.parse(path, store_only_in_memory=True)
     assert len(new_engine1.getFileToStoreInMemory()) == engine.size()
 
     # cleanup

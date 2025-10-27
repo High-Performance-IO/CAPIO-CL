@@ -765,7 +765,7 @@ TEST(testCapioSerializerParser, testFailedDumpVersion) {
     bool exception_catched = false;
 
     try {
-        capiocl::Serializer::dump(*engine, engine->getWorkflowName(), "test.json", "1234.5678");
+        capiocl::Serializer::dump(*engine, engine->getWorkflowName(), "1234.5678");
     } catch (std::exception &e) {
         exception_catched = true;
         auto demangled    = demangled_name(e);

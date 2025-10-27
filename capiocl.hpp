@@ -535,12 +535,10 @@ class Serializer final {
          * VERSION 1 configuration file.
          *
          * @param engine instance of Engine to dump
-         * @param workflow_name Name of the current workflow
          * @param filename path of output file
          * @throws SerializerException
          */
-        static void serialize_v1(const Engine &engine, const std::string &workflow_name,
-                                 const std::filesystem::path &filename);
+        static void serialize_v1(const Engine &engine, const std::filesystem::path &filename);
     };
 
   public:
@@ -549,12 +547,10 @@ class Serializer final {
      * configuration file.
      *
      * @param engine instance of Engine to dump
-     * @param workflow_name Name of the current workflow
      * @param filename path of output file
      * @param version Version of CAPIO-CL used to generate configuration files.
      */
-    static void dump(const Engine &engine, const std::string &workflow_name,
-                     const std::filesystem::path &filename,
+    static void dump(const Engine &engine, const std::filesystem::path &filename,
                      const std::string &version = CAPIO_CL_VERSION::V1);
 };
 } // namespace capiocl

@@ -88,8 +88,8 @@ PYBIND11_MODULE(_py_capio_cl, m) {
 
     py::class_<capiocl::Serializer>(m, "Serializer", "The CAPIO-CL Serializer component.")
         .def(py::init<>())
-        .def_static("dump", &capiocl::Serializer::dump, py::arg("engine"), py::arg("workflow_name"),
-                    py::arg("filename"), py::arg("version") = capiocl::CAPIO_CL_VERSION::V1)
+        .def_static("dump", &capiocl::Serializer::dump, py::arg("engine"), py::arg("filename"),
+                    py::arg("version") = capiocl::CAPIO_CL_VERSION::V1)
         .def("__str__",
              [](const capiocl::Serializer &e) {
                  return "<Serializer repr at " + std::to_string(reinterpret_cast<uintptr_t>(&e)) +
