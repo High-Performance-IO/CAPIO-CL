@@ -96,7 +96,6 @@ struct defaults;
 namespace webapi {
 class CapioClWebApiServer;
 }
-
 } // namespace capiocl
 
 #endif // CAPIO_CL_CAPIOCL_HPP

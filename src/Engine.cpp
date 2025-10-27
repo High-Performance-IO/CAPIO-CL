@@ -243,6 +243,13 @@ long capiocl::engine::Engine::getDirectoryFileCount(const std::filesystem::path 
     this->_newFile(path);
     return getDirectoryFileCount(path);
 }
+std::vector<std::string> capiocl::Engine::getFiles() const {
+    std::vector<std::string> files;
+    for (const auto &[fst, snd] : _capio_cl_entries) {
+        files.push_back(fst);
+    }
+    return files;
+}
 
 void capiocl::engine::Engine::addProducer(const std::filesystem::path &path,
                                           std::string &producer) {
