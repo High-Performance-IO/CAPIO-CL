@@ -1,0 +1,93 @@
+{
+    "IO_Graph": [
+        {
+            "input_stream": [
+                "file1.txt", 
+                "file2.txt"
+            ], 
+            "name": "_last", 
+            "output_stream": [
+                "my_command_history.txt"
+            ], 
+            "streaming": [
+                {
+                    "committed": "on_termination", 
+                    "file_deps": [], 
+                    "mode": "update", 
+                    "name": "my_command_history.txt"
+                }
+            ]
+        }, 
+        {
+            "input_stream": [
+                "file1.txt"
+            ], 
+            "name": "_middle", 
+            "output_stream": [
+                "file2.txt", 
+                "my_command_history.txt", 
+                "/tmp"
+            ], 
+            "streaming": [
+                {
+                    "committed": "on_termination", 
+                    "file_deps": [], 
+                    "mode": "update", 
+                    "name": "file2.txt"
+                }, 
+                {
+                    "committed": "on_termination", 
+                    "file_deps": [], 
+                    "mode": "update", 
+                    "name": "my_command_history.txt"
+                }, 
+                {
+                    "committed": "on_n_files", 
+                    "dirname": "/tmp", 
+                    "file_deps": [], 
+                    "mode": "no_update", 
+                    "n_files": 10
+                }
+            ]
+        }, 
+        {
+            "input_stream": [], 
+            "name": "_first", 
+            "output_stream": [
+                "file1.txt", 
+                "my_command_history.txt"
+            ], 
+            "streaming": [
+                {
+                    "committed": "on_close:3", 
+                    "file_deps": [], 
+                    "mode": "no_update", 
+                    "name": "file1.txt"
+                }, 
+                {
+                    "committed": "on_termination", 
+                    "file_deps": [], 
+                    "mode": "update", 
+                    "name": "my_command_history.txt"
+                }
+            ]
+        }
+    ], 
+    "exclude": [
+        "my_command_history.txt"
+    ], 
+    "name": "demo", 
+    "permanent": [
+        "file1.txt"
+    ], 
+    "storage": {
+        "fs": [
+            "file2.txt", 
+            "my_command_history.txt", 
+            "/tmp"
+        ], 
+        "memory": [
+            "file1.txt"
+        ]
+    }
+}
