@@ -37,6 +37,21 @@ namespace fire_rules {
 constexpr char NO_UPDATE[] = "no_update";
 /// @brief FoC Streaming Rule
 constexpr char UPDATE[]    = "update";
+
+/**
+ * Sanitize fire rule from input
+ * @param input
+ * @return sanitized fire rule
+ */
+inline std::string sanitize_fire_rule(const std::string &input) {
+    if (input == fire_rules::NO_UPDATE) {
+        return fire_rules::NO_UPDATE;
+    } else if (input == fire_rules::UPDATE) {
+        return fire_rules::UPDATE;
+    } else {
+        throw std::invalid_argument("Input commit rule is not a vlid CAPIO-CL rule");
+    }
+}
 } // namespace fire_rules
 
 /// @brief Namespace for CAPIO-CL Commit Rules
@@ -49,6 +64,25 @@ constexpr char ON_FILE[]        = "on_file";
 constexpr char ON_N_FILES[]     = "on_n_files";
 /// @brief CoT Streaming Rule
 constexpr char ON_TERMINATION[] = "on_termination";
+
+/**
+ * Sanitize commit rule from input
+ * @param input
+ * @return sanitized commit rule
+ */
+inline std::string sanitize_commit_rule(const std::string &input) {
+    if (input == commit_rules::ON_CLOSE) {
+        return commit_rules::ON_CLOSE;
+    } else if (input == commit_rules::ON_FILE) {
+        return commit_rules::ON_FILE;
+    } else if (input == commit_rules::ON_N_FILES) {
+        return commit_rules::ON_N_FILES;
+    } else if (input == commit_rules::ON_TERMINATION) {
+        return commit_rules::ON_TERMINATION;
+    } else {
+        throw std::invalid_argument("Input commit rule is not a vlid CAPIO-CL rule");
+    }
+}
 } // namespace commit_rules
 
 /// @brief Available versions of CAPIO-CL language

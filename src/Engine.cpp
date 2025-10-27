@@ -274,17 +274,14 @@ void capiocl::Engine::setCommitRule(const std::filesystem::path &path,
         return;
     }
 
-    if (commit_rule != commit_rules::ON_CLOSE && commit_rule != commit_rules::ON_TERMINATION &&
-        commit_rule != commit_rules::ON_FILE && commit_rule != commit_rules::ON_N_FILES) {
-        throw std::invalid_argument("Commit rule does not match a valid CAPIO-CL commit rule");
-    } else {
-        if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
-            itm->second.commit_rule = commit_rule;
-            return;
-        }
-        this->_newFile(path);
-        this->setCommitRule(path, commit_rule);
+    const auto commit = commit_rules::sanitize_commit_rule(commit_rule);
+
+    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+        itm->second.commit_rule = commit;
+        return;
     }
+    this->_newFile(path);
+    this->setCommitRule(path, commit);
 }
 
 std::string capiocl::Engine::getCommitRule(const std::filesystem::path &path) const {
@@ -321,16 +318,14 @@ void capiocl::Engine::setFireRule(const std::filesystem::path &path, const std::
         return;
     }
 
-    if (fire_rule != fire_rules::NO_UPDATE && fire_rule != fire_rules::UPDATE) {
-        throw std::invalid_argument("Fire rule does not match a valid CAPIO-CL fire rule");
-    } else {
-        if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
-            itm->second.fire_rule = fire_rule;
-            return;
-        }
-        this->_newFile(path);
-        setFireRule(path, fire_rule);
+    const auto fire = fire_rules::sanitize_fire_rule(fire_rule);
+
+    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+        itm->second.fire_rule = fire;
+        return;
     }
+    this->_newFile(path);
+    setFireRule(path, fire);
 }
 
 bool capiocl::Engine::isFirable(const std::filesystem::path &path) const {
