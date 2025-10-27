@@ -66,6 +66,8 @@ PYBIND11_MODULE(_py_capio_cl, m) {
         .def("isStoredInMemory", &capiocl::Engine::isStoredInMemory)
         .def("isPermanent", &capiocl::Engine::isPermanent)
         .def("setAllStoreInMemory", &capiocl::Engine::setAllStoreInMemory)
+        .def("getWorkflowName", &capiocl::Engine::getWorkflowName)
+        .def("setWorkflowName", &capiocl::Engine::setWorkflowName)
         .def("__str__", &capiocl::Engine::print)
         .def("__repr__",
              [](const capiocl::Engine &e) {

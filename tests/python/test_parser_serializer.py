@@ -69,8 +69,8 @@ def test_serialize_parse_py_capio_cl_v1(tmp_path):
 def test_parser_resolve_absolute():
     json_path = "/tmp/capio_cl_jsons/V1_test0.json"
 
-    wf_name, engine = py_capio_cl.Parser.parse(str(json_path), "/tmp")
-    assert wf_name == "test"
+    engine = py_capio_cl.Parser.parse(str(json_path), "/tmp")
+    assert engine.getWorkflowName() == "test"
     for f in ["/tmp/file", "/tmp/file1", "/tmp/file2", "/tmp/file3"]:
         assert engine.contains(f)
 

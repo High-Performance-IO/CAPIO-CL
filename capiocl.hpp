@@ -94,8 +94,13 @@ inline void print_message(const std::string &message_type = "",
  */
 class Engine final {
     friend class Serializer;
-    std::string node_name;
     bool store_all_in_memory = false;
+
+    /// @brief Node name variable used to handle home node policies
+    std::string node_name;
+
+    /// @brief Name of the current workflow name
+    std::string workflow_name;
 
     /// @brief Internal CAPIO-CL #Engine storage entity. Each CapioCLEntry is an entry for a given
     /// file handled by CAPIO-CL
@@ -151,7 +156,12 @@ class Engine final {
         node_name = std::string(1024, '\0');
         gethostname(node_name.data(), node_name.size());
         node_name.resize(std::strlen(node_name.c_str()));
-        print_message(CLI_LEVEL_INFO, "Instance created");
+
+        if (const char *_wf_name = std::getenv("WORKFLOW_NAME"); _wf_name != nullptr) {
+            this->workflow_name = _wf_name;
+        } else {
+            this->workflow_name = CAPIO_CL_DEFAULT_WF_NAME;
+        }
     }
 
     /// @brief Print the current CAPIO-CL configuration.
@@ -308,6 +318,12 @@ class Engine final {
     void setStoreFileInFileSystem(const std::filesystem::path &path);
 
     /**
+     * Set current orkflow name
+     * @param name Name of the workflow
+     */
+    void setWorkflowName(const std::string &name);
+
+    /**
      * @brief Get the expected number of files in a directory.
      * @param path Directory path.
      * @return Expected file count.
@@ -338,6 +354,9 @@ class Engine final {
 
     /// @brief Get the home node of a file.
     std::string getHomeNode(const std::filesystem::path &path) const;
+
+    /// @brief Get current workflow name loaded from memory
+    const std::string &getWorkflowName() const;
 
     /**
      * @brief Check if a process is a producer for a file.
@@ -438,11 +457,11 @@ class Parser final {
          * @param resolve_prefix Prefix to prepend to path if found to be relative
          * @param store_only_in_memory Flag to set to returned instance of #Engine if required to
          * store all files in memory
-         * @return Tuple of woorkflow name and associated Engine.
+         * @return Parsed Engine.
          */
-        static std::tuple<std::string, Engine *>
-        parse_v1(const std::filesystem::path &source, const std::filesystem::path &resolve_prefix,
-                 bool store_only_in_memory);
+        static Engine *parse_v1(const std::filesystem::path &source,
+                                const std::filesystem::path &resolve_prefix,
+                                bool store_only_in_memory);
     };
 
     /**
@@ -475,13 +494,12 @@ class Parser final {
      * @param source Input CAPIO-CL Json configuration File
      * @param resolve_prefix If paths are found to be relative, they are appended to this path
      * @param store_only_in_memory Set to true to set all files to be stored in memory
-     * @return Tuple with workflow name and #Engine instance with the information provided by
-     * the config file
+     * @return #Engine instance with the information provided by  the config file
      * @throw ParserException
      */
-    static std::tuple<std::string, Engine *> parse(const std::filesystem::path &source,
-                                                   const std::filesystem::path &resolve_prefix = "",
-                                                   bool store_only_in_memory = false);
+    static Engine *parse(const std::filesystem::path &source,
+                         const std::filesystem::path &resolve_prefix = "",
+                         bool store_only_in_memory                   = false);
 };
 
 /**

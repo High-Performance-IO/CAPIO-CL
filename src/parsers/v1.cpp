@@ -1,7 +1,7 @@
 #include "capiocl.hpp"
 #include <fstream>
 
-std::tuple<std::string, capiocl::Engine *>
+capiocl::Engine *
 capiocl::Parser::available_parsers::parse_v1(const std::filesystem::path &source,
                                              const std::filesystem::path &resolve_prefix,
                                              bool store_only_in_memory) {
@@ -16,6 +16,7 @@ capiocl::Parser::available_parsers::parse_v1(const std::filesystem::path &source
 
     // ---- workflow name ----
     workflow_name = doc["name"].as<std::string>();
+    engine->setWorkflowName(workflow_name);
     print_message(CLI_LEVEL_JSON, "Parsing configuration for workflow: " + workflow_name);
 
     // ---- IO_Graph ----
@@ -175,5 +176,5 @@ capiocl::Parser::available_parsers::parse_v1(const std::filesystem::path &source
         engine->setAllStoreInMemory();
     }
 
-    return {workflow_name, engine};
+    return engine;
 };

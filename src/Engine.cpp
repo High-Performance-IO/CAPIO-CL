@@ -16,8 +16,8 @@ void capiocl::Engine::print() const {
 
     {
         std::ostringstream oss;
-        oss << "|     Parsed configuration file for workflow: \033[1;36m" << node_name
-            << std::setw(94 - node_name.length()) << "\033[0m |";
+        oss << "|     Parsed configuration file for workflow: \033[1;36m" << workflow_name
+            << std::setw(94 - workflow_name.length()) << "\033[0m |";
         print_message(CLI_LEVEL_JSON, oss.str());
     }
 
@@ -587,6 +587,10 @@ void capiocl::Engine::setAllStoreInMemory() {
         this->setStoreFileInMemory(fst);
     }
 }
+
+void capiocl::Engine::setWorkflowName(const std::string &name) { this->workflow_name = name; }
+
+const std::string &capiocl::Engine::getWorkflowName() const { return this->workflow_name; }
 
 void capiocl::Engine::setStoreFileInFileSystem(const std::filesystem::path &path) {
 
