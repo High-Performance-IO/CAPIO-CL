@@ -143,6 +143,9 @@ void capiocl::Engine::_newFile(const std::filesystem::path &path) const {
         }
 
         CapioCLEntry entry;
+        entry.commit_rule = commit;
+        entry.fire_rule   = fire;
+
         if (matchSize > 0) {
             const auto &data = _capio_cl_entries.at(matchKey);
 
