@@ -143,6 +143,9 @@ void capiocl::Engine::_newFile(const std::filesystem::path &path) const {
         }
 
         CapioCLEntry entry;
+        entry.commit_rule = commit;
+        entry.fire_rule   = fire;
+
         if (matchSize > 0) {
             const auto &data = _capio_cl_entries.at(matchKey);
 
@@ -271,12 +274,14 @@ void capiocl::Engine::setCommitRule(const std::filesystem::path &path,
         return;
     }
 
+    const auto commit = commit_rules::sanitize_commit_rule(commit_rule);
+
     if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
-        itm->second.commit_rule = commit_rule;
+        itm->second.commit_rule = commit;
         return;
     }
     this->_newFile(path);
-    this->setCommitRule(path, commit_rule);
+    this->setCommitRule(path, commit);
 }
 
 std::string capiocl::Engine::getCommitRule(const std::filesystem::path &path) const {
@@ -313,12 +318,14 @@ void capiocl::Engine::setFireRule(const std::filesystem::path &path, const std::
         return;
     }
 
+    const auto fire = fire_rules::sanitize_fire_rule(fire_rule);
+
     if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
-        itm->second.fire_rule = fire_rule;
+        itm->second.fire_rule = fire;
         return;
     }
     this->_newFile(path);
-    setFireRule(path, fire_rule);
+    setFireRule(path, fire);
 }
 
 bool capiocl::Engine::isFirable(const std::filesystem::path &path) const {
