@@ -240,6 +240,7 @@ class Engine final {
      * @brief Set the commit rule of a file.
      * @param path File path.
      * @param commit_rule Commit rule string.
+     * @throw std::invalid_argument if commit rule is not a valid CAPIO-CL commit rule
      */
     void setCommitRule(const std::filesystem::path &path, const std::string &commit_rule);
 
@@ -247,6 +248,7 @@ class Engine final {
      * @brief Set the fire rule of a file.
      * @param path File path.
      * @param fire_rule Fire rule string.
+     * @throw std::invalid_argument if fire rule is not a valid CAPIO-CL Firing rule
      */
     void setFireRule(const std::filesystem::path &path, const std::string &fire_rule);
 

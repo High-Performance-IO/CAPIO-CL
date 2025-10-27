@@ -24,6 +24,34 @@ TEST(testCapioClEngine, testSetGetWfNameFromEnv) {
     EXPECT_TRUE(engine.getWorkflowName() == "my_custom_wf_name");
 }
 
+TEST(testCapioClEngine, testWrongCommitRule) {
+    bool exception_caught = false;
+    try {
+        capiocl::Engine engine;
+        engine.setCommitRule("x", "failMe");
+    } catch (const std::invalid_argument &e) {
+        exception_caught = true;
+    } catch (...) {
+        exception_caught = false;
+    }
+
+    EXPECT_TRUE(exception_caught);
+}
+
+TEST(testCapioClEngine, testWrongFireRule) {
+    bool exception_caught = false;
+    try {
+        capiocl::Engine engine;
+        engine.setFireRule("x", "failMe");
+    } catch (const std::invalid_argument &e) {
+        exception_caught = true;
+    } catch (...) {
+        exception_caught = false;
+    }
+
+    EXPECT_TRUE(exception_caught);
+}
+
 TEST(testCapioClEngine, testAddFileDefault) {
     capiocl::Engine engine;
     EXPECT_EQ(engine.size(), 0);
