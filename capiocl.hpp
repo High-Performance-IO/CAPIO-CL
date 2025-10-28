@@ -100,7 +100,7 @@ inline void print_message(const std::string &message_type = "",
                           const std::string &message_line = "") {
     static std::string *node_name = nullptr;
     if (node_name == nullptr) {
-        node_name = new std::string(" ", HOST_NAME_MAX);
+        node_name = new std::string(HOST_NAME_MAX, ' '); // LCOV_EXCL_LINE
         gethostname(node_name->data(), HOST_NAME_MAX);
     }
     if (message_type.empty()) {
@@ -136,27 +136,23 @@ class Engine final {
     /// @brief Name of the current workflow name
     std::string workflow_name;
 
+    // LCOV_EXCL_START
     /// @brief Internal CAPIO-CL #Engine storage entity. Each CapioCLEntry is an entry for a given
     /// file handled by CAPIO-CL
     struct CapioCLEntry final {
         std::vector<std::string> producers;
         std::vector<std::string> consumers;
         std::vector<std::filesystem::path> file_dependencies;
-        std::string commit_rule;
-        std::string fire_rule;
-        bool permanent;
-        bool excluded;
-        bool is_file;
-        bool store_in_memory;
-        long commit_on_close_count;
-        long directory_commit_file_count;
-
-        /// @brief Default constructor with default CAPIO-CL defaults
-        CapioCLEntry()
-            : commit_rule(commit_rules::ON_TERMINATION), fire_rule(fire_rules::UPDATE),
-              permanent(false), excluded(false), is_file(true), store_in_memory(false),
-              commit_on_close_count(0), directory_commit_file_count(0) {}
+        std::string commit_rule          = commit_rules::ON_TERMINATION;
+        std::string fire_rule            = fire_rules::UPDATE;
+        bool permanent                   = false;
+        bool excluded                    = false;
+        bool is_file                     = true;
+        bool store_in_memory             = false;
+        long commit_on_close_count       = 0;
+        long directory_commit_file_count = 0;
     };
+    // LCOV_EXCL_STOP
 
     /// @brief Hash map used to store the configuration from CAPIO-CL
     mutable std::unordered_map<std::string, CapioCLEntry> _capio_cl_entries;

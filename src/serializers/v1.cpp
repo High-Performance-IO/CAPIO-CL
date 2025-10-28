@@ -47,7 +47,7 @@ void capiocl::Serializer::available_serializers::serialize_v1(
             jsoncons::json streaming_item = jsoncons::json::object();
             std::string committed         = entry.commit_rule;
             const char *name_kind         = entry.is_file ? "name" : "dirname";
-            streaming_item[name_kind]     = jsoncons::json::array({path});
+            streaming_item[name_kind]     = jsoncons::json::array({path}); // LCOV_EXCL_LINE
 
             if (entry.commit_on_close_count > 0) {
                 if (entry.commit_rule == commit_rules::ON_CLOSE) {

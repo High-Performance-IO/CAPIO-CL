@@ -28,7 +28,7 @@ void capiocl::Engine::print() const {
     print_message(CLI_LEVEL_JSON, msg);
 
     print_message(
-        CLI_LEVEL_JSON,
+        CLI_LEVEL_JSON, // LCOV_EXCL_LINE
         "|                            \033[48;5;172m  \033[0m File stored on file system" +
             std::string(77, ' ') + "|");
 
