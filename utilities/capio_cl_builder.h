@@ -124,11 +124,11 @@ inline std::tuple<bool, std::string> handle_save_command(std::vector<std::string
     std::string error_message;
     bool error_occurred = false;
 
-    if (args.size() < 2) {
+    if (args.empty()) {
         error_message  = "Missing filename";
         error_occurred = true;
     } else {
-        capiocl::Serializer::dump(engine, "TODO:WORKFLOW_NAME", args[1]);
+        capiocl::Serializer::dump(engine,  args[1]);
     }
     return {error_occurred, error_message};
 }
