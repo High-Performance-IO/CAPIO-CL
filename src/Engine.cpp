@@ -385,6 +385,13 @@ bool capiocl::Engine::isPermanent(const std::filesystem::path &path) const {
     this->_newFile(path);
     return isPermanent(path);
 }
+bool capiocl::Engine::isCommitted(const std::filesystem::path &path) const {
+    return monitor->isCommitted(path);
+}
+
+void capiocl::Engine::setCommitted(const std::filesystem::path &path) const {
+    monitor->setCommitted(path);
+}
 
 void capiocl::Engine::setExclude(const std::filesystem::path &path, const bool value) {
 

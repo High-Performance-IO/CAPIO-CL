@@ -8,6 +8,7 @@
 #include <jsoncons/basic_json.hpp>
 #include <jsoncons_ext/jsonschema/jsonschema.hpp>
 #include <string>
+#include <thread>
 #include <unistd.h>
 #include <unordered_map>
 #include <vector>
@@ -112,6 +113,63 @@ inline void print_message(const std::string &message_type = "",
 }
 
 /**
+ * Class to monitor runtime dependent information on CAPIO-CL related paths, such as committment
+ * status and Home Node Policies
+ */
+class Monitor {
+    friend class Engine;
+
+    bool *continue_execution;
+
+    std::thread *commit_listener_thread;
+    mutable std::mutex committed_lock;
+
+    std::vector<std::string> _committed_files;
+
+    std::string MULTICAST_ADDR;
+    int MULTICAST_PORT;
+
+    /**
+     * Thread function to monitor the occurrence of commitment of CAPIO-CL files
+     *
+     * @param committed_files Reference to std::vector containing committed files
+     * @param lock Lock to acquire mutex access to committed_files
+     * @param continue_execution Reference to boolean variable to know when to terminate
+     * @param ip_addr Socket multicast IP Address
+     * @param ip_port Socket multicast IP Port
+     */
+    static void commit_listener(std::vector<std::string> &committed_files, std::mutex &lock,
+                                const bool *continue_execution, const std::string &ip_addr,
+                                int ip_port);
+
+  protected:
+    /**
+     * Check whether a file is committed or not. First look into _committed_files. If not found
+     * then look into the file system for a committed token. If the committed token is not found
+     * then return false.
+     *
+     * TODO: commit token on FS
+     *
+     * @param path path to check for the commit status
+     * @return
+     */
+    bool isCommitted(const std::filesystem::path &path) const;
+
+    /**
+     * Set a file to be committed. First send a multicast message, and then generate a
+     * commit token
+     *
+     * TODO: commit token on FS
+     * @param path Path of file to commit
+     */
+    void setCommitted(const std::filesystem::path &path) const;
+
+  public:
+    explicit Monitor();
+    ~Monitor();
+};
+
+/**
  * @brief Engine for managing CAPIO-CL configuration entries.
  * The CapioCLEngine class stores and manages configuration rules for files
  * and directories as defined in the CAPIO-CL configuration file.
@@ -129,6 +187,9 @@ inline void print_message(const std::string &message_type = "",
 class Engine final {
     friend class Serializer;
     bool store_all_in_memory = false;
+
+    /// @brief Monitor instance to check runtime information of CAPIO-CL files
+    Monitor *monitor;
 
     /// @brief Node name variable used to handle home node policies
     std::string node_name;
@@ -207,6 +268,8 @@ class Engine final {
         } else {
             this->workflow_name = CAPIO_CL_DEFAULT_WF_NAME;
         }
+
+        monitor = new Monitor();
     }
 
     /// @brief Print the current CAPIO-CL configuration.
@@ -470,6 +533,19 @@ class Engine final {
      * @return True if file should persist on storage after workflow termination.
      */
     bool isPermanent(const std::filesystem::path &path) const;
+
+    /**
+     * Check whether the path is committed or not
+     * @param path
+     * @return
+     */
+    bool isCommitted(const std::filesystem::path &path) const;
+
+    /**
+     * Set file indicated by path as committed
+     * @param path
+     */
+    void setCommitted(const std::filesystem::path &path) const;
 
     /**
      * @brief Check for equality between two instances of #Engine
