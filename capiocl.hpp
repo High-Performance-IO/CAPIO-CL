@@ -147,7 +147,7 @@ class Engine final {
         std::string fire_rule              = fire_rules::UPDATE;
         long directory_children_count      = 0;
         long commit_on_close_count         = 0;
-        bool enable_directory_count_update = true;
+        bool enable_directory_count_update = true; // whether to update or not directory item count
         bool store_in_memory               = false;
         bool permanent                     = false;
         bool excluded                      = false;
@@ -189,7 +189,7 @@ class Engine final {
      * the number of files within a directory. This is because, when the user explicitly sets
      * the expected number of files in a directory, it becomes impossible to determine whether
      * that provided count includes or excludes the files automatically computed from CAPIO-CL
-     * information.
+     * information, or if it includes also all future created CAPIO-CL file entries or not.
      *
      * @param path The path whose parent directory entry count should be updated.
      */
@@ -337,7 +337,8 @@ class Engine final {
      * @note When using this method, `capiocl::Engine` will no longer automatically compute
      * the number of files contained within the directory specified by @p path. This is because
      * there is no way to determine whether the user-provided count includes or excludes the files
-     * automatically detected by CAPIO-CL.
+     * automatically detected by CAPIO-CL. Also, there is no way to know whether the provided number
+     * is already inclusive of the possible future generated children files.
      *
      * @param path The directory path.
      * @param num The expected number of files in the directory.
