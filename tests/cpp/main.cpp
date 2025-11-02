@@ -449,6 +449,37 @@ TEST(testCapioClEngine, testInsertFileDependencies) {
     EXPECT_TRUE(engine.getCommitOnFileDependencies("test.txt")[2] == "c");
 }
 
+TEST(testCapioClEngine, testComputeDirectoryFileCount) {
+    capiocl::Engine e;
+    e.newFile("a");
+    e.newFile("a/b");
+    e.newFile("a/b/c");
+    e.newFile("a/b/d");
+    e.newFile("a/e");
+    e.newFile("a/b/c/f");
+
+    EXPECT_EQ(e.getDirectoryFileCount("a"), 2);
+    EXPECT_EQ(e.getDirectoryFileCount("a/b"), 2);
+    EXPECT_EQ(e.getDirectoryFileCount("a/e"), 0);
+    EXPECT_EQ(e.getDirectoryFileCount("a/b/c"), 1);
+    EXPECT_EQ(e.getDirectoryFileCount("a/b/d"), 0);
+    EXPECT_EQ(e.getDirectoryFileCount("a/b/c/f"), 0);
+
+    EXPECT_TRUE(e.isDirectory("a"));
+    EXPECT_TRUE(e.isDirectory("a/b"));
+    EXPECT_FALSE(e.isDirectory("a/e"));
+
+    e.newFile("a/e/k");
+    EXPECT_TRUE(e.isDirectory("a/e"));
+    EXPECT_EQ(e.getDirectoryFileCount("a/e"), 1);
+
+    e.setDirectoryFileCount("a/b", 10);
+    e.newFile("a/b/r");
+    EXPECT_EQ(e.getDirectoryFileCount("a/b"), 10);
+    e.newFile("a/b/r/f");
+    EXPECT_EQ(e.getDirectoryFileCount("a/b/r"), 1);
+}
+
 TEST(testCapioClEngine, testEqualDifferentOperator) {
     capiocl::Engine engine1, engine2;
 

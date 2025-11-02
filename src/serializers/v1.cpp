@@ -65,7 +65,7 @@ void capiocl::Serializer::available_serializers::serialize_v1(
             }
 
             if (!entry.is_file) {
-                streaming_item["n_files"] = entry.directory_commit_file_count;
+                streaming_item["n_files"] = entry.directory_children_count;
             }
 
             // Convert std::vector<std::filesystem::path> -> std::vector<std::string>

@@ -69,8 +69,8 @@ void capiocl::Engine::print() const {
         auto consumers = itm.second.consumers;
         auto rowCount  = std::max(producers.size(), consumers.size());
 
-        std::string n_files = std::to_string(itm.second.directory_commit_file_count);
-        if (itm.second.directory_commit_file_count < 1) {
+        std::string n_files = std::to_string(itm.second.directory_children_count);
+        if (itm.second.directory_children_count < 1) {
             n_files = "N.A.";
         }
 
@@ -161,6 +161,22 @@ void capiocl::Engine::_newFile(const std::filesystem::path &path) const {
             entry.store_in_memory = store_all_in_memory;
         }
         _capio_cl_entries.emplace(path, std::move(entry));
+        this->compute_directory_entry_count(path);
+    }
+}
+
+void capiocl::Engine::compute_directory_entry_count(const std::filesystem::path &path) const {
+    if (const auto parent = path.parent_path(); !parent.empty()) {
+        if (const auto &entry = _capio_cl_entries.find(parent); entry != _capio_cl_entries.end()) {
+            if (entry->second.enable_directory_count_update) {
+                entry->second.directory_children_count++;
+                entry->second.is_file = false;
+            } else {
+                return;
+            }
+        }
+    } else {
+        return;
     }
 }
 
@@ -203,7 +219,7 @@ long capiocl::Engine::getDirectoryFileCount(const std::filesystem::path &path) c
     }
 
     if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
-        return itm->second.directory_commit_file_count;
+        return itm->second.directory_children_count;
     }
     this->_newFile(path);
     return getDirectoryFileCount(path);
@@ -456,7 +472,8 @@ void capiocl::Engine::setDirectoryFileCount(const std::filesystem::path &path, c
 
     if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
         this->setDirectory(path);
-        itm->second.directory_commit_file_count = num;
+        itm->second.directory_children_count      = num;
+        itm->second.enable_directory_count_update = false;
         return;
     }
     this->_newFile(path);
@@ -679,7 +696,7 @@ bool capiocl::Engine::operator==(const capiocl::Engine &other) const {
             this_itm.permanent != other_itm.permanent || this_itm.excluded != other_itm.excluded ||
             this_itm.is_file != other_itm.is_file ||
             this_itm.commit_on_close_count != other_itm.commit_on_close_count ||
-            this_itm.directory_commit_file_count != other_itm.directory_commit_file_count ||
+            this_itm.directory_children_count != other_itm.directory_children_count ||
             this_itm.store_in_memory != other_itm.store_in_memory) {
             return false;
         }

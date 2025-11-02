@@ -44,10 +44,10 @@ constexpr char UPDATE[]    = "update";
  * @return sanitized fire rule
  */
 inline std::string sanitize_fire_rule(const std::string &input) {
-    if (input == fire_rules::NO_UPDATE) {
-        return fire_rules::NO_UPDATE;
-    } else if (input == fire_rules::UPDATE) {
-        return fire_rules::UPDATE;
+    if (input == NO_UPDATE) {
+        return NO_UPDATE;
+    } else if (input == UPDATE) {
+        return UPDATE;
     } else {
         throw std::invalid_argument("Input commit rule is not a vlid CAPIO-CL rule");
     }
@@ -71,14 +71,14 @@ constexpr char ON_TERMINATION[] = "on_termination";
  * @return sanitized commit rule
  */
 inline std::string sanitize_commit_rule(const std::string &input) {
-    if (input == commit_rules::ON_CLOSE) {
-        return commit_rules::ON_CLOSE;
-    } else if (input == commit_rules::ON_FILE) {
-        return commit_rules::ON_FILE;
-    } else if (input == commit_rules::ON_N_FILES) {
-        return commit_rules::ON_N_FILES;
-    } else if (input == commit_rules::ON_TERMINATION) {
-        return commit_rules::ON_TERMINATION;
+    if (input == ON_CLOSE) {
+        return ON_CLOSE;
+    } else if (input == ON_FILE) {
+        return ON_FILE;
+    } else if (input == ON_N_FILES) {
+        return ON_N_FILES;
+    } else if (input == ON_TERMINATION) {
+        return ON_TERMINATION;
     } else {
         throw std::invalid_argument("Input commit rule is not a vlid CAPIO-CL rule");
     }
@@ -143,14 +143,15 @@ class Engine final {
         std::vector<std::string> producers;
         std::vector<std::string> consumers;
         std::vector<std::filesystem::path> file_dependencies;
-        std::string commit_rule          = commit_rules::ON_TERMINATION;
-        std::string fire_rule            = fire_rules::UPDATE;
-        bool permanent                   = false;
-        bool excluded                    = false;
-        bool is_file                     = true;
-        bool store_in_memory             = false;
-        long commit_on_close_count       = 0;
-        long directory_commit_file_count = 0;
+        std::string commit_rule            = commit_rules::ON_TERMINATION;
+        std::string fire_rule              = fire_rules::UPDATE;
+        long directory_children_count      = 0;
+        long commit_on_close_count         = 0;
+        bool enable_directory_count_update = true; // whether to update or not directory item count
+        bool store_in_memory               = false;
+        bool permanent                     = false;
+        bool excluded                      = false;
+        bool is_file                       = true;
     };
     // LCOV_EXCL_STOP
 
@@ -179,6 +180,20 @@ class Engine final {
      * @param path File path name
      */
     void _newFile(const std::filesystem::path &path) const;
+
+    /**
+     * @brief Updates the number of entries in the parent directory of the given path.
+     *
+     * @note The computed value remains valid only until `setDirectoryFileCount()` is called.
+     * Once `setDirectoryFileCount()` is used, this method is no longer responsible for computing
+     * the number of files within a directory. This is because, when the user explicitly sets
+     * the expected number of files in a directory, it becomes impossible to determine whether
+     * that provided count includes or excludes the files automatically computed from CAPIO-CL
+     * information, or if it includes also all future created CAPIO-CL file entries or not.
+     *
+     * @param path The path whose parent directory entry count should be updated.
+     */
+    void compute_directory_entry_count(const std::filesystem::path &path) const;
 
   public:
     /// @brief Class constructor
@@ -317,10 +332,18 @@ class Engine final {
     void setCommitedCloseNumber(const std::filesystem::path &path, long num);
 
     /**
-     * @brief Set the expected number of files in a directory.
-     * @param path Directory path.
-     * @param num Expected file count.
+     * @brief Sets the expected number of files in a directory.
+     *
+     * @note When using this method, `capiocl::Engine` will no longer automatically compute
+     * the number of files contained within the directory specified by @p path. This is because
+     * there is no way to determine whether the user-provided count includes or excludes the files
+     * automatically detected by CAPIO-CL. Also, there is no way to know whether the provided number
+     * is already inclusive of the possible future generated children files.
+     *
+     * @param path The directory path.
+     * @param num The expected number of files in the directory.
      */
+
     void setDirectoryFileCount(const std::filesystem::path &path, long num);
 
     /**
