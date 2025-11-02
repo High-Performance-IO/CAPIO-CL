@@ -143,14 +143,15 @@ class Engine final {
         std::vector<std::string> producers;
         std::vector<std::string> consumers;
         std::vector<std::filesystem::path> file_dependencies;
-        std::string commit_rule          = commit_rules::ON_TERMINATION;
-        std::string fire_rule            = fire_rules::UPDATE;
-        bool permanent                   = false;
-        bool excluded                    = false;
-        bool is_file                     = true;
-        bool store_in_memory             = false;
-        long commit_on_close_count       = 0;
-        long directory_commit_file_count = 0;
+        std::string commit_rule            = commit_rules::ON_TERMINATION;
+        std::string fire_rule              = fire_rules::UPDATE;
+        long directory_children_count      = 0;
+        long commit_on_close_count         = 0;
+        bool enable_directory_count_update = true;
+        bool store_in_memory               = false;
+        bool permanent                     = false;
+        bool excluded                      = false;
+        bool is_file                       = true;
     };
     // LCOV_EXCL_STOP
 
@@ -181,8 +182,16 @@ class Engine final {
     void _newFile(const std::filesystem::path &path) const;
 
     /**
-     * Update the number of entries in the parent directory of given path
-     * @param path
+     * @brief Updates the number of entries in the parent directory of the given path.
+     *
+     * @note The computed value remains valid only until `setDirectoryFileCount()` is called.
+     * Once `setDirectoryFileCount()` is used, this method is no longer responsible for computing
+     * the number of files within a directory. This is because, when the user explicitly sets
+     * the expected number of files in a directory, it becomes impossible to determine whether
+     * that provided count includes or excludes the files automatically computed from CAPIO-CL
+     * information.
+     *
+     * @param path The path whose parent directory entry count should be updated.
      */
     void compute_directory_entry_count(const std::filesystem::path &path) const;
 
@@ -323,10 +332,17 @@ class Engine final {
     void setCommitedCloseNumber(const std::filesystem::path &path, long num);
 
     /**
-     * @brief Set the expected number of files in a directory.
-     * @param path Directory path.
-     * @param num Expected file count.
+     * @brief Sets the expected number of files in a directory.
+     *
+     * @note When using this method, `capiocl::Engine` will no longer automatically compute
+     * the number of files contained within the directory specified by @p path. This is because
+     * there is no way to determine whether the user-provided count includes or excludes the files
+     * automatically detected by CAPIO-CL.
+     *
+     * @param path The directory path.
+     * @param num The expected number of files in the directory.
      */
+
     void setDirectoryFileCount(const std::filesystem::path &path, long num);
 
     /**

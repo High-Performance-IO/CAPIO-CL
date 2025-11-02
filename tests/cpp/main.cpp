@@ -472,6 +472,12 @@ TEST(testCapioClEngine, testComputeDirectoryFileCount) {
     e.newFile("a/e/k");
     EXPECT_TRUE(e.isDirectory("a/e"));
     EXPECT_EQ(e.getDirectoryFileCount("a/e"), 1);
+
+    e.setDirectoryFileCount("a/b", 10);
+    e.newFile("a/b/r");
+    EXPECT_EQ(e.getDirectoryFileCount("a/b"), 10);
+    e.newFile("a/b/r/f");
+    EXPECT_EQ(e.getDirectoryFileCount("a/b/r"), 1);
 }
 
 TEST(testCapioClEngine, testEqualDifferentOperator) {
