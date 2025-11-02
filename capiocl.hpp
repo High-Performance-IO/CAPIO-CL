@@ -44,10 +44,10 @@ constexpr char UPDATE[]    = "update";
  * @return sanitized fire rule
  */
 inline std::string sanitize_fire_rule(const std::string &input) {
-    if (input == fire_rules::NO_UPDATE) {
-        return fire_rules::NO_UPDATE;
-    } else if (input == fire_rules::UPDATE) {
-        return fire_rules::UPDATE;
+    if (input == NO_UPDATE) {
+        return NO_UPDATE;
+    } else if (input == UPDATE) {
+        return UPDATE;
     } else {
         throw std::invalid_argument("Input commit rule is not a vlid CAPIO-CL rule");
     }
@@ -71,14 +71,14 @@ constexpr char ON_TERMINATION[] = "on_termination";
  * @return sanitized commit rule
  */
 inline std::string sanitize_commit_rule(const std::string &input) {
-    if (input == commit_rules::ON_CLOSE) {
-        return commit_rules::ON_CLOSE;
-    } else if (input == commit_rules::ON_FILE) {
-        return commit_rules::ON_FILE;
-    } else if (input == commit_rules::ON_N_FILES) {
-        return commit_rules::ON_N_FILES;
-    } else if (input == commit_rules::ON_TERMINATION) {
-        return commit_rules::ON_TERMINATION;
+    if (input == ON_CLOSE) {
+        return ON_CLOSE;
+    } else if (input == ON_FILE) {
+        return ON_FILE;
+    } else if (input == ON_N_FILES) {
+        return ON_N_FILES;
+    } else if (input == ON_TERMINATION) {
+        return ON_TERMINATION;
     } else {
         throw std::invalid_argument("Input commit rule is not a vlid CAPIO-CL rule");
     }
@@ -179,6 +179,12 @@ class Engine final {
      * @param path File path name
      */
     void _newFile(const std::filesystem::path &path) const;
+
+    /**
+     * Update the number of entries in the parent directory of given path
+     * @param path
+     */
+    void compute_directory_entry_count(const std::filesystem::path &path) const;
 
   public:
     /// @brief Class constructor

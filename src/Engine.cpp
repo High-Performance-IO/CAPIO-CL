@@ -161,6 +161,18 @@ void capiocl::Engine::_newFile(const std::filesystem::path &path) const {
             entry.store_in_memory = store_all_in_memory;
         }
         _capio_cl_entries.emplace(path, std::move(entry));
+        this->compute_directory_entry_count(path);
+    }
+}
+
+void capiocl::Engine::compute_directory_entry_count(const std::filesystem::path &path) const {
+    if (const auto parent = path.parent_path(); !parent.empty()) {
+        if (const auto &entry = _capio_cl_entries.find(parent); entry != _capio_cl_entries.end()) {
+            entry->second.directory_commit_file_count++;
+            entry->second.is_file = false;
+        }
+    } else {
+        return;
     }
 }
 
