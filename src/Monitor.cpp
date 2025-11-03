@@ -3,9 +3,11 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 
+#define MESSAGE_SIZE (2 + PATH_MAX)
+
 static int outgoing_socket_multicast(const std::string &address, const int port,
                                      sockaddr_in *addr) {
-    int transmission_socket = socket(AF_INET, SOCK_DGRAM, 0);
+    const int transmission_socket = socket(AF_INET, SOCK_DGRAM, 0);
     if (transmission_socket < 0) {
         return -1;
     }
@@ -70,58 +72,95 @@ void capiocl::Monitor::commit_listener(std::vector<std::string> &committed_files
     const auto socket   = incoming_socket_multicast(ip_addr, ip_port, addr_in, addr_len);
     print_message(CLI_LEVEL_INFO, "Commit Monitor thread started");
 
-    const auto addr                 = reinterpret_cast<sockaddr *>(&addr_in);
-    char incoming_message[PATH_MAX] = {0};
+    const auto addr                     = reinterpret_cast<sockaddr *>(&addr_in);
+    char incoming_message[MESSAGE_SIZE] = {0};
 
     do {
         bzero(incoming_message, sizeof(incoming_message));
 
-        if (recvfrom(socket, incoming_message, PATH_MAX, 0, addr, &addr_len) < 0) {
+        if (recvfrom(socket, incoming_message, MESSAGE_SIZE, 0, addr, &addr_len) < 0) {
             continue;
         }
-        {
+
+        const auto path = std::string(incoming_message).substr(2);
+
+        if (const char command = incoming_message[0]; command == COMMIT) {
+            // Received an advert for a committed file
             std::lock_guard lg(lock);
-            if (std::find(committed_files.begin(), committed_files.end(), incoming_message) ==
+            if (std::find(committed_files.begin(), committed_files.end(), path) ==
                 committed_files.end()) {
-                committed_files.emplace_back(incoming_message);
+                committed_files.emplace_back(path);
             }
+        } else if (command == REQUEST) {
+            // Received a query for a committed file: message begins with ?
+            std::lock_guard lg(lock);
+            if (std::find(committed_files.begin(), committed_files.end(), path) !=
+                committed_files.end()) {
+                _send_message(ip_addr, ip_port, path, COMMIT);
+            }
+        } else {
+            throw MonitorException(std::string("Unknown command: ") + path);
         }
+
     } while (*continue_execution);
 }
 
-capiocl::Monitor::Monitor() {
-    continue_execution = new bool(true);
-    MULTICAST_ADDR     = "224.224.224.1";
-    MULTICAST_PORT     = 12345;
-
-    commit_listener_thread = new std::thread(&Monitor::commit_listener, std::ref(_committed_files),
-                                             std::ref(committed_lock), std::ref(continue_execution),
-                                             MULTICAST_ADDR, MULTICAST_PORT);
-}
-
-capiocl::Monitor::~Monitor() { delete commit_listener_thread; }
-
-bool capiocl::Monitor::isCommitted(const std::filesystem::path &path) const {
-    const std::lock_guard lg(committed_lock);
-    if (std::find(_committed_files.begin(), _committed_files.end(), path) !=
-        _committed_files.end()) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-void capiocl::Monitor::setCommitted(const std::filesystem::path &path) const {
-    sockaddr_in addr       = {};
-    char message[PATH_MAX] = {0};
-    memcpy(message, path.c_str(), PATH_MAX);
-    const auto socket = outgoing_socket_multicast(MULTICAST_ADDR, MULTICAST_PORT, &addr);
+void capiocl::Monitor::_send_message(const std::string &ip_addr, const int ip_port,
+                                     const std::string &path, const MESSAGE_COMMANDS action) {
+    sockaddr_in addr           = {};
+    char message[MESSAGE_SIZE] = {0};
+    snprintf(message, sizeof(message), "%c %s", action, path.c_str());
+    const auto socket = outgoing_socket_multicast(ip_addr, ip_port, &addr);
     if (sendto(socket, message, strlen(message), 0, reinterpret_cast<sockaddr *>(&addr),
                sizeof(addr)) < 0) {
         print_message(CLI_LEVEL_ERROR, std::string("Unable to send message to multicast group: ") +
                                            std::strerror(errno));
     };
     close(socket);
+}
+
+capiocl::Monitor::Monitor(const std::string &ip_addr, const int ip_port) {
+    continue_execution = new bool(true);
+    MULTICAST_ADDR     = ip_addr;
+    MULTICAST_PORT     = ip_port;
+
+    commit_listener_thread = new std::thread(&Monitor::commit_listener, std::ref(_committed_files),
+                                             std::ref(committed_lock), std::ref(continue_execution),
+                                             MULTICAST_ADDR, MULTICAST_PORT);
+}
+
+capiocl::Monitor::~Monitor() {
+    *continue_execution = false;
+    pthread_cancel(commit_listener_thread->native_handle());
+    commit_listener_thread->join();
+    delete commit_listener_thread;
+    delete continue_execution;
+}
+
+bool capiocl::Monitor::isCommitted(const std::filesystem::path &path) const {
+
+    bool found;
+    {
+        const std::lock_guard lg(committed_lock);
+        found = std::find(_committed_files.begin(), _committed_files.end(), path) !=
+                _committed_files.end();
+    }
+
+    if (found) {
+        return true;
+    } else {
+        _send_message(MULTICAST_ADDR, MULTICAST_PORT, path, REQUEST);
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+        {
+            const std::lock_guard lg(committed_lock);
+            return std::find(_committed_files.begin(), _committed_files.end(), path) !=
+                   _committed_files.end();
+        }
+    }
+}
+
+void capiocl::Monitor::setCommitted(const std::filesystem::path &path) const {
+    _send_message(MULTICAST_ADDR, MULTICAST_PORT, std::filesystem::path(path), COMMIT);
     std::lock_guard lg(committed_lock);
     if (std::find(_committed_files.begin(), _committed_files.end(), path) ==
         _committed_files.end()) {

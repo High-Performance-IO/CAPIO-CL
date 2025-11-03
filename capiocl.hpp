@@ -135,7 +135,7 @@ class MonitorException final : public std::exception {
 };
 
 /**
- * Class to monitor runtime dependent information on CAPIO-CL related paths, such as committment
+ * Class to monitor runtime dependent information on CAPIO-CL related paths, such as commitment
  * status and Home Node Policies
  */
 class Monitor {
@@ -151,6 +151,8 @@ class Monitor {
     std::string MULTICAST_ADDR;
     int MULTICAST_PORT;
 
+    typedef enum { COMMIT = '!', REQUEST = '?' } MESSAGE_COMMANDS;
+
     /**
      * Thread function to monitor the occurrence of commitment of CAPIO-CL files
      *
@@ -163,6 +165,16 @@ class Monitor {
     static void commit_listener(std::vector<std::string> &committed_files, std::mutex &lock,
                                 const bool *continue_execution, const std::string &ip_addr,
                                 int ip_port);
+
+    /**
+     * Inner static member to send the commit message of a file
+     * @param ip_addr  Multicast IP addr to send data
+     * @param ip_port Multicast IP port to send data
+     * @param path File to be sent as committed
+     * @param action ! to send commit status, ? to request status
+     */
+    static void _send_message(const std::string &ip_addr, int ip_port, const std::string &path,
+                              MESSAGE_COMMANDS action = COMMIT);
 
   protected:
     /**
@@ -189,9 +201,12 @@ class Monitor {
   public:
     /**
      * Default constructor
+     *
+     * @param ip_addr Multicast Group IP Address
+     * @param ip_port Multicast Group IP Port
      * @throws MonitorException
      */
-    explicit Monitor();
+    explicit Monitor(const std::string &ip_addr, int ip_port);
     ~Monitor();
 };
 
@@ -295,7 +310,7 @@ class Engine final {
             this->workflow_name = CAPIO_CL_DEFAULT_WF_NAME;
         }
 
-        monitor = new Monitor();
+        monitor = new Monitor("224.224.224.1", 12345);
     }
 
     /// @brief Print the current CAPIO-CL configuration.

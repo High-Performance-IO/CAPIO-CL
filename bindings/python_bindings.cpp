@@ -11,6 +11,8 @@ PYBIND11_MODULE(_py_capio_cl, m) {
         "CAPIO-CL: Cross Application Programmable I/O - Coordination Language python bindings.";
 
     py::register_exception<capiocl::ParserException>(m, "ParserException");
+    py::register_exception<capiocl::SerializerException>(m, "SerializerException");
+    py::register_exception<capiocl::MonitorException>(m, "MonitorException");
 
     py::module_ fire_rules       = m.def_submodule("fire_rules", "CAPIO-CL fire rules");
     fire_rules.attr("UPDATE")    = py::str(capiocl::fire_rules::UPDATE);
