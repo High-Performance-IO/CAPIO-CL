@@ -68,6 +68,8 @@ PYBIND11_MODULE(_py_capio_cl, m) {
         .def("setAllStoreInMemory", &capiocl::Engine::setAllStoreInMemory)
         .def("getWorkflowName", &capiocl::Engine::getWorkflowName)
         .def("setWorkflowName", &capiocl::Engine::setWorkflowName)
+        .def("setCommitted", &capiocl::Engine::setCommitted)
+        .def("isCommitted", &capiocl::Engine::isCommitted)
         .def("__str__", &capiocl::Engine::print)
         .def("__repr__",
              [](const capiocl::Engine &e) {

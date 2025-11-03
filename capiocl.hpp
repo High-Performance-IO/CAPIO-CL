@@ -113,6 +113,28 @@ inline void print_message(const std::string &message_type = "",
 }
 
 /**
+ * @brief Custom exception thrown when parsing a CAPIO-CL configuration file by #Parser
+ */
+class MonitorException final : public std::exception {
+    std::string message;
+
+  public:
+    /**
+     * @brief Construct a new CAPIO-CL Exception
+     * @param msg Error Message that raised this exception
+     */
+    explicit MonitorException(const std::string &msg) : message(msg) {
+        print_message(CLI_LEVEL_ERROR, msg);
+    }
+
+    /**
+     * Get the description of the error causing the exception
+     * @return
+     */
+    [[nodiscard]] const char *what() const noexcept override { return message.c_str(); }
+};
+
+/**
  * Class to monitor runtime dependent information on CAPIO-CL related paths, such as committment
  * status and Home Node Policies
  */
@@ -122,9 +144,9 @@ class Monitor {
     bool *continue_execution;
 
     std::thread *commit_listener_thread;
-    mutable std::mutex committed_lock;
 
-    std::vector<std::string> _committed_files;
+    mutable std::mutex committed_lock;
+    mutable std::vector<std::string> _committed_files;
 
     std::string MULTICAST_ADDR;
     int MULTICAST_PORT;
@@ -165,6 +187,10 @@ class Monitor {
     void setCommitted(const std::filesystem::path &path) const;
 
   public:
+    /**
+     * Default constructor
+     * @throws MonitorException
+     */
     explicit Monitor();
     ~Monitor();
 };
