@@ -23,35 +23,39 @@ static int incoming_socket_multicast(const std::string &address_ip, const int po
     constexpr int loopback   = 1; // enable reception of loopback messages
     constexpr int multi_bind = 1; // enable multiple sockets on same address
 
-    const int _socket = socket(AF_INET, SOCK_DGRAM, 0);
-    if (_socket < 0) {
-        throw capiocl::MonitorException(std::string("socket() failed: ") + strerror(errno));
-    }
-
-    // Allow multiple sockets to bind to the same port
-    if (setsockopt(_socket, SOL_SOCKET, SO_REUSEADDR, &multi_bind, sizeof(multi_bind)) < 0) {
-        throw capiocl::MonitorException(std::string("REUSEADDR failed: ") + strerror(errno));
-    }
-
-    if (setsockopt(_socket, SOL_SOCKET, SO_REUSEPORT, &multi_bind, sizeof(multi_bind)) < 0) {
-        throw capiocl::MonitorException(std::string("REUSEPORT failed: ") + strerror(errno));
-    }
-
-    // Bind to port
     addr                 = {};
     addr.sin_family      = AF_INET;
     addr.sin_port        = htons(port);
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
     addrlen              = sizeof(addr);
 
+    ip_mreq mreq              = {};
+    mreq.imr_multiaddr.s_addr = inet_addr(address_ip.c_str());
+    mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+
+    const int _socket = socket(AF_INET, SOCK_DGRAM, 0);
+
+    // LCOV_EXCL_START
+    if (_socket < 0) {
+        throw capiocl::MonitorException(std::string("socket() failed: ") + strerror(errno));
+    }
+
+    // Allow multiple sockets to bind to the same addr
+    if (setsockopt(_socket, SOL_SOCKET, SO_REUSEADDR, &multi_bind, sizeof(multi_bind)) < 0) {
+        throw capiocl::MonitorException(std::string("REUSEADDR failed: ") + strerror(errno));
+    }
+
+    // Allow multiple sockets to bind to the same port
+    if (setsockopt(_socket, SOL_SOCKET, SO_REUSEPORT, &multi_bind, sizeof(multi_bind)) < 0) {
+        throw capiocl::MonitorException(std::string("REUSEPORT failed: ") + strerror(errno));
+    }
+
+    // Bind to port
     if (bind(_socket, reinterpret_cast<sockaddr *>(&addr), addrlen) < 0) {
         throw capiocl::MonitorException(std::string("bind failed: ") + strerror(errno));
     }
 
     // Join multicast group
-    ip_mreq mreq              = {};
-    mreq.imr_multiaddr.s_addr = inet_addr(address_ip.c_str());
-    mreq.imr_interface.s_addr = htonl(INADDR_ANY);
     if (setsockopt(_socket, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0) {
         throw capiocl::MonitorException(std::string("join multicast failed: ") + strerror(errno));
     }
@@ -60,6 +64,7 @@ static int incoming_socket_multicast(const std::string &address_ip, const int po
     if (setsockopt(_socket, IPPROTO_IP, IP_MULTICAST_LOOP, &loopback, sizeof(loopback)) < 0) {
         throw capiocl::MonitorException(std::string("loopback failed: ") + strerror(errno));
     }
+    // LCOV_EXCL_STOP
 
     return _socket;
 }
