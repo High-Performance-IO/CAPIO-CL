@@ -196,7 +196,7 @@ class Monitor {
      * TODO: commit token on FS
      * @param path Path of file to commit
      */
-    void setCommitted(const std::filesystem::path path) const;
+    void setCommitted(std::filesystem::path path) const;
 
   public:
     /**
@@ -230,7 +230,7 @@ class Engine final {
     bool store_all_in_memory = false;
 
     /// @brief Monitor instance to check runtime information of CAPIO-CL files
-    Monitor *monitor;
+    Monitor monitor;
 
     /// @brief Node name variable used to handle home node policies
     std::string node_name;
@@ -299,22 +299,7 @@ class Engine final {
 
   public:
     /// @brief Class constructor
-    explicit Engine() {
-        node_name = std::string(1024, '\0');
-        gethostname(node_name.data(), node_name.size());
-        node_name.resize(std::strlen(node_name.c_str()));
-
-        if (const char *_wf_name = std::getenv("WORKFLOW_NAME"); _wf_name != nullptr) {
-            this->workflow_name = _wf_name;
-        } else {
-            this->workflow_name = CAPIO_CL_DEFAULT_WF_NAME;
-        }
-
-        monitor = new Monitor("224.224.224.1", 12345);
-    }
-
-    /// @brief Default destructor
-    ~Engine() { delete monitor; }
+    explicit Engine();
 
     /// @brief Print the current CAPIO-CL configuration.
     void print() const;

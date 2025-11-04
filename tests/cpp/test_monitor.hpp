@@ -1,6 +1,10 @@
 #ifndef CAPIO_CL_MONITOR_HPP
 #define CAPIO_CL_MONITOR_HPP
 
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+
 #define MONITOR_SUITE_NAME testMonitor
 
 TEST(MONITOR_SUITE_NAME, testCommitCommunication) {
@@ -26,27 +30,17 @@ TEST(MONITOR_SUITE_NAME, testCommitCommunication) {
 }
 
 TEST(MONITOR_SUITE_NAME, testIsCommittedAfterStartup) {
-    std::mutex m1;
-    std::lock_guard lg(m1);
-    std::thread t1([&]() {
-        const capiocl::Engine e;
-        e.setCommitted("a");
-        EXPECT_TRUE(e.isCommitted("a"));
-        std::lock_guard lg1(m1);
-    });
+
+    const capiocl::Engine e;
+    e.setCommitted("a");
+    EXPECT_TRUE(e.isCommitted("a"));
 
     sleep(1);
 
-    std::thread t2([&]() {
-        const capiocl::Engine e;
-
-        while (!e.isCommitted("a")) {
-            sleep(1);
-        }
-        EXPECT_TRUE(e.isCommitted("a"));
-    });
-
-    t1.join();
-    t2.join();
+    const capiocl::Engine e1;
+    while (!e1.isCommitted("a")) {
+        sleep(1);
+    }
+    EXPECT_TRUE(e1.isCommitted("a"));
 }
 #endif // CAPIO_CL_MONITOR_HPP

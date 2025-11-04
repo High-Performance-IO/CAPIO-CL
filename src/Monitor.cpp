@@ -5,21 +5,22 @@
 
 #define MESSAGE_SIZE (2 + PATH_MAX)
 
-static int outgoing_socket_multicast(const std::string &address, const int port,
-                                     sockaddr_in *addr) {
-    const int transmission_socket = socket(AF_INET, SOCK_DGRAM, 0);
+static std::tuple<int, sockaddr_in> outgoing_socket_multicast(const std::string &address,
+                                                              const int port) {
+    sockaddr_in addr{};
+    addr.sin_family      = AF_INET;
+    addr.sin_addr.s_addr = inet_addr(address.c_str());
+    addr.sin_port        = htons(port);
 
+    const int transmission_socket = socket(AF_INET, SOCK_DGRAM, 0);
     // LCOV_EXCL_START
     if (transmission_socket < 0) {
         throw capiocl::MonitorException(std::string("socket() failed: ") + strerror(errno));
     }
     // LCOV_EXCL_STOP
 
-    addr->sin_family      = AF_INET;
-    addr->sin_addr.s_addr = inet_addr(address.c_str());
-    addr->sin_port        = htons(port);
-    return transmission_socket;
-};
+    return {transmission_socket, addr};
+}
 
 static int incoming_socket_multicast(const std::string &address_ip, const int port,
                                      sockaddr_in &addr, socklen_t &addrlen) {
@@ -78,7 +79,7 @@ void capiocl::Monitor::commit_listener(std::vector<std::string> &committed_files
     sockaddr_in addr_in = {};
     socklen_t addr_len  = {};
     const auto socket   = incoming_socket_multicast(ip_addr, ip_port, addr_in, addr_len);
-    print_message(CLI_LEVEL_INFO, "Monitor on thread: " + std::to_string(gettid()));
+    print_message(CLI_LEVEL_INFO, "Monitor on thread: " + std::to_string(getpid()));
 
     const auto addr                     = reinterpret_cast<sockaddr *>(&addr_in);
     char incoming_message[MESSAGE_SIZE] = {0};
@@ -101,28 +102,24 @@ void capiocl::Monitor::commit_listener(std::vector<std::string> &committed_files
                 committed_files.end()) {
                 committed_files.emplace_back(path);
             }
-        } else if (command == REQUEST) {
-            // Received a query for a committed file: message begins with ?
+        } else {
+            // Received a query for a committed file: message begins with capiocl::Monitor::REQUEST
             std::lock_guard lg(lock);
             if (std::find(committed_files.begin(), committed_files.end(), path) !=
                 committed_files.end()) {
                 _send_message(ip_addr, ip_port, path, COMMIT);
             }
-        } else {
-            throw MonitorException(std::string("Unknown command: ") + path);
         }
-
     } while (*continue_execution);
 }
 
 void capiocl::Monitor::_send_message(const std::string &ip_addr, const int ip_port,
                                      const std::string &path, const MESSAGE_COMMANDS action) {
-    sockaddr_in addr           = {};
     char message[MESSAGE_SIZE] = {0};
     snprintf(message, sizeof(message), "%c %s", action, path.c_str());
-    const auto socket = outgoing_socket_multicast(ip_addr, ip_port, &addr);
-    sendto(socket, message, strlen(message), 0, reinterpret_cast<sockaddr *>(&addr), sizeof(addr));
-    close(socket);
+    auto [out_s, addr] = outgoing_socket_multicast(ip_addr, ip_port);
+    sendto(out_s, message, strlen(message), 0, reinterpret_cast<sockaddr *>(&addr), sizeof(addr));
+    close(out_s);
 }
 
 capiocl::Monitor::Monitor(const std::string &ip_addr, const int ip_port) {

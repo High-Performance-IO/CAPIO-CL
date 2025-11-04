@@ -122,6 +122,17 @@ void capiocl::Engine::print() const {
 
     print_message(CLI_LEVEL_JSON, "");
 }
+capiocl::Engine::Engine() : monitor("224.224.224.1", 12345) {
+    node_name = std::string(1024, '\0');
+    gethostname(node_name.data(), node_name.size());
+    node_name.resize(std::strlen(node_name.c_str()));
+
+    if (const char *_wf_name = std::getenv("WORKFLOW_NAME"); _wf_name != nullptr) {
+        this->workflow_name = _wf_name;
+    } else {
+        this->workflow_name = CAPIO_CL_DEFAULT_WF_NAME;
+    }
+}
 
 void capiocl::Engine::_newFile(const std::filesystem::path &path) const {
     if (path.empty()) {
@@ -386,11 +397,11 @@ bool capiocl::Engine::isPermanent(const std::filesystem::path &path) const {
     return isPermanent(path);
 }
 bool capiocl::Engine::isCommitted(const std::filesystem::path &path) const {
-    return monitor->isCommitted(path);
+    return monitor.isCommitted(path);
 }
 
 void capiocl::Engine::setCommitted(const std::filesystem::path &path) const {
-    monitor->setCommitted(path);
+    monitor.setCommitted(path);
 }
 
 void capiocl::Engine::setExclude(const std::filesystem::path &path, const bool value) {
