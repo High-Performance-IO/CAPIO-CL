@@ -313,6 +313,9 @@ class Engine final {
         monitor = new Monitor("224.224.224.1", 12345);
     }
 
+    /// @brief Default destructor
+    ~Engine() { delete monitor; }
+
     /// @brief Print the current CAPIO-CL configuration.
     void print() const;
 

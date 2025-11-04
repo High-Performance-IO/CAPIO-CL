@@ -8,9 +8,12 @@
 static int outgoing_socket_multicast(const std::string &address, const int port,
                                      sockaddr_in *addr) {
     const int transmission_socket = socket(AF_INET, SOCK_DGRAM, 0);
+
+    // LCOV_EXCL_START
     if (transmission_socket < 0) {
-        return -1;
+        throw capiocl::MonitorException(std::string("socket() failed: ") + strerror(errno));
     }
+    // LCOV_EXCL_STOP
 
     addr->sin_family      = AF_INET;
     addr->sin_addr.s_addr = inet_addr(address.c_str());
@@ -116,11 +119,7 @@ void capiocl::Monitor::_send_message(const std::string &ip_addr, const int ip_po
     char message[MESSAGE_SIZE] = {0};
     snprintf(message, sizeof(message), "%c %s", action, path.c_str());
     const auto socket = outgoing_socket_multicast(ip_addr, ip_port, &addr);
-    if (sendto(socket, message, strlen(message), 0, reinterpret_cast<sockaddr *>(&addr),
-               sizeof(addr)) < 0) {
-        print_message(CLI_LEVEL_ERROR, std::string("Unable to send message to multicast group: ") +
-                                           std::strerror(errno));
-    };
+    sendto(socket, message, strlen(message), 0, reinterpret_cast<sockaddr *>(&addr), sizeof(addr));
     close(socket);
 }
 
