@@ -182,8 +182,6 @@ class Monitor {
      * then look into the file system for a committed token. If the committed token is not found
      * then return false.
      *
-     * TODO: commit token on FS
-     *
      * @param path path to check for the commit status
      * @return
      */
@@ -193,7 +191,6 @@ class Monitor {
      * Set a file to be committed. First send a multicast message, and then generate a
      * commit token
      *
-     * TODO: commit token on FS
      * @param path Path of file to commit
      */
     void setCommitted(std::filesystem::path path) const;

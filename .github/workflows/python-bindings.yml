@@ -72,7 +72,7 @@ jobs:
             --exclude-throw-branches                      \
             --gcov-ignore-parse-errors=negative_hits.warn \
             --exclude tests/                              \
-            --xml coverage.xml                            
+            --xml coverage.xml                            \
             .
 
       - name: "Upload coverage report"

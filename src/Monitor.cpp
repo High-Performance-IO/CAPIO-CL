@@ -1,9 +1,26 @@
 #include "capiocl.hpp"
 #include <arpa/inet.h>
+#include <fstream>
+#include <iostream>
 #include <netinet/in.h>
 #include <sys/socket.h>
 
 #define MESSAGE_SIZE (2 + PATH_MAX)
+
+std::filesystem::path compute_commit_token_name(const std::filesystem::path &path) {
+    const auto abs = std::filesystem::absolute(path);
+    auto token     = abs.parent_path() / ("." + abs.filename().string() + ".capiocl");
+    return token;
+}
+
+void generate_commit_token(const std::filesystem::path &path) {
+    if (const auto token_name = compute_commit_token_name(path);
+        !std::filesystem::exists(token_name)) {
+        std::filesystem::create_directories(token_name.parent_path());
+        std::ofstream file(token_name);
+        file.close();
+    }
+}
 
 static std::tuple<int, sockaddr_in> outgoing_socket_multicast(const std::string &address,
                                                               const int port) {
@@ -156,8 +173,13 @@ bool capiocl::Monitor::isCommitted(const std::filesystem::path &path) const {
         std::this_thread::sleep_for(std::chrono::milliseconds(300));
         {
             const std::lock_guard lg(committed_lock);
-            return std::find(_committed_files.begin(), _committed_files.end(), path) !=
-                   _committed_files.end();
+            found = std::find(_committed_files.begin(), _committed_files.end(), path) !=
+                    _committed_files.end();
+        }
+        if (found) {
+            return true;
+        } else {
+            return std::filesystem::exists(compute_commit_token_name(path));
         }
     }
 }
@@ -168,5 +190,6 @@ void capiocl::Monitor::setCommitted(const std::filesystem::path path) const {
     if (std::find(_committed_files.begin(), _committed_files.end(), path) ==
         _committed_files.end()) {
         _committed_files.emplace_back(path);
+        generate_commit_token(path);
     }
 }
