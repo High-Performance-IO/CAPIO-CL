@@ -78,7 +78,7 @@ void capiocl::Monitor::commit_listener(std::vector<std::string> &committed_files
     sockaddr_in addr_in = {};
     socklen_t addr_len  = {};
     const auto socket   = incoming_socket_multicast(ip_addr, ip_port, addr_in, addr_len);
-    print_message(CLI_LEVEL_INFO, "Commit Monitor thread started");
+    print_message(CLI_LEVEL_INFO, "Monitor on thread: " + std::to_string(gettid()));
 
     const auto addr                     = reinterpret_cast<sockaddr *>(&addr_in);
     char incoming_message[MESSAGE_SIZE] = {0};
@@ -86,9 +86,11 @@ void capiocl::Monitor::commit_listener(std::vector<std::string> &committed_files
     do {
         bzero(incoming_message, sizeof(incoming_message));
 
+        // LCOV_EXCL_START
         if (recvfrom(socket, incoming_message, MESSAGE_SIZE, 0, addr, &addr_len) < 0) {
             continue;
         }
+        // LCOV_EXCL_STOP
 
         const auto path = std::string(incoming_message).substr(2);
 
@@ -163,7 +165,7 @@ bool capiocl::Monitor::isCommitted(const std::filesystem::path &path) const {
     }
 }
 
-void capiocl::Monitor::setCommitted(const std::filesystem::path &path) const {
+void capiocl::Monitor::setCommitted(const std::filesystem::path path) const {
     _send_message(MULTICAST_ADDR, MULTICAST_PORT, std::filesystem::path(path), COMMIT);
     std::lock_guard lg(committed_lock);
     if (std::find(_committed_files.begin(), _committed_files.end(), path) ==

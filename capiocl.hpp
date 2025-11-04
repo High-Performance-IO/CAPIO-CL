@@ -196,7 +196,7 @@ class Monitor {
      * TODO: commit token on FS
      * @param path Path of file to commit
      */
-    void setCommitted(const std::filesystem::path &path) const;
+    void setCommitted(const std::filesystem::path path) const;
 
   public:
     /**
