@@ -24,17 +24,9 @@ include(GNUInstallDirs)
 #####################################
 # Options
 #####################################
-option(CAPIO_CL_BUILD_TESTS "Build CAPIO-CL test suite" ON)
-option(BUILD_PYTHON_BINDINGS "Build python bindings for CAPIO-CL" ON)
+option(CAPIO_CL_BUILD_TESTS "Build CAPIO-CL test suite" OFF)
+option(BUILD_PYTHON_BINDINGS "Build python bindings for CAPIO-CL" OFF)
 option(ENABLE_COVERAGE "Enable code coverage collection" FALSE)
-
-# Disable tests when included as a subproject
-if (NOT PROJECT_IS_TOP_LEVEL)
-    set(CAPIO_CL_BUILD_TESTS OFF)
-    set(BUILD_PYTHON_BINDINGS OFF)
-    message(STATUS "CAPIO-CL included as subproject → tests disabled")
-    message(STATUS "CAPIO-CL included as subproject → python bindings disabled")
-endif ()
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_compile_options(-O0 -g)
