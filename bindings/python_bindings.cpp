@@ -1,8 +1,14 @@
-#include "capiocl.hpp"
 #include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/stl/filesystem.h>
+
+#include "capiocl.hpp"
+#include "include/engine.h"
+#include "include/monitor.h"
+#include "include/parser.h"
+#include "include/printer.h"
+#include "include/serializer.h"
 
 namespace py = pybind11;
 
@@ -10,96 +16,86 @@ PYBIND11_MODULE(_py_capio_cl, m) {
     m.doc() =
         "CAPIO-CL: Cross Application Programmable I/O - Coordination Language python bindings.";
 
-    py::register_exception<capiocl::ParserException>(m, "ParserException");
-    py::register_exception<capiocl::SerializerException>(m, "SerializerException");
-    py::register_exception<capiocl::MonitorException>(m, "MonitorException");
+    py::register_exception<capiocl::parser::ParserException>(m, "ParserException");
+    py::register_exception<capiocl::serializer::SerializerException>(m, "SerializerException");
+    py::register_exception<capiocl::monitor::MonitorException>(m, "MonitorException");
 
     py::module_ fire_rules       = m.def_submodule("fire_rules", "CAPIO-CL fire rules");
-    fire_rules.attr("UPDATE")    = py::str(capiocl::fire_rules::UPDATE);
-    fire_rules.attr("NO_UPDATE") = py::str(capiocl::fire_rules::NO_UPDATE);
+    fire_rules.attr("UPDATE")    = py::str(capiocl::fireRules::UPDATE);
+    fire_rules.attr("NO_UPDATE") = py::str(capiocl::fireRules::NO_UPDATE);
 
     py::module_ commit_rules            = m.def_submodule("commit_rules", "CAPIO-CL commit rules");
-    commit_rules.attr("ON_CLOSE")       = py::str(capiocl::commit_rules::ON_CLOSE);
-    commit_rules.attr("ON_FILE")        = py::str(capiocl::commit_rules::ON_FILE);
-    commit_rules.attr("ON_N_FILES")     = py::str(capiocl::commit_rules::ON_N_FILES);
-    commit_rules.attr("ON_TERMINATION") = py::str(capiocl::commit_rules::ON_TERMINATION);
+    commit_rules.attr("ON_CLOSE")       = py::str(capiocl::commitRules::ON_CLOSE);
+    commit_rules.attr("ON_FILE")        = py::str(capiocl::commitRules::ON_FILE);
+    commit_rules.attr("ON_N_FILES")     = py::str(capiocl::commitRules::ON_N_FILES);
+    commit_rules.attr("ON_TERMINATION") = py::str(capiocl::commitRules::ON_TERMINATION);
 
     py::module_ VERSION = m.def_submodule("VERSION", "CAPIO-CL version");
     VERSION.attr("V1")  = py::str(capiocl::CAPIO_CL_VERSION::V1);
 
-    py::class_<capiocl::Engine>(
+    py::class_<capiocl::engine::Engine>(
         m, "Engine", "The main CAPIO-CL engine for managing data communication and I/O operations.")
         .def(py::init<>())
-        .def("newFile", &capiocl::Engine::newFile)
-        .def("print", &capiocl::Engine::print)
-        .def("contains", &capiocl::Engine::contains)
-        .def("size", &capiocl::Engine::size)
-        .def("add", &capiocl::Engine::add)
-        .def("addProducer", &capiocl::Engine::addProducer)
-        .def("addConsumer", &capiocl::Engine::addConsumer)
-        .def("addFileDependency", &capiocl::Engine::addFileDependency)
-        .def("remove", &capiocl::Engine::remove)
-        .def("setCommitRule", &capiocl::Engine::setCommitRule)
-        .def("setFireRule", &capiocl::Engine::setFireRule)
-        .def("setPermanent", &capiocl::Engine::setPermanent)
-        .def("setExclude", &capiocl::Engine::setExclude)
-        .def("setDirectory", &capiocl::Engine::setDirectory)
-        .def("setFile", &capiocl::Engine::setFile)
-        .def("setCommittedCloseNumber", &capiocl::Engine::setCommitedCloseNumber)
-        .def("setDirectoryFileCount", &capiocl::Engine::setDirectoryFileCount)
-        .def("setFileDeps", &capiocl::Engine::setFileDeps)
-        .def("setStoreFileInMemory", &capiocl::Engine::setStoreFileInMemory)
-        .def("setStoreFileInFileSystem", &capiocl::Engine::setStoreFileInFileSystem)
-        .def("getDirectoryFileCount", &capiocl::Engine::getDirectoryFileCount)
-        .def("getCommitRule", &capiocl::Engine::getCommitRule)
-        .def("getFireRule", &capiocl::Engine::getFireRule)
-        .def("getProducers", &capiocl::Engine::getProducers)
-        .def("getConsumers", &capiocl::Engine::getConsumers)
-        .def("getCommitCloseCount", &capiocl::Engine::getCommitCloseCount)
-        .def("getCommitOnFileDependencies", &capiocl::Engine::getCommitOnFileDependencies)
-        .def("getFileToStoreInMemory", &capiocl::Engine::getFileToStoreInMemory)
-        .def("getHomeNode", &capiocl::Engine::getHomeNode)
-        .def("isProducer", &capiocl::Engine::isProducer)
-        .def("isConsumer", &capiocl::Engine::isConsumer)
-        .def("isFirable", &capiocl::Engine::isFirable)
-        .def("isFile", &capiocl::Engine::isFile)
-        .def("isExcluded", &capiocl::Engine::isExcluded)
-        .def("isDirectory", &capiocl::Engine::isDirectory)
-        .def("isStoredInMemory", &capiocl::Engine::isStoredInMemory)
-        .def("isPermanent", &capiocl::Engine::isPermanent)
-        .def("setAllStoreInMemory", &capiocl::Engine::setAllStoreInMemory)
-        .def("getWorkflowName", &capiocl::Engine::getWorkflowName)
-        .def("setWorkflowName", &capiocl::Engine::setWorkflowName)
-        .def("setCommitted", &capiocl::Engine::setCommitted)
-        .def("isCommitted", &capiocl::Engine::isCommitted)
-        .def("__str__", &capiocl::Engine::print)
+        .def("newFile", &capiocl::engine::Engine::newFile)
+        .def("print", &capiocl::engine::Engine::print)
+        .def("contains", &capiocl::engine::Engine::contains)
+        .def("size", &capiocl::engine::Engine::size)
+        .def("add", &capiocl::engine::Engine::add)
+        .def("addProducer", &capiocl::engine::Engine::addProducer)
+        .def("addConsumer", &capiocl::engine::Engine::addConsumer)
+        .def("addFileDependency", &capiocl::engine::Engine::addFileDependency)
+        .def("remove", &capiocl::engine::Engine::remove)
+        .def("setCommitRule", &capiocl::engine::Engine::setCommitRule)
+        .def("setFireRule", &capiocl::engine::Engine::setFireRule)
+        .def("setPermanent", &capiocl::engine::Engine::setPermanent)
+        .def("setExclude", &capiocl::engine::Engine::setExclude)
+        .def("setDirectory", &capiocl::engine::Engine::setDirectory)
+        .def("setFile", &capiocl::engine::Engine::setFile)
+        .def("setCommittedCloseNumber", &capiocl::engine::Engine::setCommitedCloseNumber)
+        .def("setDirectoryFileCount", &capiocl::engine::Engine::setDirectoryFileCount)
+        .def("setFileDeps", &capiocl::engine::Engine::setFileDeps)
+        .def("setStoreFileInMemory", &capiocl::engine::Engine::setStoreFileInMemory)
+        .def("setStoreFileInFileSystem", &capiocl::engine::Engine::setStoreFileInFileSystem)
+        .def("getDirectoryFileCount", &capiocl::engine::Engine::getDirectoryFileCount)
+        .def("getCommitRule", &capiocl::engine::Engine::getCommitRule)
+        .def("getFireRule", &capiocl::engine::Engine::getFireRule)
+        .def("getProducers", &capiocl::engine::Engine::getProducers)
+        .def("getConsumers", &capiocl::engine::Engine::getConsumers)
+        .def("getCommitCloseCount", &capiocl::engine::Engine::getCommitCloseCount)
+        .def("getCommitOnFileDependencies", &capiocl::engine::Engine::getCommitOnFileDependencies)
+        .def("getFileToStoreInMemory", &capiocl::engine::Engine::getFileToStoreInMemory)
+        .def("getHomeNode", &capiocl::engine::Engine::getHomeNode)
+        .def("isProducer", &capiocl::engine::Engine::isProducer)
+        .def("isConsumer", &capiocl::engine::Engine::isConsumer)
+        .def("isFirable", &capiocl::engine::Engine::isFirable)
+        .def("isFile", &capiocl::engine::Engine::isFile)
+        .def("isExcluded", &capiocl::engine::Engine::isExcluded)
+        .def("isDirectory", &capiocl::engine::Engine::isDirectory)
+        .def("isStoredInMemory", &capiocl::engine::Engine::isStoredInMemory)
+        .def("isPermanent", &capiocl::engine::Engine::isPermanent)
+        .def("setAllStoreInMemory", &capiocl::engine::Engine::setAllStoreInMemory)
+        .def("getWorkflowName", &capiocl::engine::Engine::getWorkflowName)
+        .def("setWorkflowName", &capiocl::engine::Engine::setWorkflowName)
+        .def("setCommitted", &capiocl::engine::Engine::setCommitted)
+        .def("isCommitted", &capiocl::engine::Engine::isCommitted)
+        .def("__str__", &capiocl::engine::Engine::print)
         .def("__repr__",
-             [](const capiocl::Engine &e) {
+             [](const capiocl::engine::Engine &e) {
                  return "<Engine repr at " + std::to_string(reinterpret_cast<uintptr_t>(&e)) + ">";
              })
         .def(pybind11::self == pybind11::self);
 
-    py::class_<capiocl::Parser>(m, "Parser", "The CAPIO-CL Parser component.")
-        .def_static("parse", &capiocl::Parser::parse, py::arg("source"),
+    py::class_<capiocl::parser::Parser>(m, "Parser", "The CAPIO-CL Parser component.")
+        .def_static("parse", &capiocl::parser::Parser::parse, py::arg("source"),
                     py::arg("resolve_prefix") = "", py::arg("store_only_in_memory") = false)
         .def("__str__",
-             [](const capiocl::Parser &e) {
+             [](const capiocl::parser::Parser &e) {
                  return "<Parser repr at " + std::to_string(reinterpret_cast<uintptr_t>(&e)) + ">";
              })
-        .def("__repr__", [](const capiocl::Parser &e) {
+        .def("__repr__", [](const capiocl::parser::Parser &e) {
             return "<Parser repr at " + std::to_string(reinterpret_cast<uintptr_t>(&e)) + ">";
         });
 
-    py::class_<capiocl::Serializer>(m, "Serializer", "The CAPIO-CL Serializer component.")
-        .def(py::init<>())
-        .def_static("dump", &capiocl::Serializer::dump, py::arg("engine"), py::arg("filename"),
-                    py::arg("version") = capiocl::CAPIO_CL_VERSION::V1)
-        .def("__str__",
-             [](const capiocl::Serializer &e) {
-                 return "<Serializer repr at " + std::to_string(reinterpret_cast<uintptr_t>(&e)) +
-                        ">";
-             })
-        .def("__repr__", [](const capiocl::Serializer &e) {
-            return "<Serializer repr at " + std::to_string(reinterpret_cast<uintptr_t>(&e)) + ">";
-        });
+    m.def("serialize", &capiocl::serializer::Serializer::dump, py::arg("engine"),
+          py::arg("filename"), py::arg("version") = capiocl::CAPIO_CL_VERSION::V1);
 }

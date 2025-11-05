@@ -945,6 +945,7 @@ WARN_LOGFILE           =
 
 INPUT                  = .README.md     \
                          ../src         \
+                         ../include     \
                          ../capiocl.hpp \
                          semantics.md   \
                          syntax_v1.md

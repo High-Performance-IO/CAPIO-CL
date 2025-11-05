@@ -24,6 +24,7 @@ jobs:
       matrix:
         path:
           - "src"
+          - "include"
           - "tests"
           - "bindings"
           - "capiocl.hpp"

@@ -1,5 +1,3 @@
-#include "capiocl.hpp"
-
 #include <cstdlib>
 #include <cstring>
 #include <cxxabi.h>
@@ -12,6 +10,13 @@ template <typename T> std::string demangled_name(const T &obj) {
         abi::__cxa_demangle(mangled, nullptr, nullptr, &status), std::free);
     return status == 0 ? demangled.get() : mangled;
 }
+
+#include "capiocl.hpp"
+#include "include/engine.h"
+#include "include/monitor.h"
+#include "include/parser.h"
+#include "include/printer.h"
+#include "include/serializer.h"
 
 #include "test_engine.hpp"
 #include "test_exceptions.hpp"
