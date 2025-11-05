@@ -53,4 +53,16 @@ TEST(MONITOR_SUITE_NAME, testCommitAfterTerminationOfServer) {
     EXPECT_TRUE(e1.isCommitted("a"));
 }
 
+TEST(MONITOR_SUITE_NAME, testIssueExceptionOnMonitorInstance) {
+    capiocl::MonitorInterface interface;
+    EXPECT_THROW(interface.isCommitted("/test"), capiocl::MonitorException);
+    EXPECT_THROW(interface.setCommitted("/test"), capiocl::MonitorException);
+
+    try {
+        interface.setCommitted("/test");
+    } catch (capiocl::MonitorException &e) {
+        EXPECT_TRUE(strlen(e.what()) > 50);
+    }
+}
+
 #endif // CAPIO_CL_MONITOR_HPP

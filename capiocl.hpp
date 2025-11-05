@@ -93,7 +93,7 @@ struct CAPIO_CL_VERSION final {
 };
 
 /**
- * Print a message to standard out. Used to log messages related to the CAPIO-CL #Engine
+ * Print a message to standard out. Used to log messages related to the CAPIO-CL Engine
  * @param message_type Type of message to print.
  * @param message_line
  */
@@ -113,7 +113,7 @@ inline void print_message(const std::string &message_type = "",
 }
 
 /**
- * @brief Custom exception thrown when parsing a CAPIO-CL configuration file by #Parser
+ * @brief Custom exception thrown when parsing a CAPIO-CL configuration file by Parser
  */
 class MonitorException final : public std::exception {
     std::string message;
@@ -133,50 +133,186 @@ class MonitorException final : public std::exception {
      */
     [[nodiscard]] const char *what() const noexcept override { return message.c_str(); }
 };
+/**
+ * @brief Abstract interface for monitoring the commit state of files in CAPIO-CL.
+ *
+ * This class defines a common API for components that track whether files
+ * have been marked as "committed" in the CAPIO-CL runtime. Implementations may
+ * monitor commit state using different backends (e.g., filesystem signals or
+ * multicast synchronization).
+ *
+ * The class is thread-safe through `committed_lock`, protecting `_committed_files`
+ * which stores the list of committed file paths.
+ */
+class MonitorInterface {
+  protected:
+    /**
+     * @brief Mutex protecting access to the committed file list.
+     */
+    mutable std::mutex committed_lock;
 
+    /**
+     * @brief List of committed file paths stored as strings.
+     */
+    mutable std::vector<std::string> _committed_files;
+
+  public:
+    /**
+     * @brief Virtual destructor for safe polymorphic deletion.
+     */
+    virtual ~MonitorInterface() = default;
+
+    /**
+     * @brief Check whether the given file has been committed.
+     *
+     * @param path Path to the file being queried.
+     * @return true if the file is recorded as committed, false otherwise.
+     */
+    virtual bool isCommitted(const std::filesystem::path &path) const;
+
+    /**
+     * @brief Mark the given file as committed.
+     *
+     * @param path Path to the file to mark as committed.
+     */
+    virtual void setCommitted(const std::filesystem::path &path) const;
+};
+
+/**
+ * @brief Monitor implementation that synchronizes file commit state via multicast messages.
+ *
+ * MulticastMonitor exchanges commit events between distributed processes using
+ * multicast network messages. When one process commits a file, it broadcasts a message
+ * so that other collaborators update their commit state.
+ *
+ * A background thread (`commit_listener_thread`) listens for notifications from
+ * the network to update the internal commit list.
+ */
+class MulticastMonitor final : public MonitorInterface {
+
+    static constexpr int MESSAGE_SIZE = (2 + PATH_MAX); ///< Max network message size.
+
+    /**
+     * @brief Pointer to a flag used to signal when the listener thread should stop.
+     */
+    bool *continue_execution;
+
+    /**
+     * @brief Background thread used to listen for commit messages.
+     */
+    std::thread *commit_listener_thread;
+
+    /**
+     * @brief Multicast group IP address.
+     */
+    std::string MULTICAST_ADDR;
+
+    /**
+     * @brief Multicast port number.
+     */
+    int MULTICAST_PORT;
+
+    /**
+     * @brief Supported network command types for commit messages.
+     */
+    typedef enum { COMMIT = '!', REQUEST = '?' } MESSAGE_COMMANDS;
+
+    /**
+     * @brief Send a commit or request message over multicast.
+     *
+     * @param ip_addr Destination multicast address.
+     * @param ip_port Destination multicast port.
+     * @param path File path associated with the message.
+     * @param action The type of message to send (COMMIT or REQUEST).
+     */
+    static void _send_message(const std::string &ip_addr, const int ip_port,
+                              const std::string &path, MESSAGE_COMMANDS action);
+
+    /**
+     * @brief Background thread function to listen for commit messages.
+     *
+     * This function runs continuously while @p continue_execution remains true.
+     * When commit events are received, the corresponding file paths are recorded
+     * into @p committed_files.
+     *
+     * @param committed_files Vector storing committed file paths.
+     * @param lock Mutex protecting shared access to committed_files.
+     * @param continue_execution Controls thread termination.
+     * @param ip_addr Multicast listen address.
+     * @param ip_port Multicast listen port.
+     */
+    static void commit_listener(std::vector<std::string> &committed_files, std::mutex &lock,
+                                const bool *continue_execution, const std::string &ip_addr,
+                                int ip_port);
+
+  public:
+    /**
+     * @brief Construct a multicast-based monitor.
+     *
+     * @param ip_addr Multicast group address to use.
+     * @param ip_port Multicast port to use.
+     */
+    MulticastMonitor(const std::string &ip_addr, int ip_port);
+
+    /**
+     * @brief Destructor; stops listener thread and cleans resources.
+     */
+    ~MulticastMonitor() override;
+
+    bool isCommitted(const std::filesystem::path &path) const override;
+    void setCommitted(const std::filesystem::path &path) const override;
+};
+
+/**
+ * @brief Monitor implementation that represents commit state using the filesystem.
+ *
+ * FileSystemMonitor uses token files on disk to record when a file is committed.
+ * A committed file `<path>` is associated with a token file whose name is computed
+ * from the path. Existence of the token file implies commit state.
+ */
+class FileSystemMonitor final : public MonitorInterface {
+    /**
+     * @brief Compute the token filename used to represent the commit state of the given file.
+     *
+     * @param path The original file path.
+     * @return A filesystem path representing the commit token.
+     */
+    static std::filesystem::path compute_commit_token_name(const std::filesystem::path &path);
+
+    /**
+     * @brief Create the commit token for a file.
+     *
+     * This typically involves creating an empty token file in the filesystem.
+     *
+     * @param path Path of the committed file.
+     */
+    static void generate_commit_token(const std::filesystem::path &path);
+
+  public:
+    /**
+     * @brief Construct a filesystem-based commit monitor.
+     */
+    FileSystemMonitor() {}
+
+    /**
+     * @brief Destructor for FileSystemMonitor.
+     */
+    ~FileSystemMonitor() override {}
+
+    bool isCommitted(const std::filesystem::path &path) const override;
+    void setCommitted(const std::filesystem::path &path) const override;
+};
 /**
  * Class to monitor runtime dependent information on CAPIO-CL related paths, such as commitment
  * status and Home Node Policies
  */
 class Monitor {
     friend class Engine;
+    friend class MonitorInterface;
 
-    bool *continue_execution;
+    std::vector<const MonitorInterface *> interfaces;
 
-    std::thread *commit_listener_thread;
-
-    mutable std::mutex committed_lock;
-    mutable std::vector<std::string> _committed_files;
-
-    std::string MULTICAST_ADDR;
-    int MULTICAST_PORT;
-
-    typedef enum { COMMIT = '!', REQUEST = '?' } MESSAGE_COMMANDS;
-
-    /**
-     * Thread function to monitor the occurrence of commitment of CAPIO-CL files
-     *
-     * @param committed_files Reference to std::vector containing committed files
-     * @param lock Lock to acquire mutex access to committed_files
-     * @param continue_execution Reference to boolean variable to know when to terminate
-     * @param ip_addr Socket multicast IP Address
-     * @param ip_port Socket multicast IP Port
-     */
-    static void commit_listener(std::vector<std::string> &committed_files, std::mutex &lock,
-                                const bool *continue_execution, const std::string &ip_addr,
-                                int ip_port);
-
-    /**
-     * Inner static member to send the commit message of a file
-     * @param ip_addr  Multicast IP addr to send data
-     * @param ip_port Multicast IP port to send data
-     * @param path File to be sent as committed
-     * @param action ! to send commit status, ? to request status
-     */
-    static void _send_message(const std::string &ip_addr, int ip_port, const std::string &path,
-                              MESSAGE_COMMANDS action = COMMIT);
-
-  protected:
+  public:
     /**
      * Check whether a file is committed or not. First look into _committed_files. If not found
      * then look into the file system for a committed token. If the committed token is not found
@@ -185,7 +321,7 @@ class Monitor {
      * @param path path to check for the commit status
      * @return
      */
-    bool isCommitted(const std::filesystem::path &path) const;
+    [[nodiscard]] bool isCommitted(const std::filesystem::path &path) const;
 
     /**
      * Set a file to be committed. First send a multicast message, and then generate a
@@ -195,15 +331,12 @@ class Monitor {
      */
     void setCommitted(std::filesystem::path path) const;
 
-  public:
     /**
-     * Default constructor
-     *
-     * @param ip_addr Multicast Group IP Address
-     * @param ip_port Multicast Group IP Port
-     * @throws MonitorException
+     * Add a new backend for monitor. Must be a derived class from MonitorInterface
+     * @param interface
      */
-    explicit Monitor(const std::string &ip_addr, int ip_port);
+    void registerMonitorBackend(const MonitorInterface *interface);
+
     ~Monitor();
 };
 
@@ -236,7 +369,7 @@ class Engine final {
     std::string workflow_name;
 
     // LCOV_EXCL_START
-    /// @brief Internal CAPIO-CL #Engine storage entity. Each CapioCLEntry is an entry for a given
+    /// @brief Internal CAPIO-CL Engine storage entity. Each CapioCLEntry is an entry for a given
     /// file handled by CAPIO-CL
     struct CapioCLEntry final {
         std::vector<std::string> producers;
@@ -574,15 +707,15 @@ class Engine final {
     void setCommitted(const std::filesystem::path &path) const;
 
     /**
-     * @brief Check for equality between two instances of #Engine
-     * @param other reference to another #Engine class instance
+     * @brief Check for equality between two instances of Engine
+     * @param other reference to another Engine class instance
      * @return true if both this instance and other are equivalent. false otherwise.
      */
     bool operator==(const Engine &other) const;
 };
 
 /**
- * @brief Custom exception thrown when parsing a CAPIO-CL configuration file by #Parser
+ * @brief Custom exception thrown when parsing a CAPIO-CL configuration file by Parser
  */
 class ParserException final : public std::exception {
     std::string message;
@@ -612,7 +745,7 @@ class Parser final {
          * Parser for the V1 Specification of the CAPIO-CL language
          * @param source Path of CAPIO-CL configuration file
          * @param resolve_prefix Prefix to prepend to path if found to be relative
-         * @param store_only_in_memory Flag to set to returned instance of #Engine if required to
+         * @param store_only_in_memory Flag to set to returned instance of Engine if required to
          * store all files in memory
          * @return Parsed Engine.
          */
@@ -651,7 +784,7 @@ class Parser final {
      * @param source Input CAPIO-CL Json configuration File
      * @param resolve_prefix If paths are found to be relative, they are appended to this path
      * @param store_only_in_memory Set to true to set all files to be stored in memory
-     * @return #Engine instance with the information provided by  the config file
+     * @return Engine instance with the information provided by  the config file
      * @throw ParserException
      */
     static Engine *parse(const std::filesystem::path &source,
@@ -660,7 +793,7 @@ class Parser final {
 };
 
 /**
- * @brief Custom exception thrown when serializing an instance of #Engine
+ * @brief Custom exception thrown when serializing an instance of Engine
  */
 class SerializerException final : public std::exception {
     std::string message;
@@ -681,14 +814,14 @@ class SerializerException final : public std::exception {
     [[nodiscard]] const char *what() const noexcept override { return message.c_str(); }
 };
 
-/// @brief Dump the current loaded CAPIO-CL configuration from class #Engine to a CAPIO-CL
+/// @brief Dump the current loaded CAPIO-CL configuration from class Engine to a CAPIO-CL
 /// configuration file.
 class Serializer final {
 
     /// @brief Available serializers for CAPIO-CL
     struct available_serializers {
         /**
-         * @brief Dump the current configuration loaded into an instance of  #Engine to a CAPIO-CL
+         * @brief Dump the current configuration loaded into an instance of  Engine to a CAPIO-CL
          * VERSION 1 configuration file.
          *
          * @param engine instance of Engine to dump
@@ -700,7 +833,7 @@ class Serializer final {
 
   public:
     /**
-     * @brief Dump the current configuration loaded into an instance of  #Engine to a CAPIO-CL
+     * @brief Dump the current configuration loaded into an instance of Engine to a CAPIO-CL
      * configuration file.
      *
      * @param engine instance of Engine to dump

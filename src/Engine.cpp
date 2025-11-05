@@ -122,7 +122,7 @@ void capiocl::Engine::print() const {
 
     print_message(CLI_LEVEL_JSON, "");
 }
-capiocl::Engine::Engine() : monitor("224.224.224.1", 12345) {
+capiocl::Engine::Engine() {
     node_name = std::string(1024, '\0');
     gethostname(node_name.data(), node_name.size());
     node_name.resize(std::strlen(node_name.c_str()));
@@ -132,6 +132,10 @@ capiocl::Engine::Engine() : monitor("224.224.224.1", 12345) {
     } else {
         this->workflow_name = CAPIO_CL_DEFAULT_WF_NAME;
     }
+
+    // TODO: make selection of monitor available to user
+    monitor.registerMonitorBackend(new MulticastMonitor("224.224.224.1", 12345));
+    monitor.registerMonitorBackend(new FileSystemMonitor());
 }
 
 void capiocl::Engine::_newFile(const std::filesystem::path &path) const {
