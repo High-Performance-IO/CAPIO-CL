@@ -33,3 +33,6 @@ result = "{major}.{minor}.{patch}"
 [tool.scikit-build]
 cmake.version = ">=3.18"
 ninja.version = ">=1.10"
+
+[tool.scikit-build.cmake.define]
+BUILD_PYTHON_BINDINGS = true

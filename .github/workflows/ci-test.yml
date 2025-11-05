@@ -34,97 +34,99 @@ jobs:
         with:
           clang-format-version: "16"
           check-path: "${{ matrix.path }}"
+
   unit-tests:
     name: "Build ${{ matrix.build_type }} with ${{ matrix.cxx }}"
     runs-on: ubuntu-22.04
+
     strategy:
+      fail-fast: false
       matrix:
-        build_type:
-          - Debug
-          - Release
+        build_type: [ Debug, Release ]
         cxx:
-          - g++-9
-          - g++-10
-          - g++-11
-          - g++-12
-          - g++-13
-          - clang-13
-          - clang-14
-          - clang-15
-          - clang-16
-          - clang-17
-          - clang-18
+          - gcc:9
+          - gcc:10
+          - gcc:11
+          - gcc:12
+          - gcc:13
+          - silkeh/clang:13
+          - silkeh/clang:14
+          - silkeh/clang:15
+          - silkeh/clang:16
+          - silkeh/clang:17
+          - silkeh/clang:18
+
+    container:
+      image: ${{ matrix.cxx }}
+
     steps:
       - uses: actions/checkout@v4
-      - name: "Install packages"
+
+      - name: Install build tools
         run: |
-          sudo apt install -y ninja-build
-      - name: "Get compiler version"
-        run: |
-          IFS='-' read -r -a COMPILER <<< "${{ matrix.cxx }}"
-          echo "CXX_VERSION=${COMPILER[1]}" >> $GITHUB_ENV
-      - name: "Install Clang"
-        if: ${{ startsWith(matrix.cxx, 'clang-') }}
-        run: |
-          wget -O /tmp/llvm.sh https://apt.llvm.org/llvm.sh
-          chmod u+x /tmp/llvm.sh
-          sudo /tmp/llvm.sh ${{ env.CXX_VERSION }}
-          rm -f /tmp/llvm.sh
-      - name: "Fix missing libclang_rt.profile for Clang 14"
-        if: ${{ matrix.cxx == 'clang-14' }}
-        run: |
-          sudo apt download libclang-rt-14-dev
-          sudo dpkg --force-all -i libclang-rt-14-dev*
-      - name: "Install GCC"
-        if: ${{ startsWith(matrix.cxx, 'g++-') }}
-        run: |
-          sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-          sudo apt update
-          sudo apt install -y ${{ matrix.cxx }}
+          apt-get update
+          apt-get install -y  \
+            cmake             \
+            ninja-build       \
+            make              \
+            sudo              \
+            python3           \
+            python3-pip       \
+            python3-venv      \
+            git
+
       - name: "Run CMake"
         env:
-          CXX: ${{ startsWith(matrix.cxx, 'clang-') && 'clang++' || 'g++' }}-${{ env.CXX_VERSION }}
+          CXX: ${{ startsWith(matrix.cxx, 'gcc') && 'g++' || 'clang++' }}
         run: |
           cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
                 -DENABLE_COVERAGE=${{ matrix.build_type == 'Debug' && 'ON' || 'OFF' }} \
                 -DBUILD_PYTHON_BINDINGS=OFF \
+                -DCAPIO_CL_BUILD_TESTS=ON \
                 -G Ninja \
                 -B ../build \
-                -S ${GITHUB_WORKSPACE}
+                .
           cmake --build ../build -j $(nproc)
           sudo cmake --install ../build --prefix /usr/local
-      - name: "Run tests"
-        id: run-tests
-        timeout-minutes: 5
-        env:
-          CAPIO_DIR: ${{ github.workspace }}
-          CAPIO_LOG_LEVEL: -1
+
+      - name: Run unit tests\
         run: |
-          
-          echo "Run CAPIO-CL unit tests"
           CAPIO_CL_tests \
             --gtest_break_on_failure \
             --gtest_print_time=1
 
-      - name: "Generate coverage report"
+      - name: Generate coverage report
         if: ${{ matrix.build_type == 'Debug' }}
         run: |
-          pip install --upgrade gcovr
-          gcovr \
-            --exclude-throw-branches                      \
-            --gcov-ignore-parse-errors=negative_hits.warn \
-            --exclude tests/                              \
-            --xml coverage.xml                            \
-            --gcov-executable "${{ startsWith(matrix.cxx, 'clang-') && format('llvm-cov-{0} gcov', env.CXX_VERSION) || format('gcov-{0}', env.CXX_VERSION) }}" \
-            ../build
-      - name: "Upload coverage report"
+          python3 -m venv .venv
+          . .venv/bin/activate
+          pip install --upgrade "gcovr==6.0" 
+          gcovr                                         \
+          --exclude-throw-branches                      \
+          --gcov-ignore-parse-errors=negative_hits.warn \
+          --exclude tests/                              \
+          --xml coverage.xml                            \
+          --gcov-executable "${{ startsWith(matrix.cxx, 'gcc') && 'gcov' || 'llvm-cov gcov' }}" \
+          --root ../build
+
+      - name: Compute safe coverage file name
+        shell: bash
+        if: ${{ matrix.build_type == 'Debug' }}
+        run: |
+          SAFE="${{ matrix.cxx }}"
+          SAFE="${SAFE//[:\/]/_}"
+          echo "SAFE_CXX=$SAFE" >> "$GITHUB_ENV"
+
+      - name: Upload coverage artifact
         if: ${{ matrix.build_type == 'Debug' }}
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ format('{0}-tests', matrix.cxx) }}
-          path: ./coverage.xml
+          name: ${{ env.SAFE_CXX }}-coverage
+          path: coverage.xml
           retention-days: 1
-          if-no-files-found: error
+
+
+
 
   build-documentation:
     name: "Build Doxygen documentation"
@@ -137,10 +139,10 @@ jobs:
           sudo apt install make graphviz wget
       - name: "Install Doxygen 1.14.0"
         run: |
-            wget https://www.doxygen.nl/files/doxygen-1.14.0.linux.bin.tar.gz
-            tar -xzf doxygen-1.14.0.linux.bin.tar.gz
-            sudo mv doxygen-1.14.0/bin/doxygen /usr/local/bin/doxygen
-            doxygen --version
+          wget https://www.doxygen.nl/files/doxygen-1.14.0.linux.bin.tar.gz
+          tar -xzf doxygen-1.14.0.linux.bin.tar.gz
+          sudo mv doxygen-1.14.0/bin/doxygen /usr/local/bin/doxygen
+          doxygen --version
       - name: "Run Doxygen"
         working-directory: doxygen
         run: make
