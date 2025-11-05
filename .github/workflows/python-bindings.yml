@@ -68,9 +68,11 @@ jobs:
         if: ${{ startsWith(matrix.on, 'ubuntu-') }}
         run: |
           pip install --upgrade gcovr
-          gcovr \
-            --exclude-throw-branches \
-            --xml coverage.xml \
+           gcovr                                          \
+            --exclude-throw-branches                      \
+            --gcov-ignore-parse-errors=negative_hits.warn \
+            --exclude tests/                              \
+            --xml coverage.xml                            \
             .
 
       - name: "Upload coverage report"
