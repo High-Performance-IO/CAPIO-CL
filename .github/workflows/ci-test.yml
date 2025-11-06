@@ -108,7 +108,7 @@ jobs:
           --exclude tests/                              \
           --xml coverage.xml                            \
           --gcov-executable "${{ startsWith(matrix.cxx, 'gcc') && 'gcov' || 'llvm-cov gcov' }}" \
-          --root ../build .
+          --root .
 
       - name: Compute safe coverage file name
         shell: bash
