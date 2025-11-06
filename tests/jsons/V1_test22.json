@@ -16,7 +16,7 @@
           ],
           "committed": "on_termination",
           "mode": "no_update",
-          "n_files" : "failMe"
+          "n_files": "failMe"
         }
       ]
     }

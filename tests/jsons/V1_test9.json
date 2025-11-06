@@ -3,7 +3,9 @@
   "IO_Graph": [
     {
       "name": "step",
-      "input_stream" : ["file"]
+      "input_stream": [
+        "file"
+      ]
     }
   ]
 }

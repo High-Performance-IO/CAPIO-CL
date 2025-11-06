@@ -1,9 +1,13 @@
-#include "capiocl.hpp"
 #include <fstream>
 #include <iostream>
 
-void capiocl::Serializer::available_serializers::serialize_v1(
-    const Engine &engine, const std::filesystem::path &filename) {
+#include "capiocl.hpp"
+#include "include/engine.h"
+#include "include/printer.h"
+#include "include/serializer.h"
+
+void capiocl::serializer::Serializer::available_serializers::serialize_v1(
+    const engine::Engine &engine, const std::filesystem::path &filename) {
     jsoncons::json doc;
     doc["name"] = engine.getWorkflowName();
 
@@ -50,14 +54,14 @@ void capiocl::Serializer::available_serializers::serialize_v1(
             streaming_item[name_kind]     = jsoncons::json::array({path}); // LCOV_EXCL_LINE
 
             if (entry.commit_on_close_count > 0) {
-                if (entry.commit_rule == commit_rules::ON_CLOSE) {
+                if (entry.commit_rule == commitRules::ON_CLOSE) {
                     const auto close_count      = std::to_string(entry.commit_on_close_count);
                     streaming_item["committed"] = entry.commit_rule + ":" + close_count;
                 } else {
                     const auto msg = "Commit rule is not ON_CLOSE but close count > 0";
-                    print_message(CLI_LEVEL_WARNING, msg);
-                    print_message(CLI_LEVEL_WARNING, "Setting commit rule = ON_CLOSE");
-                    streaming_item["committed"] = std::string(commit_rules::ON_CLOSE) + ":" +
+                    printer::print(printer::CLI_LEVEL_WARNING, msg);
+                    printer::print(printer::CLI_LEVEL_WARNING, "Setting commit rule = ON_CLOSE");
+                    streaming_item["committed"] = std::string(commitRules::ON_CLOSE) + ":" +
                                                   std::to_string(entry.commit_on_close_count);
                 }
             } else {
@@ -120,5 +124,5 @@ void capiocl::Serializer::available_serializers::serialize_v1(
     }
     out << jsoncons::pretty_print(doc) << std::endl;
 
-    print_message(CLI_LEVEL_INFO, "Configuration serialized to " + filename.string());
+    printer::print(printer::CLI_LEVEL_INFO, "Configuration serialized to " + filename.string());
 }

@@ -52,7 +52,7 @@ def test_serialize_parse_py_capio_cl_v1(tmp_path):
     engine.print()
 
     # Serialize
-    py_capio_cl.Serializer.dump(engine, path)
+    py_capio_cl.serialize(engine, path)
 
     # Parse back
     new_engine = py_capio_cl.Parser.parse(path)

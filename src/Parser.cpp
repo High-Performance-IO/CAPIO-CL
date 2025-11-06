@@ -1,10 +1,18 @@
-#include "capio_cl_json_schemas.hpp"
-#include "capiocl.hpp"
 #include <filesystem>
 #include <fstream>
 
-std::filesystem::path capiocl::Parser::resolve(std::filesystem::path path,
-                                               const std::filesystem::path &prefix) {
+#include "capio_cl_json_schemas.hpp"
+#include "capiocl.hpp"
+#include "include/engine.h"
+#include "include/parser.h"
+#include "include/printer.h"
+
+capiocl::parser::ParserException::ParserException(const std::string &msg) : message(msg) {
+    printer::print(printer::CLI_LEVEL_ERROR, msg);
+}
+
+std::filesystem::path capiocl::parser::Parser::resolve(std::filesystem::path path,
+                                                       const std::filesystem::path &prefix) {
     if (prefix.empty()) {
         return path;
     }
@@ -15,29 +23,30 @@ std::filesystem::path capiocl::Parser::resolve(std::filesystem::path path,
 
     auto resolved  = prefix / path;
     const auto msg = "Path : " + path.string() + " IS RELATIVE! Resolved to: " + resolved.string();
-    print_message(CLI_LEVEL_WARNING, msg);
+    printer::print(printer::CLI_LEVEL_WARNING, msg);
 
     return resolved;
 }
 
-jsoncons::jsonschema::json_schema<jsoncons::json> capiocl::Parser::loadSchema(const char *data) {
+jsoncons::jsonschema::json_schema<jsoncons::json>
+capiocl::parser::Parser::loadSchema(const char *data) {
     return jsoncons::jsonschema::make_json_schema(jsoncons::json::parse(data));
 }
 
-void capiocl::Parser::validate_json(const jsoncons::json &doc) {
+void capiocl::parser::Parser::validate_json(const jsoncons::json &doc) {
     jsoncons::jsonschema::json_schema<jsoncons::json> schema = loadSchema(schema_v1);
     try {
         // throws jsoncons::jsonschema::validation_error on failure
         [[maybe_unused]] auto status = schema.validate(doc);
     } catch (const jsoncons::jsonschema::validation_error &e) {
-        print_message(CLI_LEVEL_ERROR, e.what());
+        printer::print(printer::CLI_LEVEL_ERROR, e.what());
         throw ParserException("JSON validation failed!");
     }
 }
 
-capiocl::Engine *capiocl::Parser::parse(const std::filesystem::path &source,
-                                        const std::filesystem::path &resolve_prefix,
-                                        bool store_only_in_memory) {
+capiocl::engine::Engine *capiocl::parser::Parser::parse(const std::filesystem::path &source,
+                                                        const std::filesystem::path &resolve_prefix,
+                                                        bool store_only_in_memory) {
 
     if (source.empty()) {
         throw ParserException("Empty source file name!");
@@ -58,7 +67,8 @@ capiocl::Engine *capiocl::Parser::parse(const std::filesystem::path &source,
     }
 
     file.close();
-    print_message(CLI_LEVEL_INFO, "Parsing CAPIO-CL config file for version: " + capio_cl_release);
+    printer::print(printer::CLI_LEVEL_INFO,
+                   "Parsing CAPIO-CL config file for version: " + capio_cl_release);
 
     if (capio_cl_release == CAPIO_CL_VERSION::V1) {
         return available_parsers::parse_v1(source, resolve_prefix, store_only_in_memory);

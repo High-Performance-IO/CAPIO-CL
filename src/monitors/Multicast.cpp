@@ -3,6 +3,8 @@
 #include <sys/socket.h>
 
 #include "capiocl.hpp"
+#include "include/monitor.h"
+#include "include/printer.h"
 
 static std::tuple<int, sockaddr_in> outgoing_socket_multicast(const std::string &address,
                                                               const int port) {
@@ -14,7 +16,8 @@ static std::tuple<int, sockaddr_in> outgoing_socket_multicast(const std::string 
     const int transmission_socket = socket(AF_INET, SOCK_DGRAM, 0);
     // LCOV_EXCL_START
     if (transmission_socket < 0) {
-        throw capiocl::MonitorException(std::string("socket() failed: ") + strerror(errno));
+        throw capiocl::monitor::MonitorException(std::string("socket() failed: ") +
+                                                 strerror(errno));
     }
     // LCOV_EXCL_STOP
 
@@ -40,45 +43,52 @@ static int incoming_socket_multicast(const std::string &address_ip, const int po
 
     // LCOV_EXCL_START
     if (_socket < 0) {
-        throw capiocl::MonitorException(std::string("socket() failed: ") + strerror(errno));
+        throw capiocl::monitor::MonitorException(std::string("socket() failed: ") +
+                                                 strerror(errno));
     }
 
     // Allow multiple sockets to bind to the same addr
     if (setsockopt(_socket, SOL_SOCKET, SO_REUSEADDR, &multi_bind, sizeof(multi_bind)) < 0) {
-        throw capiocl::MonitorException(std::string("REUSEADDR failed: ") + strerror(errno));
+        throw capiocl::monitor::MonitorException(std::string("REUSEADDR failed: ") +
+                                                 strerror(errno));
     }
 
     // Allow multiple sockets to bind to the same port
     if (setsockopt(_socket, SOL_SOCKET, SO_REUSEPORT, &multi_bind, sizeof(multi_bind)) < 0) {
-        throw capiocl::MonitorException(std::string("REUSEPORT failed: ") + strerror(errno));
+        throw capiocl::monitor::MonitorException(std::string("REUSEPORT failed: ") +
+                                                 strerror(errno));
     }
 
     // Bind to port
     if (bind(_socket, reinterpret_cast<sockaddr *>(&addr), addrlen) < 0) {
-        throw capiocl::MonitorException(std::string("bind failed: ") + strerror(errno));
+        throw capiocl::monitor::MonitorException(std::string("bind failed: ") + strerror(errno));
     }
 
     // Join multicast group
     if (setsockopt(_socket, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0) {
-        throw capiocl::MonitorException(std::string("join multicast failed: ") + strerror(errno));
+        throw capiocl::monitor::MonitorException(std::string("join multicast failed: ") +
+                                                 strerror(errno));
     }
 
     // Enable loopback
     if (setsockopt(_socket, IPPROTO_IP, IP_MULTICAST_LOOP, &loopback, sizeof(loopback)) < 0) {
-        throw capiocl::MonitorException(std::string("loopback failed: ") + strerror(errno));
+        throw capiocl::monitor::MonitorException(std::string("loopback failed: ") +
+                                                 strerror(errno));
     }
     // LCOV_EXCL_STOP
 
     return _socket;
 }
 
-void capiocl::MulticastMonitor::commit_listener(std::vector<std::string> &committed_files,
-                                                std::mutex &lock, const bool *continue_execution,
-                                                const std::string &ip_addr, const int ip_port) {
+void capiocl::monitor::MulticastMonitor::commit_listener(std::vector<std::string> &committed_files,
+                                                         std::mutex &lock,
+                                                         const bool *continue_execution,
+                                                         const std::string &ip_addr,
+                                                         const int ip_port) {
     sockaddr_in addr_in = {};
     socklen_t addr_len  = {};
     const auto socket   = incoming_socket_multicast(ip_addr, ip_port, addr_in, addr_len);
-    print_message(CLI_LEVEL_INFO, "Monitor on thread: " + std::to_string(getpid()));
+    printer::print(printer::CLI_LEVEL_INFO, "Monitor on thread: " + std::to_string(getpid()));
 
     const auto addr                     = reinterpret_cast<sockaddr *>(&addr_in);
     char incoming_message[MESSAGE_SIZE] = {0};
@@ -112,9 +122,9 @@ void capiocl::MulticastMonitor::commit_listener(std::vector<std::string> &commit
     } while (*continue_execution);
 }
 
-void capiocl::MulticastMonitor::_send_message(const std::string &ip_addr, const int ip_port,
-                                              const std::string &path,
-                                              const MESSAGE_COMMANDS action) {
+void capiocl::monitor::MulticastMonitor::_send_message(const std::string &ip_addr,
+                                                       const int ip_port, const std::string &path,
+                                                       const MESSAGE_COMMANDS action) {
     char message[MESSAGE_SIZE] = {0};
     snprintf(message, sizeof(message), "%c %s", action, path.c_str());
     auto [out_s, addr] = outgoing_socket_multicast(ip_addr, ip_port);
@@ -122,7 +132,8 @@ void capiocl::MulticastMonitor::_send_message(const std::string &ip_addr, const 
     close(out_s);
 }
 
-capiocl::MulticastMonitor::MulticastMonitor(const std::string &ip_addr, const int ip_port) {
+capiocl::monitor::MulticastMonitor::MulticastMonitor(const std::string &ip_addr,
+                                                     const int ip_port) {
     continue_execution = new bool(true);
     MULTICAST_ADDR     = ip_addr;
     MULTICAST_PORT     = ip_port;
@@ -132,7 +143,7 @@ capiocl::MulticastMonitor::MulticastMonitor(const std::string &ip_addr, const in
         std::ref(continue_execution), MULTICAST_ADDR, MULTICAST_PORT);
 }
 
-capiocl::MulticastMonitor::~MulticastMonitor() {
+capiocl::monitor::MulticastMonitor::~MulticastMonitor() {
     *continue_execution = false;
     pthread_cancel(commit_listener_thread->native_handle());
     commit_listener_thread->join();
@@ -140,7 +151,7 @@ capiocl::MulticastMonitor::~MulticastMonitor() {
     delete continue_execution;
 }
 
-bool capiocl::MulticastMonitor::isCommitted(const std::filesystem::path &path) const {
+bool capiocl::monitor::MulticastMonitor::isCommitted(const std::filesystem::path &path) const {
 
     {
         const std::lock_guard lg(committed_lock);
@@ -160,7 +171,7 @@ bool capiocl::MulticastMonitor::isCommitted(const std::filesystem::path &path) c
     }
 }
 
-void capiocl::MulticastMonitor::setCommitted(const std::filesystem::path &path) const {
+void capiocl::monitor::MulticastMonitor::setCommitted(const std::filesystem::path &path) const {
     _send_message(MULTICAST_ADDR, MULTICAST_PORT, std::filesystem::path(path), COMMIT);
     std::lock_guard lg(committed_lock);
     if (std::find(_committed_files.begin(), _committed_files.end(), path) ==

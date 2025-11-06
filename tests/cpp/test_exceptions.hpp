@@ -2,37 +2,40 @@
 #define CAPIO_CL_EXCEPTIONS_HPP
 
 #define EXCEPTION_SUITE_NAME TestThrowExceptions
+#include "include/serializer.h"
 
 TEST(EXCEPTION_SUITE_NAME, testFailedDump) {
     const std::filesystem::path json_path("/tmp/capio_cl_jsons/V1_test24.json");
-    auto engine            = capiocl::Parser::parse(json_path, "/tmp");
+    auto engine            = capiocl::parser::Parser::parse(json_path, "/tmp");
     bool exception_catched = false;
 
     try {
-        capiocl::Serializer::dump(*engine, "/");
+        capiocl::serializer::Serializer::dump(*engine, "/");
     } catch (std::exception &e) {
         exception_catched = true;
         auto demangled    = demangled_name(e);
-        capiocl::print_message(capiocl::CLI_LEVEL_INFO, "Caught exception of type =" + demangled);
-        EXPECT_TRUE(demangled == "capiocl::SerializerException");
+        capiocl::printer::print(capiocl::printer::CLI_LEVEL_INFO,
+                                "Caught exception of type =" + demangled);
+        EXPECT_TRUE(demangled == "capiocl::serializer::SerializerException");
         EXPECT_GT(std::string(e.what()).size(), 0);
     }
 
     EXPECT_TRUE(exception_catched);
 }
 
-TEST(EXCEPTION_SUITE_NAME, testFailedDumpVersion) {
+TEST(EXCEPTION_SUITE_NAME, testFailedserializeVersion) {
     const std::filesystem::path json_path("/tmp/capio_cl_jsons/V1_test24.json");
-    auto engine            = capiocl::Parser::parse(json_path, "/tmp");
+    auto engine            = capiocl::parser::Parser::parse(json_path, "/tmp");
     bool exception_catched = false;
 
     try {
-        capiocl::Serializer::dump(*engine, "test.json", "1234.5678");
+        capiocl::serializer::Serializer::dump(*engine, "test.json", "1234.5678");
     } catch (std::exception &e) {
         exception_catched = true;
         auto demangled    = demangled_name(e);
-        capiocl::print_message(capiocl::CLI_LEVEL_INFO, "Caught exception of type =" + demangled);
-        EXPECT_TRUE(demangled == "capiocl::SerializerException");
+        capiocl::printer::print(capiocl::printer::CLI_LEVEL_INFO,
+                                "Caught exception of type =" + demangled);
+        EXPECT_TRUE(demangled == "capiocl::serializer::SerializerException");
         EXPECT_GT(std::string(e.what()).size(), 0);
     }
 
@@ -41,7 +44,8 @@ TEST(EXCEPTION_SUITE_NAME, testFailedDumpVersion) {
 
 TEST(EXCEPTION_SUITE_NAME, testParserException) {
     std::filesystem::path JSON_DIR = "/tmp/capio_cl_jsons";
-    capiocl::print_message(capiocl::CLI_LEVEL_INFO, "Loading jsons from " + JSON_DIR.string());
+    capiocl::printer::print(capiocl::printer::CLI_LEVEL_INFO,
+                            "Loading jsons from " + JSON_DIR.string());
     bool exception_catched = false;
 
     std::vector<std::filesystem::path> test_filenames = {
@@ -76,25 +80,26 @@ TEST(EXCEPTION_SUITE_NAME, testParserException) {
     for (const auto &test : test_filenames) {
         exception_catched = false;
         try {
-            capiocl::print_message(capiocl::CLI_LEVEL_WARNING, "Testing on file " + test.string());
-            capiocl::Parser::parse(test);
+            capiocl::printer::print(capiocl::printer::CLI_LEVEL_WARNING,
+                                    "Testing on file " + test.string());
+            capiocl::parser::Parser::parse(test);
         } catch (std::exception &e) {
             exception_catched = true;
             auto demangled    = demangled_name(e);
-            capiocl::print_message(capiocl::CLI_LEVEL_INFO,
-                                   "Caught exception of type =" + demangled);
-            EXPECT_TRUE(demangled == "capiocl::ParserException");
+            capiocl::printer::print(capiocl::printer::CLI_LEVEL_INFO,
+                                    "Caught exception of type =" + demangled);
+            EXPECT_TRUE(demangled == "capiocl::parser::ParserException");
             EXPECT_GT(std::string(e.what()).size(), 0);
         }
         EXPECT_TRUE(exception_catched);
-        capiocl::print_message(capiocl::CLI_LEVEL_INFO, "Test failed successfully\n\n");
+        capiocl::printer::print(capiocl::printer::CLI_LEVEL_INFO, "Test failed successfully\n\n");
     }
 }
 
 TEST(EXCEPTION_SUITE_NAME, testWrongCommitRule) {
     bool exception_caught = false;
     try {
-        capiocl::Engine engine;
+        capiocl::engine::Engine engine;
         engine.setCommitRule("x", "failMe");
     } catch (const std::invalid_argument &e) {
         exception_caught = true;
@@ -108,7 +113,7 @@ TEST(EXCEPTION_SUITE_NAME, testWrongCommitRule) {
 TEST(EXCEPTION_SUITE_NAME, testWrongFireRule) {
     bool exception_caught = false;
     try {
-        capiocl::Engine engine;
+        capiocl::engine::Engine engine;
         engine.setFireRule("x", "failMe");
     } catch (const std::invalid_argument &e) {
         exception_caught = true;
