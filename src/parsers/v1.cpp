@@ -181,4 +181,4 @@ capiocl::parser::Parser::available_parsers::parse_v1(const std::filesystem::path
     }
 
     return engine;
-};
+}
