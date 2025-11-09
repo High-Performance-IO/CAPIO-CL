@@ -1,10 +1,12 @@
 #ifndef CAPIO_CL_MONITOR_H
 #define CAPIO_CL_MONITOR_H
 
+#include <bits/local_lim.h>
 #include <filesystem>
 #include <mutex>
 #include <string>
 #include <thread>
+#include <unordered_map>
 #include <vector>
 
 #ifndef PATH_MAX
@@ -50,12 +52,19 @@ class MonitorInterface {
     /**
      * @brief Mutex protecting access to the committed file list.
      */
-    mutable std::mutex committed_lock;
+    mutable std::mutex committed_lock, home_node_lock;
 
     /**
      * @brief List of committed file paths stored as strings.
      */
     mutable std::vector<std::string> _committed_files;
+
+    /**
+     * @brief Lookup table to get home node staring from path.
+     * Key = file path;
+     * Value = hostname of home node.
+     */
+    mutable std::unordered_map<std::string, std::string> _home_nodes;
 
   public:
     /**
@@ -77,6 +86,14 @@ class MonitorInterface {
      * @param path Path to the file to mark as committed.
      */
     virtual void setCommitted(const std::filesystem::path &path) const;
+
+    /**
+     * Set the current hostname as  the home node for a given path
+     * @param path
+     */
+    virtual void setHomeNode(const std::filesystem::path &path) const;
+
+    virtual const std::string &getHomeNode(const std::filesystem::path &path) const;
 };
 
 /**
@@ -99,24 +116,33 @@ class MulticastMonitor final : public MonitorInterface {
     bool *continue_execution;
 
     /**
-     * @brief Background thread used to listen for commit messages.
+     * @brief Background threads used to listen for commit messages and for home nodes.
      */
-    std::thread *commit_listener_thread;
+    std::thread *commit_listener_thread, *home_node_listener_thread;
 
     /**
      * @brief Multicast group IP address.
      */
-    std::string MULTICAST_ADDR;
+    std::string MULTICAST_COMMIT_ADDR;
+
+    std::string MULTICAST_HOME_NODE_ADDR;
 
     /**
      * @brief Multicast port number.
      */
-    int MULTICAST_PORT;
+    int MULTICAST_COMMIT_PORT;
+
+    int MULTICAST_HOME_NODE_PORT;
 
     /**
      * @brief Supported network command types for commit messages.
      */
-    typedef enum { COMMIT = '!', REQUEST = '?' } MESSAGE_COMMANDS;
+    typedef enum { SET = '!', GET = '?' } MESSAGE_COMMANDS;
+
+    /**
+     * @brief hostname of the current instance
+     */
+    mutable char _hostname[HOST_NAME_MAX] = {0};
 
     /**
      * @brief Send a commit or request message over multicast.
@@ -126,8 +152,8 @@ class MulticastMonitor final : public MonitorInterface {
      * @param path File path associated with the message.
      * @param action The type of message to send (COMMIT or REQUEST).
      */
-    static void _send_message(const std::string &ip_addr, const int ip_port,
-                              const std::string &path, MESSAGE_COMMANDS action);
+    static void _send_message(const std::string &ip_addr, int ip_port, const std::string &path,
+                              MESSAGE_COMMANDS action);
 
     /**
      * @brief Background thread function to listen for commit messages.
@@ -139,21 +165,41 @@ class MulticastMonitor final : public MonitorInterface {
      * @param committed_files Vector storing committed file paths.
      * @param lock Mutex protecting shared access to committed_files.
      * @param continue_execution Controls thread termination.
-     * @param ip_addr Multicast listen address.
-     * @param ip_port Multicast listen port.
+     * @param ip_addr Multicast commit listen address.
+     * @param ip_port Multicast commit listen port.
      */
     static void commit_listener(std::vector<std::string> &committed_files, std::mutex &lock,
                                 const bool *continue_execution, const std::string &ip_addr,
                                 int ip_port);
 
+    /**
+     * @brief Background thread function to listen for commit messages.
+     *
+     * This function runs continuously while @p continue_execution remains true.
+     * When commit events are received, the corresponding file paths are recorded
+     * into @p committed_files.
+     *
+     * @param home_nodes Vector storing committed file paths.
+     * @param lock Mutex protecting shared access to committed_files.
+     * @param continue_execution Controls thread termination.
+     * @param ip_addr Multicast home node listen address.
+     * @param ip_port Multicast home node listen port.
+     */
+    static void home_node_listener(std::unordered_map<std::string, std::string> &home_nodes,
+                                   std::mutex &lock, const bool *continue_execution,
+                                   const std::string &ip_addr, int ip_port);
+
   public:
     /**
      * @brief Construct a multicast-based monitor.
      *
-     * @param ip_addr Multicast group address to use.
-     * @param ip_port Multicast port to use.
+     * @param commit_ip_addr Multicast commit group address to use.
+     * @param commit_ip_port Multicast commit port to use.
+     * @param home_node_ip_addr Multicast home node group address to use.
+     * @param home_node_ip_port Multicast home node port to use.
      */
-    MulticastMonitor(const std::string &ip_addr, int ip_port);
+    MulticastMonitor(const std::string &commit_ip_addr, int commit_ip_port,
+                     const std::string &home_node_ip_addr, int home_node_ip_port);
 
     /**
      * @brief Destructor; stops listener thread and cleans resources.
@@ -162,6 +208,8 @@ class MulticastMonitor final : public MonitorInterface {
 
     bool isCommitted(const std::filesystem::path &path) const override;
     void setCommitted(const std::filesystem::path &path) const override;
+    void setHomeNode(const std::filesystem::path &path) const override;
+    const std::string &getHomeNode(const std::filesystem::path &path) const override;
 };
 
 /**
@@ -193,15 +241,17 @@ class FileSystemMonitor final : public MonitorInterface {
     /**
      * @brief Construct a filesystem-based commit monitor.
      */
-    FileSystemMonitor() {}
+    FileSystemMonitor() = default;
 
     /**
      * @brief Destructor for FileSystemMonitor.
      */
-    ~FileSystemMonitor() override {}
+    ~FileSystemMonitor() override = default;
 
     bool isCommitted(const std::filesystem::path &path) const override;
     void setCommitted(const std::filesystem::path &path) const override;
+    void setHomeNode(const std::filesystem::path &path) const override;
+    const std::string &getHomeNode(const std::filesystem::path &path) const override;
 };
 
 /**
@@ -238,6 +288,20 @@ class Monitor {
      * @param interface
      */
     void registerMonitorBackend(const MonitorInterface *interface);
+
+    /**
+     * set the home node for given path to the current hostname, by calling the setHomeNode method
+     * for all registered Monitor backends.
+     * @param path
+     */
+    void setHomeNode(const std::filesystem::path &path) const;
+
+    /**
+     * Get set of home nodes from all registered backends
+     * @param path
+     * @return
+     */
+    const std::vector<std::string> getHomeNode(std::filesystem::path path) const;
 
     ~Monitor();
 };

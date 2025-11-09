@@ -27,3 +27,12 @@ void capiocl::monitor::FileSystemMonitor::setCommitted(const std::filesystem::pa
 bool capiocl::monitor::FileSystemMonitor::isCommitted(const std::filesystem::path &path) const {
     return std::filesystem::exists(compute_commit_token_name(path));
 }
+
+void capiocl::monitor::FileSystemMonitor::setHomeNode(const std::filesystem::path &path) const {
+    return;
+}
+
+const std::string &
+capiocl::monitor::FileSystemMonitor::getHomeNode(const std::filesystem::path &path) const {
+    return std::string("");
+}

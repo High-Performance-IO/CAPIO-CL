@@ -137,7 +137,8 @@ capiocl::engine::Engine::Engine() {
     }
 
     // TODO: make selection of monitor available to user
-    monitor.registerMonitorBackend(new monitor::MulticastMonitor("224.224.224.1", 12345));
+    monitor.registerMonitorBackend(
+        new monitor::MulticastMonitor("224.224.224.1", 12345, "224.224.224.2", 12345));
     monitor.registerMonitorBackend(new monitor::FileSystemMonitor());
 }
 
