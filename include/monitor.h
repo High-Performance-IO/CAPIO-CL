@@ -114,14 +114,9 @@ class MulticastMonitor final : public MonitorInterface {
     static constexpr int MESSAGE_SIZE = (2 + PATH_MAX + PATH_MAX); ///< Max network message size.
 
     /**
-     * @brief Pointer to a flag used to signal when the listener thread should stop.
-     */
-    bool *continue_execution;
-
-    /**
      * @brief Background threads used to listen for commit messages and for home nodes.
      */
-    std::thread *commit_listener_thread, *home_node_listener_thread;
+    std::thread *commit_thread, *home_node_thread;
 
     /**
      * @brief Multicast group IP address.
@@ -167,13 +162,12 @@ class MulticastMonitor final : public MonitorInterface {
      *
      * @param committed_files Vector storing committed file paths.
      * @param lock Mutex protecting shared access to committed_files.
-     * @param continue_execution Controls thread termination.
      * @param ip_addr Multicast commit listen address.
      * @param ip_port Multicast commit listen port.
      */
-    static void commit_listener(std::vector<std::string> &committed_files, std::mutex &lock,
-                                const bool *continue_execution, const std::string &ip_addr,
-                                int ip_port);
+    [[noreturn]] static void commit_listener(std::vector<std::string> &committed_files,
+                                             std::mutex &lock, const std::string &ip_addr,
+                                             int ip_port);
 
     /**
      * @brief Background thread function to listen for commit messages.
@@ -184,13 +178,12 @@ class MulticastMonitor final : public MonitorInterface {
      *
      * @param home_nodes Vector storing committed file paths.
      * @param lock Mutex protecting shared access to committed_files.
-     * @param continue_execution Controls thread termination.
      * @param ip_addr Multicast home node listen address.
      * @param ip_port Multicast home node listen port.
      */
-    static void home_node_listener(std::unordered_map<std::string, std::string> &home_nodes,
-                                   std::mutex &lock, const bool *continue_execution,
-                                   const std::string &ip_addr, int ip_port);
+    [[noreturn]] static void
+    home_node_listener(std::unordered_map<std::string, std::string> &home_nodes, std::mutex &lock,
+                       const std::string &ip_addr, int ip_port);
 
   public:
     /**
