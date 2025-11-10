@@ -25,10 +25,14 @@ void capiocl::monitor::Monitor::setHomeNode(const std::filesystem::path &path) c
 }
 
 const std::vector<std::string>
-capiocl::monitor::Monitor::getHomeNode(const std::filesystem::path& path) const {
+capiocl::monitor::Monitor::getHomeNode(const std::filesystem::path &path) const {
     std::vector<std::string> home_nodes;
     for (const auto &interface : interfaces) {
         auto node = interface->getHomeNode(path);
+        if (node == NO_HOME_NODE) {
+            continue;
+        }
+
         if (std::find(home_nodes.begin(), home_nodes.end(), node) == home_nodes.end()) {
             home_nodes.emplace_back(node);
         }

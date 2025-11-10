@@ -16,6 +16,9 @@
 /// @brief Namespace containing the CAPIO-CL Monitor components
 namespace capiocl::monitor {
 
+/// @brief Constant value for when a home node is not found
+static const std::string NO_HOME_NODE = "<NONE>";
+
 /**
  * @brief Custom exception thrown when parsing a CAPIO-CL configuration file by Parser
  */
@@ -108,7 +111,7 @@ class MonitorInterface {
  */
 class MulticastMonitor final : public MonitorInterface {
 
-    static constexpr int MESSAGE_SIZE = (2 + PATH_MAX); ///< Max network message size.
+    static constexpr int MESSAGE_SIZE = (2 + PATH_MAX + PATH_MAX); ///< Max network message size.
 
     /**
      * @brief Pointer to a flag used to signal when the listener thread should stop.
@@ -221,8 +224,6 @@ class MulticastMonitor final : public MonitorInterface {
  */
 class FileSystemMonitor final : public MonitorInterface {
 
-    const std::string ho_home_node = "<>";
-
     /**
      * @brief Compute the token filename used to represent the commit state of the given file.
      *
@@ -304,7 +305,8 @@ class Monitor {
      * @param path
      * @return
      */
-    [[nodiscard]] const std::vector<std::string> getHomeNode(const std::filesystem::path& path) const;
+    [[nodiscard]] const std::vector<std::string>
+    getHomeNode(const std::filesystem::path &path) const;
 
     ~Monitor();
 };

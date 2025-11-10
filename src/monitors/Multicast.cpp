@@ -32,7 +32,7 @@ static int incoming_socket_multicast(const std::string &address_ip, const int po
     addr                 = {};
     addr.sin_family      = AF_INET;
     addr.sin_port        = htons(port);
-    addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    addr.sin_addr.s_addr = inet_addr(address_ip.c_str());
     addrlen              = sizeof(addr);
 
     ip_mreq mreq              = {};
@@ -44,12 +44,6 @@ static int incoming_socket_multicast(const std::string &address_ip, const int po
     // LCOV_EXCL_START
     if (_socket < 0) {
         throw capiocl::monitor::MonitorException(std::string("socket() failed: ") +
-                                                 strerror(errno));
-    }
-
-    // Allow multiple sockets to bind to the same addr
-    if (setsockopt(_socket, SOL_SOCKET, SO_REUSEADDR, &multi_bind, sizeof(multi_bind)) < 0) {
-        throw capiocl::monitor::MonitorException(std::string("REUSEADDR failed: ") +
                                                  strerror(errno));
     }
 
@@ -156,6 +150,7 @@ void capiocl::monitor::MulticastMonitor::home_node_listener(
         }
         const auto &path = tokens[1];
         if (tokens[0].c_str()[0] == SET) {
+
             // Received an advert for a committed file
             std::lock_guard lg(lock);
 
@@ -189,8 +184,8 @@ capiocl::monitor::MulticastMonitor::MulticastMonitor(const std::string &commit_i
                                                      int home_node_ip_port) {
     continue_execution       = new bool(true);
     MULTICAST_COMMIT_ADDR    = commit_ip_addr;
-    MULTICAST_HOME_NODE_ADDR = home_node_ip_addr;
     MULTICAST_COMMIT_PORT    = commit_ip_port;
+    MULTICAST_HOME_NODE_ADDR = home_node_ip_addr;
     MULTICAST_HOME_NODE_PORT = home_node_ip_port;
 
     commit_listener_thread = new std::thread(
@@ -272,7 +267,6 @@ capiocl::monitor::MulticastMonitor::getHomeNode(const std::filesystem::path &pat
     if (const auto itm = _home_nodes.find(path); itm != _home_nodes.end()) {
         return itm->second;
     } else {
-        return std::string("");
-        ;
+        return NO_HOME_NODE;
     }
 }

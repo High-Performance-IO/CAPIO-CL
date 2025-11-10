@@ -34,5 +34,5 @@ void capiocl::monitor::FileSystemMonitor::setHomeNode(const std::filesystem::pat
 
 const std::string &
 capiocl::monitor::FileSystemMonitor::getHomeNode(const std::filesystem::path &path) const {
-    return this->ho_home_node;
+    return capiocl::monitor::NO_HOME_NODE;
 }

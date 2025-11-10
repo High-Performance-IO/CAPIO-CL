@@ -56,6 +56,8 @@ TEST(MONITOR_SUITE_NAME, testIssueExceptionOnMonitorInstance) {
     capiocl::monitor::MonitorInterface interface;
     EXPECT_THROW(interface.isCommitted("/test"), capiocl::monitor::MonitorException);
     EXPECT_THROW(interface.setCommitted("/test"), capiocl::monitor::MonitorException);
+    EXPECT_THROW(interface.setHomeNode("./test.txt"), capiocl::monitor::MonitorException);
+    EXPECT_THROW(interface.getHomeNode("./test.txt"), capiocl::monitor::MonitorException);
 
     try {
         interface.setCommitted("/test");
@@ -65,8 +67,8 @@ TEST(MONITOR_SUITE_NAME, testIssueExceptionOnMonitorInstance) {
 }
 
 TEST(MONITOR_SUITE_NAME, testHomeNodeAcrossDifferentThreads) {
-    auto e1 = new capiocl::engine::Engine();
-    auto e2 = new capiocl::engine::Engine();
+    const auto e1 = new capiocl::engine::Engine();
+    const auto e2 = new capiocl::engine::Engine();
 
     char hostname[HOST_NAME_MAX] = {};
     gethostname(hostname, HOST_NAME_MAX);
@@ -74,8 +76,11 @@ TEST(MONITOR_SUITE_NAME, testHomeNodeAcrossDifferentThreads) {
     e1->setHomeNode("test.txt");
     const auto home_nodes = e2->getHomeNode("test.txt");
 
-    EXPECT_EQ(home_nodes.size(), 2);
+    EXPECT_EQ(home_nodes.size(), 1);
     EXPECT_TRUE(home_nodes[0] == hostname);
+
+    const auto home_nodes_1 = e2->getHomeNode("test1.txt");
+    EXPECT_EQ(home_nodes_1.size(), 0);
 }
 
 #endif // CAPIO_CL_MONITOR_HPP
