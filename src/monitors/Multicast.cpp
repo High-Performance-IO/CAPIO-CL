@@ -161,6 +161,11 @@ capiocl::monitor::MulticastMonitor::commit_listener(std::vector<std::string> &co
         } else {
             // Received a query for a home node, Message begins with capiocl::Monitor::REQUEST
             std::lock_guard lg(lock);
+
+            if (home_nodes.find(path) == home_nodes.end()) {
+                continue;
+            }
+
             if (home_nodes[path] == this_hostname) {
                 const auto message = path + " " + this_hostname;
                 _send_message(ip_addr, ip_port, message, SET);
@@ -253,8 +258,7 @@ capiocl::monitor::MulticastMonitor::getHomeNode(const std::filesystem::path &pat
         }
     }
 
-    _send_message(MULTICAST_HOME_NODE_ADDR, MULTICAST_HOME_NODE_PORT,
-                  path.string() + " " + _hostname, GET);
+    _send_message(MULTICAST_HOME_NODE_ADDR, MULTICAST_HOME_NODE_PORT, path.string(), GET);
     std::this_thread::sleep_for(std::chrono::milliseconds(300));
 
     const std::lock_guard lg(home_node_lock);
