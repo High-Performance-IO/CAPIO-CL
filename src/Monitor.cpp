@@ -33,12 +33,10 @@ capiocl::monitor::Monitor::getHomeNode(const std::filesystem::path &path) const 
             continue;
         }
 
-        if (node.empty()) {
-            continue;
-        }
-
         if (std::find(home_nodes.begin(), home_nodes.end(), node) == home_nodes.end()) {
             home_nodes.emplace_back(node);
+        } else {
+            continue;
         }
     }
     return home_nodes;

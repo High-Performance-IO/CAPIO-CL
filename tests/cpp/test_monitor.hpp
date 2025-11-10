@@ -86,4 +86,20 @@ TEST(MONITOR_SUITE_NAME, testHomeNodeAcrossDifferentThreads) {
     EXPECT_EQ(home_nodes_1.size(), 0);
 }
 
+TEST(MONITOR_SUITE_NAME, testHomeNodeAfterSetup) {
+    char hostname[HOST_NAME_MAX] = {};
+    gethostname(hostname, HOST_NAME_MAX);
+
+    const capiocl::engine::Engine e;
+    e.setHomeNode("test.txt");
+
+    sleep(1);
+
+    const capiocl::engine::Engine e1;
+    const auto home_nodes  = e1.getHomeNode("test.txt");
+
+    EXPECT_EQ(home_nodes.size(), 1);
+    EXPECT_TRUE(home_nodes[0] == hostname);
+}
+
 #endif // CAPIO_CL_MONITOR_HPP

@@ -167,8 +167,7 @@ capiocl::monitor::MulticastMonitor::commit_listener(std::vector<std::string> &co
             }
 
             if (home_nodes[path] == this_hostname) {
-                const auto message = path + " " + this_hostname;
-                _send_message(ip_addr, ip_port, message, SET);
+                _send_message(ip_addr, ip_port, path + " " + this_hostname, SET);
             }
         }
     } while (true);
