@@ -74,10 +74,13 @@ TEST(MONITOR_SUITE_NAME, testHomeNodeAcrossDifferentThreads) {
     gethostname(hostname, HOST_NAME_MAX);
 
     e1->setHomeNode("test.txt");
-    const auto home_nodes = e2->getHomeNode("test.txt");
+    const auto home_nodes  = e2->getHomeNode("test.txt");
+    // test for entry already present.
+    const auto home_nodes2 = e2->getHomeNode("test.txt");
 
     EXPECT_EQ(home_nodes.size(), 1);
     EXPECT_TRUE(home_nodes[0] == hostname);
+    EXPECT_TRUE(home_nodes2[0] == hostname);
 
     const auto home_nodes_1 = e2->getHomeNode("test1.txt");
     EXPECT_EQ(home_nodes_1.size(), 0);

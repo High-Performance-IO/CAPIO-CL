@@ -187,23 +187,21 @@ capiocl::monitor::MulticastMonitor::MulticastMonitor(const std::string &commit_i
     MULTICAST_HOME_NODE_PORT = home_node_ip_port;
 
     commit_thread =
-        new std::thread(&commit_listener, std::ref(_committed_files), std::ref(committed_lock),
-                        MULTICAST_COMMIT_ADDR, MULTICAST_COMMIT_PORT);
+        std::thread(&commit_listener, std::ref(_committed_files), std::ref(committed_lock),
+                    MULTICAST_COMMIT_ADDR, MULTICAST_COMMIT_PORT);
 
     home_node_thread =
-        new std::thread(&home_node_listener, std::ref(_home_nodes), std::ref(home_node_lock),
-                        MULTICAST_HOME_NODE_ADDR, MULTICAST_HOME_NODE_PORT);
+        std::thread(&home_node_listener, std::ref(_home_nodes), std::ref(home_node_lock),
+                    MULTICAST_HOME_NODE_ADDR, MULTICAST_HOME_NODE_PORT);
 
     gethostname(_hostname, HOST_NAME_MAX);
 }
 
 capiocl::monitor::MulticastMonitor::~MulticastMonitor() {
-    pthread_cancel(commit_thread->native_handle());
-    pthread_cancel(home_node_thread->native_handle());
-    commit_thread->join();
-    home_node_thread->join();
-    delete home_node_thread;
-    delete commit_thread;
+    pthread_cancel(commit_thread.native_handle());
+    pthread_cancel(home_node_thread.native_handle());
+    commit_thread.join();
+    home_node_thread.join();
 }
 
 bool capiocl::monitor::MulticastMonitor::isCommitted(const std::filesystem::path &path) const {
@@ -240,9 +238,7 @@ void capiocl::monitor::MulticastMonitor::setHomeNode(const std::filesystem::path
     _send_message(MULTICAST_HOME_NODE_ADDR, MULTICAST_HOME_NODE_PORT, message, SET);
 
     std::lock_guard lg(home_node_lock);
-    if (_home_nodes.find(path) == _home_nodes.end()) {
-        _home_nodes[path] = _hostname;
-    }
+    _home_nodes[path] = _hostname;
 }
 
 const std::string &

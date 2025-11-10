@@ -116,7 +116,7 @@ class MulticastMonitor final : public MonitorInterface {
     /**
      * @brief Background threads used to listen for commit messages and for home nodes.
      */
-    std::thread *commit_thread, *home_node_thread;
+    std::thread commit_thread, home_node_thread;
 
     /**
      * @brief Multicast group IP address.
