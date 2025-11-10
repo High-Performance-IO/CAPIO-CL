@@ -116,6 +116,9 @@ capiocl::monitor::MulticastMonitor::commit_listener(std::vector<std::string> &co
 [[noreturn]] void capiocl::monitor::MulticastMonitor::home_node_listener(
     std::unordered_map<std::string, std::string> &home_nodes, std::mutex &lock,
     const std::string &ip_addr, int ip_port) {
+    char this_hostname[HOST_NAME_MAX] = {};
+    gethostname(this_hostname, HOST_NAME_MAX);
+
     sockaddr_in addr_in = {};
     socklen_t addr_len  = {};
     const auto socket   = incoming_socket_multicast(ip_addr, ip_port, addr_in, addr_len);
@@ -158,9 +161,8 @@ capiocl::monitor::MulticastMonitor::commit_listener(std::vector<std::string> &co
         } else {
             // Received a query for a home node, Message begins with capiocl::Monitor::REQUEST
             std::lock_guard lg(lock);
-            if (const auto iter = home_nodes.find(path); iter != home_nodes.end()) {
-                const auto home_node = iter->second;
-                const auto message   = path + " " + home_node;
+            if (home_nodes[path] == this_hostname) {
+                const auto message = path + " " + this_hostname;
                 _send_message(ip_addr, ip_port, message, SET);
             }
         }
