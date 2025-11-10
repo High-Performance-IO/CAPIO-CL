@@ -397,17 +397,6 @@ TEST(ENGINE_SUITE_NAME, testStorageOptions) {
     EXPECT_FALSE(engine.isStoredInMemory("F"));
 }
 
-TEST(ENGINE_SUITE_NAME, testHomeNode) {
-    std::string node_name(1024, '\0');
-    gethostname(node_name.data(), node_name.size());
-    node_name.resize(std::strlen(node_name.c_str()));
-
-    capiocl::engine::Engine engine;
-    engine.newFile("A");
-    EXPECT_TRUE(engine.getHomeNode("A") == node_name);
-    EXPECT_TRUE(engine.getHomeNode("B") == node_name);
-}
-
 TEST(ENGINE_SUITE_NAME, testInsertFileDependencies) {
     capiocl::engine::Engine engine;
 

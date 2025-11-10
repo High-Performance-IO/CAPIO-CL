@@ -671,11 +671,12 @@ std::vector<std::string> capiocl::engine::Engine::getFileToStoreInMemory() const
     return files;
 }
 
-std::string capiocl::engine::Engine::getHomeNode(const std::filesystem::path &path) const {
-    if (const auto location = _capio_cl_entries.find(path); location == _capio_cl_entries.end()) {
-        return node_name;
-    }
-    return node_name;
+std::vector<std::string> capiocl::engine::Engine::getHomeNode(const std::filesystem::path &path) const {
+    return monitor.getHomeNode(path);
+}
+
+void capiocl::engine::Engine::setHomeNode(const std::filesystem::path &path) const {
+    monitor.setHomeNode(path);
 }
 
 bool capiocl::engine::Engine::isExcluded(const std::filesystem::path &path) const {

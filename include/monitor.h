@@ -220,6 +220,9 @@ class MulticastMonitor final : public MonitorInterface {
  * from the path. Existence of the token file implies commit state.
  */
 class FileSystemMonitor final : public MonitorInterface {
+
+    const std::string ho_home_node = "<>";
+
     /**
      * @brief Compute the token filename used to represent the commit state of the given file.
      *
@@ -301,7 +304,7 @@ class Monitor {
      * @param path
      * @return
      */
-    const std::vector<std::string> getHomeNode(std::filesystem::path path) const;
+    [[nodiscard]] const std::vector<std::string> getHomeNode(const std::filesystem::path& path) const;
 
     ~Monitor();
 };

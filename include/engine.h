@@ -299,7 +299,10 @@ class Engine final {
     std::vector<std::string> getFileToStoreInMemory() const;
 
     /// @brief Get the home node of a file.
-    std::string getHomeNode(const std::filesystem::path &path) const;
+    std::vector<std::string> getHomeNode(const std::filesystem::path &path) const;
+
+    /// @brief Set the home node for a given path
+    void setHomeNode(const std::filesystem::path &path) const;
 
     /// @brief Get current workflow name loaded from memory
     const std::string &getWorkflowName() const;

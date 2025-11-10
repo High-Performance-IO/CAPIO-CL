@@ -64,4 +64,18 @@ TEST(MONITOR_SUITE_NAME, testIssueExceptionOnMonitorInstance) {
     }
 }
 
+TEST(MONITOR_SUITE_NAME, testHomeNodeAcrossDifferentThreads) {
+    auto e1 = new capiocl::engine::Engine();
+    auto e2 = new capiocl::engine::Engine();
+
+    char hostname[HOST_NAME_MAX] = {};
+    gethostname(hostname, HOST_NAME_MAX);
+
+    e1->setHomeNode("test.txt");
+    const auto home_nodes = e2->getHomeNode("test.txt");
+
+    EXPECT_EQ(home_nodes.size(), 2);
+    EXPECT_TRUE(home_nodes[0] == hostname);
+}
+
 #endif // CAPIO_CL_MONITOR_HPP

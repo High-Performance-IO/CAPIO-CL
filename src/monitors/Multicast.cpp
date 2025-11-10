@@ -88,8 +88,6 @@ void capiocl::monitor::MulticastMonitor::commit_listener(std::vector<std::string
     sockaddr_in addr_in = {};
     socklen_t addr_len  = {};
     const auto socket   = incoming_socket_multicast(ip_addr, ip_port, addr_in, addr_len);
-    printer::print(printer::CLI_LEVEL_INFO, "Monitor on thread: " + std::to_string(getpid()));
-
     const auto addr                     = reinterpret_cast<sockaddr *>(&addr_in);
     char incoming_message[MESSAGE_SIZE] = {0};
 
@@ -128,7 +126,6 @@ void capiocl::monitor::MulticastMonitor::home_node_listener(
     sockaddr_in addr_in = {};
     socklen_t addr_len  = {};
     const auto socket   = incoming_socket_multicast(ip_addr, ip_port, addr_in, addr_len);
-    printer::print(printer::CLI_LEVEL_INFO, "Monitor on thread: " + std::to_string(getpid()));
 
     const auto addr                     = reinterpret_cast<sockaddr *>(&addr_in);
     char incoming_message[MESSAGE_SIZE] = {0};
