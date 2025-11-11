@@ -96,7 +96,25 @@ TEST(MONITOR_SUITE_NAME, testHomeNodeAfterSetup) {
     sleep(1);
 
     const capiocl::engine::Engine e1;
-    const auto home_nodes  = e1.getHomeNode("test.txt");
+    const auto home_nodes = e1.getHomeNode("test.txt");
+
+    EXPECT_EQ(home_nodes.size(), 1);
+    EXPECT_TRUE(home_nodes[0] == hostname);
+}
+
+TEST(MONITOR_SUITE_NAME, testHomeNodeAfterInstanceTearDown) {
+    char hostname[HOST_NAME_MAX] = {};
+    gethostname(hostname, HOST_NAME_MAX);
+
+    auto e1 = new capiocl::engine::Engine();
+
+    e1->setHomeNode("test.txt");
+    delete e1;
+
+    sleep(1);
+
+    const capiocl::engine::Engine e2;
+    const auto home_nodes = e2.getHomeNode("test.txt");
 
     EXPECT_EQ(home_nodes.size(), 1);
     EXPECT_TRUE(home_nodes[0] == hostname);
