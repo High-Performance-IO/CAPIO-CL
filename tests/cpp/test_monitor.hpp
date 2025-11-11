@@ -74,13 +74,13 @@ TEST(MONITOR_SUITE_NAME, testHomeNodeAcrossDifferentThreads) {
     gethostname(hostname, HOST_NAME_MAX);
 
     e1->setHomeNode("test.txt");
-    const auto home_nodes  = e2->getHomeNode("test.txt");
+    const std::set<std::string> home_nodes  = e2->getHomeNode("test.txt");
     // test for entry already present.
-    const auto home_nodes2 = e2->getHomeNode("test.txt");
+    const std::set<std::string> home_nodes2 = e2->getHomeNode("test.txt");
 
     EXPECT_EQ(home_nodes.size(), 1);
-    EXPECT_TRUE(home_nodes[0] == hostname);
-    EXPECT_TRUE(home_nodes2[0] == hostname);
+    EXPECT_NE(home_nodes.find(hostname), home_nodes.end());
+    EXPECT_NE(home_nodes2.find(hostname), home_nodes2.end());
 
     const auto home_nodes_1 = e2->getHomeNode("test1.txt");
     EXPECT_EQ(home_nodes_1.size(), 0);
@@ -99,7 +99,7 @@ TEST(MONITOR_SUITE_NAME, testHomeNodeAfterSetup) {
     const auto home_nodes = e1.getHomeNode("test.txt");
 
     EXPECT_EQ(home_nodes.size(), 1);
-    EXPECT_TRUE(home_nodes[0] == hostname);
+    EXPECT_NE(home_nodes.find(hostname), home_nodes.end());
 }
 
 TEST(MONITOR_SUITE_NAME, testHomeNodeAfterInstanceTearDown) {
@@ -114,10 +114,10 @@ TEST(MONITOR_SUITE_NAME, testHomeNodeAfterInstanceTearDown) {
     sleep(1);
 
     const capiocl::engine::Engine e2;
-    const auto home_nodes = e2.getHomeNode("test.txt");
+    const std::set<std::string> home_nodes = e2.getHomeNode("test.txt");
 
     EXPECT_EQ(home_nodes.size(), 1);
-    EXPECT_TRUE(home_nodes[0] == hostname);
+    EXPECT_NE(home_nodes.find(hostname), home_nodes.end());
 }
 
 #endif // CAPIO_CL_MONITOR_HPP

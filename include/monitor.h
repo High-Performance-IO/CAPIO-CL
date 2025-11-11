@@ -8,6 +8,7 @@
 #include <thread>
 #include <unordered_map>
 #include <vector>
+#include <set>
 
 #ifndef PATH_MAX
 #define PATH_MAX 4096
@@ -101,6 +102,11 @@ class MonitorInterface {
      */
     virtual void setHomeNode(const std::filesystem::path &path) const;
 
+    /**
+     * Get the home node for a given path as reported by the implementation of this interface
+     * @param path
+     * @return the home node responsible for the given path
+     */
     virtual const std::string &getHomeNode(const std::filesystem::path &path) const;
 };
 
@@ -314,7 +320,7 @@ class Monitor {
      * @param path
      * @return
      */
-    [[nodiscard]] const std::vector<std::string>
+    [[nodiscard]] std::set<std::string>
     getHomeNode(const std::filesystem::path &path) const;
 
     ~Monitor();
