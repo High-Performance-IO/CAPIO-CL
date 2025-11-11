@@ -1,4 +1,5 @@
 import socket
+import time
 from pathlib import PosixPath
 
 import py_capio_cl
@@ -261,8 +262,12 @@ def test_home_node():
     this_node_name = socket.gethostname()
     engine = py_capio_cl.Engine()
     engine.newFile("A")
+    assert this_node_name not in engine.getHomeNode("B")
+    assert this_node_name not in engine.getHomeNode("A")
+    engine1 = py_capio_cl.Engine()
+    engine1.setHomeNode("A")
+    time.sleep(1)
     assert this_node_name in engine.getHomeNode("A")
-    assert this_node_name in engine.getHomeNode("B")
 
 
 def test_insert_file_dependencies():
