@@ -258,11 +258,11 @@ def test_storage_options(tmp_path):
 
 
 def test_home_node():
-    nodename = socket.gethostname()
+    this_node_name = socket.gethostname()
     engine = py_capio_cl.Engine()
     engine.newFile("A")
-    assert engine.getHomeNode("A") == nodename
-    assert engine.getHomeNode("B") == nodename
+    assert this_node_name in engine.getHomeNode("A")
+    assert this_node_name in engine.getHomeNode("B")
 
 
 def test_insert_file_dependencies():

@@ -671,7 +671,8 @@ std::vector<std::string> capiocl::engine::Engine::getFileToStoreInMemory() const
     return files;
 }
 
-std::set<std::string> capiocl::engine::Engine::getHomeNode(const std::filesystem::path &path) const {
+std::set<std::string>
+capiocl::engine::Engine::getHomeNode(const std::filesystem::path &path) const {
     return monitor.getHomeNode(path);
 }
 

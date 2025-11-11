@@ -1,17 +1,21 @@
 #ifndef CAPIO_CL_MONITOR_H
 #define CAPIO_CL_MONITOR_H
 
-#include <bits/local_lim.h>
+#include <climits>
 #include <filesystem>
 #include <mutex>
+#include <set>
 #include <string>
 #include <thread>
 #include <unordered_map>
 #include <vector>
-#include <set>
 
 #ifndef PATH_MAX
 #define PATH_MAX 4096
+#endif
+
+#ifndef HOST_NAME_MAX
+#define HOST_NAME_MAX 1024
 #endif
 
 /// @brief Namespace containing the CAPIO-CL Monitor components
@@ -56,7 +60,12 @@ class MonitorInterface {
     /**
      * @brief Mutex protecting access to the committed file list.
      */
-    mutable std::mutex committed_lock, home_node_lock;
+    mutable std::mutex committed_lock;
+
+    /**
+     * @brief Mutex protecting access to the home nodes list.
+     */
+    mutable std::mutex home_node_lock;
 
     /**
      * @brief List of committed file paths stored as strings.
@@ -320,8 +329,7 @@ class Monitor {
      * @param path
      * @return
      */
-    [[nodiscard]] std::set<std::string>
-    getHomeNode(const std::filesystem::path &path) const;
+    [[nodiscard]] std::set<std::string> getHomeNode(const std::filesystem::path &path) const;
 
     ~Monitor();
 };

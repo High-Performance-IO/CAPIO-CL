@@ -28,7 +28,7 @@ std::set<std::string>
 capiocl::monitor::Monitor::getHomeNode(const std::filesystem::path &path) const {
     std::set<std::string> home_nodes;
     for (const auto &interface : interfaces) {
-        const auto& node = interface->getHomeNode(path);
+        const auto &node = interface->getHomeNode(path);
         if (node == NO_HOME_NODE) {
             continue;
         }
