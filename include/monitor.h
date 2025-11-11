@@ -69,6 +69,11 @@ class MonitorInterface {
      */
     mutable std::unordered_map<std::string, std::string> _home_nodes;
 
+    /**
+     * @brief hostname of the current instance
+     */
+    mutable char _hostname[HOST_NAME_MAX] = {0};
+
   public:
     /**
      * @brief Virtual destructor for safe polymorphic deletion.
@@ -136,11 +141,6 @@ class MulticastMonitor final : public MonitorInterface {
      * @brief Supported network command types for commit messages.
      */
     typedef enum { SET = '!', GET = '?' } MESSAGE_COMMANDS;
-
-    /**
-     * @brief hostname of the current instance
-     */
-    mutable char _hostname[HOST_NAME_MAX] = {0};
 
     /**
      * @brief Send a commit or request message over multicast.
@@ -217,28 +217,44 @@ class MulticastMonitor final : public MonitorInterface {
  */
 class FileSystemMonitor final : public MonitorInterface {
 
+    typedef enum { COMMIT, HOME_NODE } CAPIO_CL_COMMIT_TOKEN_TYPES;
+
     /**
      * @brief Compute the token filename used to represent the commit state of the given file.
      *
      * @param path The original file path.
+     * @param type Type of token to generate
      * @return A filesystem path representing the commit token.
      */
-    static std::filesystem::path compute_commit_token_name(const std::filesystem::path &path);
+    static std::filesystem::path
+    compute_capiocl_token_name(const std::filesystem::path &path,
+                               CAPIO_CL_COMMIT_TOKEN_TYPES type = COMMIT);
 
     /**
      * @brief Create the commit token for a file.
      *
-     * This typically involves creating an empty token file in the filesystem.
+     * This creates an empty token file in the filesystem.
      *
      * @param path Path of the committed file.
      */
     static void generate_commit_token(const std::filesystem::path &path);
 
+    /**
+     * @brief Generate a token containing the home node for given path
+     *
+     * This creates a token file containing the homenode in the filesystem.
+     *
+     * @param path
+     * @param home_node
+     */
+    static void generate_home_node_token(const std::filesystem::path &path,
+                                         const std::string &home_node);
+
   public:
     /**
      * @brief Construct a filesystem-based commit monitor.
      */
-    FileSystemMonitor() = default;
+    FileSystemMonitor();
 
     /**
      * @brief Destructor for FileSystemMonitor.
