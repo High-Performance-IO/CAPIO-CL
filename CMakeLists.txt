@@ -27,6 +27,7 @@ include(GNUInstallDirs)
 option(CAPIO_CL_BUILD_TESTS "Build CAPIO-CL test suite" OFF)
 option(BUILD_PYTHON_BINDINGS "Build python bindings for CAPIO-CL" OFF)
 option(ENABLE_COVERAGE "Enable code coverage collection" FALSE)
+option(ENABLE_COVERAGE_PIPELINE "Add dedicated target to execute and collect coverage" OFF)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_compile_options(-O0 -g)
@@ -202,5 +203,68 @@ if (CAPIO_CL_BUILD_TESTS)
     install(DIRECTORY ${TEST_JSON_DIR}
             DESTINATION ${CMAKE_INSTALL_BINDIR}/jsons
             FILES_MATCHING PATTERN "*.json"
+    )
+
+    #####################################
+    # Targget to execute tests
+    #####################################
+    add_custom_target(run_tests
+            DEPENDS CAPIO_CL_tests
+            COMMAND $<TARGET_FILE:CAPIO_CL_tests>
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+            COMMENT "Executing CAPIO_CL_tests"
+    )
+
+endif ()
+
+if (ENABLE_COVERAGE_PIPELINE)
+
+    if (NOT (CAPIO_CL_BUILD_TESTS AND ENABLE_COVERAGE))
+        message(FATAL_ERROR "Unable to add coverage pipeline when coverage and tests are not being built")
+    endif ()
+
+    find_program(LCOV_BIN lcov)
+    find_program(GENHTML_BIN genhtml)
+
+    if (NOT LCOV_BIN)
+        message(FATAL_ERROR "lcov not found! Install lcov first.")
+    endif ()
+
+    if (NOT GENHTML_BIN)
+        message(FATAL_ERROR "genhtml not found! Install lcov first.")
+    endif ()
+
+    message(STATUS "Adding coverage collection pipeline")
+
+    # Output directories
+    set(COVERAGE_DIR "${CMAKE_BINARY_DIR}/coverage")
+    set(COVERAGE_INFO "${COVERAGE_DIR}/coverage.info")
+    file(MAKE_DIRECTORY ${COVERAGE_DIR})
+
+    # Run tests + collect coverage + generate HTML
+    add_custom_target(generate_coverage
+            DEPENDS run_tests
+            COMMAND ${LCOV_BIN} --directory ${CMAKE_BINARY_DIR} --capture
+            --ignore-errors inconsistent
+            --ignore-errors negative
+            ${GCOV_EXTRA_ARGS}
+            --output-file ${COVERAGE_INFO}
+
+            COMMAND ${LCOV_BIN}
+            --remove ${COVERAGE_INFO}
+                    "*jsoncons*"
+                    "/usr/include/*"
+                    "*googletest*"
+                    "*tests/*"
+                    ${COVERAGE_REMOVE_PATTERNS}
+            --ignore-errors unused
+            --ignore-errors inconsistent
+            --output-file ${COVERAGE_INFO}
+
+            COMMAND ${GENHTML_BIN} ${COVERAGE_INFO}
+            --ignore-errors inconsistent
+            --output-directory ${COVERAGE_DIR}
+
+            COMMENT "Generating coverage report in ${COVERAGE_DIR}"
     )
 endif ()
