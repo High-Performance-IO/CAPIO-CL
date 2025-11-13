@@ -233,8 +233,8 @@ bool capiocl::monitor::MulticastMonitor::isCommitted(const std::filesystem::path
 void capiocl::monitor::MulticastMonitor::setCommitted(const std::filesystem::path &path) const {
     _send_message(MULTICAST_COMMIT_ADDR, MULTICAST_COMMIT_PORT, std::filesystem::path(path), SET);
     std::lock_guard lg(committed_lock);
-    if (std::find(_committed_files.begin(), _committed_files.end(), path) ==
-        _committed_files.end()) {
+    const auto position = std::find(_committed_files.begin(), _committed_files.end(), path);
+    if (position == _committed_files.end()) {
         _committed_files.emplace_back(path);
     }
 }

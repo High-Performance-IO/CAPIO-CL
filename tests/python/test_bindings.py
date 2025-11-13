@@ -259,15 +259,34 @@ def test_storage_options(tmp_path):
 
 
 def test_home_node():
+    """
+    This test is skipped on macOS runners due to the issue described here:
+    https://github.com/actions/runner-images/issues/10924.
+    The test will only be executed on Linux-based runners, not macOS.
+    """
     this_node_name = socket.gethostname()
     engine = py_capio_cl.Engine()
-    engine.newFile("A")
+    engine.newFile("./A")
     assert this_node_name not in engine.getHomeNode("B")
-    assert this_node_name not in engine.getHomeNode("A")
+    assert this_node_name not in engine.getHomeNode("./A")
     engine1 = py_capio_cl.Engine()
-    engine1.setHomeNode("A")
+    engine1.setHomeNode("./A")
     time.sleep(1)
-    assert this_node_name in engine.getHomeNode("A")
+    assert this_node_name in engine.getHomeNode("./A")
+
+
+def test_commit_status():
+    """
+    This test is skipped on macOS runners due to the issue described here:
+    https://github.com/actions/runner-images/issues/10924.
+    The test will only be executed on Linux-based runners, not macOS.
+    """
+    engine = py_capio_cl.Engine()
+    engine.setCommitted("./C")
+    assert engine.isCommitted("./C")
+
+    engine1 = py_capio_cl.Engine()
+    assert engine1.isCommitted("./C")
 
 
 def test_insert_file_dependencies():
