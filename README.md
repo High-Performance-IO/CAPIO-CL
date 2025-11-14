@@ -10,23 +10,32 @@
 ![C++](https://img.shields.io/badge/C%2B%2B-%E2%89%A517-blueviolet?logo=c%2B%2B&logoColor=white)
 ![Python Bindings](https://img.shields.io/badge/Python_Bindings-3.10–3.14-darkgreen?style=flat&logo=python&logoColor=white&labelColor=gray)
 
-![Ubuntu](https://img.shields.io/badge/Ubuntu-121212?logo=ubuntu&logoColor=E95420)
-![macOS](https://img.shields.io/badge/macOS-121212?logo=apple&logoColor=white)
 
-![Intel](https://img.shields.io/badge/Intel-121212?logo=intel&logoColor=0071C5)
-![ARM](https://img.shields.io/badge/ARM-121212?logo=arm&logoColor=0091BD)
-![RISC-V](https://img.shields.io/badge/RISC--V-121212?logo=riscv&logoColor=F9A825)
+#### Platform support
 
-[![Download Documentation](https://img.shields.io/badge/Read-Documentation-brown?logo=readthedocs&logoColor=white)](https://github.com/High-Performance-IO/CAPIO-CL/releases/latest/download/documentation.pdf)
-[![DOI](https://img.shields.io/badge/DOI-10.1007%2Fs10766--025--00789--0-%23cc5500?logo=doi&logoColor=white&labelColor=2b2b2b)](https://doi.org/10.1007/s10766-025-00789-0)
+| OS / Arch | ![x86_64](https://img.shields.io/badge/x86__64-121212?logo=intel&logoColor=blue) | ![ARM](https://img.shields.io/badge/ARM-121212?logo=arm&logoColor=0091BD) | ![RISC-V](https://img.shields.io/badge/RISC--V-121212?logo=riscv&logoColor=F9A825) |
+|-----------|----------------------------------------------------------------------------------|----------------------------------------------|----------------------------------------------|
+| ![Ubuntu](https://img.shields.io/badge/Ubuntu-121212?logo=ubuntu&logoColor=E95420) | ✅                                                                                | ✅ | ✅ |
+| ![macOS](https://img.shields.io/badge/macOS-121212?logo=apple&logoColor=white)     | ✅                                                                                | ✅ | |
+
+
+#### Documentation
+
+- [![Core Language](https://img.shields.io/badge/Core%20Language-10.1007%2Fs10766--025--00789--0-%23cc5500?logo=doi&logoColor=white&labelColor=2b2b2b)](https://doi.org/10.1007/s10766-025-00789-0)
+- [![Metadata Streaming](https://img.shields.io/badge/Metadata%20Streaming-10.1145%2F3731599.3767577-%23cc5500?logo=doi&logoColor=white&labelColor=2b2b2b)](https://doi.org/10.1145/3731599.3767577)
+- [![Doxygen documentation](https://img.shields.io/github/v/release/High-Performance-IO/CAPIO-CL?label=Doxygen%20documentation&labelColor=2b2b2b&color=brown&logo=readthedocs&logoColor=white)](https://github.com/High-Performance-IO/CAPIO-CL/releases/latest/download/documentation.pdf)
+
 
 **CAPIO-CL** is a novel I/O coordination language that enables users to annotate file-based workflow data dependencies
 with **synchronization semantics** for files and directories.
 Designed to facilitate **transparent overlap between computation and I/O operations**, CAPIO-CL allows multiple
 producer–consumer application modules to coordinate efficiently using a **JSON-based syntax**.
 
-For detailed documentation and examples, please
-visit: [https://capio.hpc4ai.it/docs/coord-language/](https://capio.hpc4ai.it/docs/coord-language/)
+For detailed documentation and examples, please visit: 
+
+[![CAPIO Website](https://img.shields.io/badge/CAPIO%20Website-Documentation-brightgreen?logo=readthedocs&logoColor=white)](https://capio.hpc4ai.it/docs/coord-language/)
+
+
 
 ---
 
