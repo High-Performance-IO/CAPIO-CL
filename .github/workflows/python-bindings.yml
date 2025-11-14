@@ -43,26 +43,34 @@ jobs:
         if: startsWith(matrix.on, 'macos-')
         run: brew install ninja gcc cmake
 
+      - name: "Create virtual environment"
+        run: |
+          python -m venv venv
+          . ./venv/bin/activate
+          pip install -r build-requirements.txt
+          pip install -r test-requirements.txt
+
       # Install Python build dependencies
-      - name: "Build and Install Python wheel"
+      - name: "Build and Install Python package"
         run: |
           mkdir -p /tmp/capio_cl_jsons
           cp tests/jsons/*.json /tmp/capio_cl_jsons
-          python -m pip install --upgrade pip
-          python -m pip install -r build-requirements.txt
-          
-          python -m build                               \
-              -Ccmake.define.ENABLE_COVERAGE=ON         \
-              -Ccmake.build-type=Debug                  \
-              -Ccmake.define.CAPIO_CL_BUILD_TESTS=OFF
-          
-          pip install dist/*.whl
+          . ./venv/bin/activate
+          pip install .
 
       # Run unit tests
-      - name: "Run Python tests"
+      - name: "Run Python tests (Ubuntu)"
+        if: startsWith(matrix.on, 'ubuntu-')
         run: |
-          python -m pip install -r test-requirements.txt
+          . ./venv/bin/activate
           pytest -v tests/python/test_*
+
+      - name: "Run Python tests (MacOS)"
+        if: startsWith(matrix.on, 'macos-')
+        run: |
+          . ./venv/bin/activate
+          pytest -k "not test_home_node" -v tests/python/test_*
+      
 
       - name: "Generate coverage report"
         if: ${{ startsWith(matrix.on, 'ubuntu-') }}

@@ -78,6 +78,7 @@ PYBIND11_MODULE(_py_capio_cl, m) {
         .def("setWorkflowName", &capiocl::engine::Engine::setWorkflowName)
         .def("setCommitted", &capiocl::engine::Engine::setCommitted)
         .def("isCommitted", &capiocl::engine::Engine::isCommitted)
+        .def("setHomeNode", &capiocl::engine::Engine::setHomeNode)
         .def("__str__", &capiocl::engine::Engine::print)
         .def("__repr__",
              [](const capiocl::engine::Engine &e) {
