@@ -183,14 +183,12 @@ void capiocl::monitor::MulticastMonitor::_send_message(const std::string &ip_add
     close(out_s);
 }
 
-capiocl::monitor::MulticastMonitor::MulticastMonitor(const std::string &commit_ip_addr,
-                                                     const int commit_ip_port,
-                                                     const std::string &home_node_ip_addr,
-                                                     int home_node_ip_port) {
-    MULTICAST_COMMIT_ADDR    = commit_ip_addr;
-    MULTICAST_COMMIT_PORT    = commit_ip_port;
-    MULTICAST_HOME_NODE_ADDR = home_node_ip_addr;
-    MULTICAST_HOME_NODE_PORT = home_node_ip_port;
+capiocl::monitor::MulticastMonitor::MulticastMonitor(
+    const configuration::CapioClConfiguration &config) {
+    config.getParameter("monitor.commit.ip", &MULTICAST_COMMIT_ADDR, "224.224.224.1");
+    config.getParameter("monitor.commit.port", &MULTICAST_COMMIT_PORT, 12345);
+    config.getParameter("monitor.homenode.ip", &MULTICAST_HOME_NODE_ADDR, "224.224.224.2");
+    config.getParameter("monitor.homenode.port", &MULTICAST_HOME_NODE_PORT, 12345);
 
     commit_thread =
         std::thread(&commit_listener, std::ref(_committed_files), std::ref(committed_lock),

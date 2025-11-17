@@ -72,6 +72,8 @@ capiocl::engine::Engine *capiocl::parser::Parser::parse(const std::filesystem::p
 
     if (capio_cl_release == CAPIO_CL_VERSION::V1) {
         return available_parsers::parse_v1(source, resolve_prefix, store_only_in_memory);
+    } else if (capio_cl_release == CAPIO_CL_VERSION::V1_1) {
+        return available_parsers::parse_v1_1(source, resolve_prefix, store_only_in_memory);
     } else {
         throw ParserException("Invalid CAPIO-CL specification version!");
     }

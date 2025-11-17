@@ -3,6 +3,7 @@
 #include <sstream>
 
 #include "capiocl.hpp"
+#include "include/configuration.h"
 #include "include/engine.h"
 #include "include/printer.h"
 
@@ -136,10 +137,7 @@ capiocl::engine::Engine::Engine() {
         this->workflow_name = CAPIO_CL_DEFAULT_WF_NAME;
     }
 
-    // TODO: make selection of monitor available to user
-    monitor.registerMonitorBackend(
-        new monitor::MulticastMonitor("224.224.224.1", 12345, "224.224.224.2", 12345));
-    monitor.registerMonitorBackend(new monitor::FileSystemMonitor());
+    configuration = new configuration::CapioClConfiguration();
 }
 
 void capiocl::engine::Engine::_newFile(const std::filesystem::path &path) const {
@@ -752,4 +750,10 @@ bool capiocl::engine::Engine::operator==(const capiocl::engine::Engine &other) c
         }
     }
     return true;
+}
+void capiocl::engine::Engine::loadConfiguration(const std::string &path) {
+    configuration->load(path);
+
+    monitor.registerMonitorBackend(new monitor::MulticastMonitor(*configuration));
+    monitor.registerMonitorBackend(new monitor::FileSystemMonitor());
 }

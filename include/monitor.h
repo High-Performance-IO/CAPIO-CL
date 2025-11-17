@@ -1,6 +1,8 @@
 #ifndef CAPIO_CL_MONITOR_H
 #define CAPIO_CL_MONITOR_H
 
+#include "configuration.h"
+
 #include <climits>
 #include <filesystem>
 #include <mutex>
@@ -204,13 +206,9 @@ class MulticastMonitor final : public MonitorInterface {
     /**
      * @brief Construct a multicast-based monitor.
      *
-     * @param commit_ip_addr Multicast commit group address to use.
-     * @param commit_ip_port Multicast commit port to use.
-     * @param home_node_ip_addr Multicast home node group address to use.
-     * @param home_node_ip_port Multicast home node port to use.
+     *@param config const reference to CAPIO-CL configuration
      */
-    MulticastMonitor(const std::string &commit_ip_addr, int commit_ip_port,
-                     const std::string &home_node_ip_addr, int home_node_ip_port);
+    MulticastMonitor(const capiocl::configuration::CapioClConfiguration &config);
 
     /**
      * @brief Destructor; stops listener thread and cleans resources.

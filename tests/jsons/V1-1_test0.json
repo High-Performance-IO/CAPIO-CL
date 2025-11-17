@@ -1,0 +1,32 @@
+{
+  "version": 1.1,
+  "configuration" : "/tmp/capio_cl.toml",
+  "name": "test",
+  "IO_Graph": [
+    {
+      "name": "step",
+      "input_stream": [
+        "/tmp/file",
+        "file3"
+      ],
+      "output_stream": [
+        "file1",
+        "file2"
+      ],
+      "streaming": [
+        {
+          "name": [
+            "/tmp/file"
+          ],
+          "committed": "on_termination",
+          "mode": "no_update"
+        },
+        {
+          "name": [
+            "/tmp/file1"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -46,6 +46,12 @@ add_compile_options(-Wall -Wextra -Wpedantic)
 #####################################
 
 FetchContent_Declare(
+        tomlplusplus
+        GIT_REPOSITORY https://github.com/marzer/tomlplusplus.git
+        GIT_TAG        v3.4.0
+)
+
+FetchContent_Declare(
         jsoncons
         GIT_REPOSITORY https://github.com/danielaparker/jsoncons.git
         GIT_TAG v1.4.3
@@ -55,7 +61,7 @@ set(JSONCONS_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(JSONCONS_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(JSONCONS_BUILD_FUZZERS OFF CACHE BOOL "" FORCE)
 
-FetchContent_MakeAvailable(jsoncons)
+FetchContent_MakeAvailable(jsoncons tomlplusplus)
 
 if (BUILD_PYTHON_BINDINGS)
     FetchContent_Declare(
@@ -117,10 +123,11 @@ target_include_directories(libcapio_cl PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${jsoncons_SOURCE_DIR}/include
         ${CAPIOCL_JSON_SCHEMAS_DIRECTORY}
+        ${TOMLPLUSPLUS_SOURCE_DIR}/include
 )
 
-# jsoncons is header-only, no linking required
 target_link_libraries(libcapio_cl PUBLIC)
+target_link_libraries(libcapio_cl PRIVATE tomlplusplus::tomlplusplus)
 
 #####################################
 # Install rules

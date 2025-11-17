@@ -27,6 +27,9 @@ class Engine final {
     friend class serializer::Serializer;
     bool store_all_in_memory = false;
 
+    ///@brief Configuration imported from CAPIO-CL config TOML file
+    configuration::CapioClConfiguration* configuration;
+
     /// @brief Monitor instance to check runtime information of CAPIO-CL files
     monitor::Monitor monitor;
 
@@ -384,6 +387,12 @@ class Engine final {
      * @return true if both this instance and other are equivalent. false otherwise.
      */
     bool operator==(const Engine &other) const;
+
+    /**
+     * Load a CAPIO-CL TOML configuration file
+     * @param path
+     */
+    void loadConfiguration(const std::string & path);
 };
 
 } // namespace capiocl::engine

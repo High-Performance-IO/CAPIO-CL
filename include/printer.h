@@ -2,6 +2,7 @@
 #define CAPIO_CL_PRINTER_H
 #include <climits>
 #include <unistd.h>
+#include <iostream>
 
 #ifndef HOST_NAME_MAX
 #define HOST_NAME_MAX 1024
