@@ -28,7 +28,7 @@ class Engine final {
     bool store_all_in_memory = false;
 
     ///@brief Configuration imported from CAPIO-CL config TOML file
-    configuration::CapioClConfiguration* configuration;
+    configuration::CapioClConfiguration *configuration;
 
     /// @brief Monitor instance to check runtime information of CAPIO-CL files
     monitor::Monitor monitor;
@@ -100,8 +100,8 @@ class Engine final {
     void compute_directory_entry_count(const std::filesystem::path &path) const;
 
   public:
-    /// @brief Class constructor
-    explicit Engine();
+    /// @brief Class constructorw
+    explicit Engine(bool use_default_settings = true);
 
     /// @brief Print the current CAPIO-CL configuration.
     void print() const;
@@ -392,7 +392,7 @@ class Engine final {
      * Load a CAPIO-CL TOML configuration file
      * @param path
      */
-    void loadConfiguration(const std::string & path);
+    void loadConfiguration(const std::string &path);
 
     /**
      * Use default CAPIO-CL TOML configuration.

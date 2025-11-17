@@ -126,7 +126,7 @@ void capiocl::engine::Engine::print() const {
     printer::print(printer::CLI_LEVEL_JSON, "");
 }
 
-capiocl::engine::Engine::Engine() {
+capiocl::engine::Engine::Engine(const bool use_default_settings) {
     node_name = std::string(1024, '\0');
     gethostname(node_name.data(), node_name.size());
     node_name.resize(std::strlen(node_name.c_str()));
@@ -138,6 +138,9 @@ capiocl::engine::Engine::Engine() {
     }
 
     configuration = new configuration::CapioClConfiguration();
+    if (use_default_settings) {
+        this->useDefaultConfiguration();
+    }
 }
 
 void capiocl::engine::Engine::_newFile(const std::filesystem::path &path) const {

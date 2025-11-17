@@ -10,7 +10,7 @@ capiocl::parser::Parser::available_parsers::parse_v1(const std::filesystem::path
                                                      const std::filesystem::path &resolve_prefix,
                                                      bool store_only_in_memory) {
     std::string workflow_name = CAPIO_CL_DEFAULT_WF_NAME;
-    auto engine               = new engine::Engine();
+    auto engine               = new engine::Engine(true);
 
     engine->useDefaultConfiguration();
 
