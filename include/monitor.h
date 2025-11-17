@@ -150,9 +150,12 @@ class MulticastMonitor final : public MonitorInterface {
     /**
      * @brief Multicast port number.
      */
-    int MULTICAST_COMMIT_PORT;
+    int MULTICAST_COMMIT_PORT{};
 
-    int MULTICAST_HOME_NODE_PORT;
+    int MULTICAST_HOME_NODE_PORT{};
+
+    ///@brief Delay in milliseconds before checking again for a status change
+    int MULTICAST_DELAY_MILLIS{};
 
     /**
      * @brief Supported network command types for commit messages.

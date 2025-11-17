@@ -19,6 +19,14 @@ void flatten_table(const toml::table &tbl, std::unordered_map<std::string, std::
     }
 }
 
+capiocl::configuration::CapioClConfiguration::CapioClConfiguration() {
+    this->set("monitor.mcast.commit.ip", "224.224.224.1");
+    this->set("monitor.mcast.commit.port", "12345");
+    this->set("monitor.mcast.homenode.ip", "224.224.224.2");
+    this->set("monitor.mcast.homenode.port", "12345");
+    this->set("monitor.mcast.delay_ms", "300");
+}
+
 void capiocl::configuration::CapioClConfiguration::set(const std::string &key, std::string value) {
     config[key] = std::move(value);
 }
@@ -37,22 +45,17 @@ void capiocl::configuration::CapioClConfiguration::load(const std::filesystem::p
     flatten_table(tbl, config);
 }
 
-void capiocl::configuration::CapioClConfiguration::getParameter(const std::string &key, int *value,
-                                                                const int def_value) const {
+void capiocl::configuration::CapioClConfiguration::getParameter(const std::string &key,
+                                                                int *value) const {
 
     if (config.find(key) != config.end()) {
         *value = std::stoi(config.at(key));
-    } else {
-        *value = def_value;
     }
 }
 
 void capiocl::configuration::CapioClConfiguration::getParameter(const std::string &key,
-                                                                std::string *value,
-                                                                std::string def_value) const {
+                                                                std::string *value) const {
     if (config.find(key) != config.end()) {
         *value = config.at(key);
-    } else {
-        *value = std::move(def_value);
     }
 }

@@ -10,16 +10,16 @@ class capiocl::configuration::CapioClConfiguration {
     friend class engine::Engine;
     std::unordered_map<std::string, std::string> config;
 
-protected:
-    void set(const std::string& key, std::string value);
+  protected:
+    void set(const std::string &key, std::string value);
 
   public:
-    explicit CapioClConfiguration() = default;
-    ~CapioClConfiguration()         = default;
+    explicit CapioClConfiguration();
+    ~CapioClConfiguration() = default;
 
     void load(const std::filesystem::path &path);
-    void getParameter(const std::string &key, int *value, int def_value) const;
-    void getParameter(const std::string &key, std::string *value, std::string def_value) const;
+    void getParameter(const std::string &key, int *value) const;
+    void getParameter(const std::string &key, std::string *value) const;
 };
 
 #endif
