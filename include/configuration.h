@@ -7,7 +7,11 @@
 
 /// @brief Load configuration and store it from a CAPIO-CL TOML configuration file
 class capiocl::configuration::CapioClConfiguration {
+    friend class engine::Engine;
     std::unordered_map<std::string, std::string> config;
+
+protected:
+    void set(const std::string& key, std::string value);
 
   public:
     explicit CapioClConfiguration() = default;

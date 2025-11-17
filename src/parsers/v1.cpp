@@ -12,6 +12,8 @@ capiocl::parser::Parser::available_parsers::parse_v1(const std::filesystem::path
     std::string workflow_name = CAPIO_CL_DEFAULT_WF_NAME;
     auto engine               = new engine::Engine();
 
+    engine->useDefaultConfiguration();
+
     // ---- Load JSON ----
     std::ifstream file(source);
 

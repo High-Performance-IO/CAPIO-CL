@@ -19,6 +19,10 @@ void flatten_table(const toml::table &tbl, std::unordered_map<std::string, std::
     }
 }
 
+void capiocl::configuration::CapioClConfiguration::set(const std::string &key, std::string value) {
+    config[key] = std::move(value);
+}
+
 void capiocl::configuration::CapioClConfiguration::load(const std::filesystem::path &path) {
     if (path.empty()) {
         return;

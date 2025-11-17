@@ -757,3 +757,13 @@ void capiocl::engine::Engine::loadConfiguration(const std::string &path) {
     monitor.registerMonitorBackend(new monitor::MulticastMonitor(*configuration));
     monitor.registerMonitorBackend(new monitor::FileSystemMonitor());
 }
+void capiocl::engine::Engine::useDefaultConfiguration() {
+
+    configuration->set("monitor.commit.port", "224.224.224.1");
+    configuration->set("monitor.commit.port", "12345");
+    configuration->set("monitor.homenode.ip", "224.224.224.2");
+    configuration->set("monitor.homenode.port", "12345");
+
+    monitor.registerMonitorBackend(new monitor::MulticastMonitor(*configuration));
+    monitor.registerMonitorBackend(new monitor::FileSystemMonitor());
+}

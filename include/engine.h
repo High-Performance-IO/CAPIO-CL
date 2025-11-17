@@ -393,6 +393,11 @@ class Engine final {
      * @param path
      */
     void loadConfiguration(const std::string & path);
+
+    /**
+     * Use default CAPIO-CL TOML configuration.
+     */
+    void useDefaultConfiguration();
 };
 
 } // namespace capiocl::engine

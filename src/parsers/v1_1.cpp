@@ -7,8 +7,8 @@
 
 capiocl::engine::Engine *
 capiocl::parser::Parser::available_parsers::parse_v1_1(const std::filesystem::path &source,
-                                                     const std::filesystem::path &resolve_prefix,
-                                                     bool store_only_in_memory) {
+                                                       const std::filesystem::path &resolve_prefix,
+                                                       bool store_only_in_memory) {
     std::string workflow_name = CAPIO_CL_DEFAULT_WF_NAME;
     auto engine               = new engine::Engine();
 
@@ -23,9 +23,13 @@ capiocl::parser::Parser::available_parsers::parse_v1_1(const std::filesystem::pa
     engine->setWorkflowName(workflow_name);
     printer::print(printer::CLI_LEVEL_JSON, "Parsing configuration for workflow: " + workflow_name);
 
-    // ---- CAPIOCL TOML CONFIGURATION ----
-    auto toml_config_path = doc["configuration"].as<std::string>();
-    engine.loadConfiguration(toml_config_path);
+    // ---- CAPIO-CL TOML CONFIGURATION ----
+    if (doc.contains("configuration")) {
+        auto toml_config_path = doc["configuration"].as<std::string>();
+        engine->loadConfiguration(toml_config_path);
+    } else {
+        engine->useDefaultConfiguration();
+    }
 
     // ---- IO_Graph ----
     for (const auto &app : doc["IO_Graph"].array_range()) {
