@@ -20,15 +20,19 @@ void flatten_table(const toml::table &tbl, std::unordered_map<std::string, std::
 }
 
 capiocl::configuration::CapioClConfiguration::CapioClConfiguration() {
-    this->set("monitor.mcast.commit.ip", "224.224.224.1");
-    this->set("monitor.mcast.commit.port", "12345");
-    this->set("monitor.mcast.homenode.ip", "224.224.224.2");
-    this->set("monitor.mcast.homenode.port", "12345");
-    this->set("monitor.mcast.delay_ms", "300");
+    this->set(defaults::DEFAULT_MONITOR_MCAST_IP);
+    this->set(defaults::DEFAULT_MONITOR_MCAST_PORT);
+    this->set(defaults::DEFAULT_MONITOR_HOMENODE_IP);
+    this->set(defaults::DEFAULT_MONITOR_HOMENODE_PORT);
+    this->set(defaults::DEFAULT_MONITOR_MCAST_DELAY);
 }
 
 void capiocl::configuration::CapioClConfiguration::set(const std::string &key, std::string value) {
     config[key] = std::move(value);
+}
+
+void capiocl::configuration::CapioClConfiguration::set(const ConfigurationEntry entry) {
+    this->set(entry.k, entry.v);
 }
 
 void capiocl::configuration::CapioClConfiguration::load(const std::filesystem::path &path) {

@@ -5,6 +5,19 @@
 
 #include "capiocl.hpp"
 
+typedef struct {
+    std::string k;
+    std::string v;
+} ConfigurationEntry;
+
+struct capiocl::configuration::defaults {
+    static ConfigurationEntry DEFAULT_MONITOR_MCAST_IP;
+    static ConfigurationEntry DEFAULT_MONITOR_MCAST_PORT;
+    static ConfigurationEntry DEFAULT_MONITOR_MCAST_DELAY;
+    static ConfigurationEntry DEFAULT_MONITOR_HOMENODE_IP;
+    static ConfigurationEntry DEFAULT_MONITOR_HOMENODE_PORT;
+};
+
 /// @brief Load configuration and store it from a CAPIO-CL TOML configuration file
 class capiocl::configuration::CapioClConfiguration {
     friend class engine::Engine;
@@ -12,6 +25,7 @@ class capiocl::configuration::CapioClConfiguration {
 
   protected:
     void set(const std::string &key, std::string value);
+    void set(ConfigurationEntry entry);
 
   public:
     explicit CapioClConfiguration();

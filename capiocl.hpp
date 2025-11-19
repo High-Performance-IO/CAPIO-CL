@@ -96,6 +96,7 @@ class Engine;
 
 namespace configuration {
 class CapioClConfiguration;
+struct defaults;
 }
 } // namespace capiocl
 
