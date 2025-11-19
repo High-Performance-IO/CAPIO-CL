@@ -4,6 +4,23 @@
 #define EXCEPTION_SUITE_NAME TestThrowExceptions
 #include "include/serializer.h"
 
+TEST(EXCEPTION_SUITE_NAME, testWhatMEthods) {
+    try {
+        capiocl::parser::Parser::parse("");
+    } catch (const capiocl::parser::ParserException &e) {
+        EXPECT_TRUE(demangled_name(e) == "capiocl::parser::ParserException");
+        EXPECT_GT(strlen(e.what()), 0);
+    }
+
+    try {
+        const auto engine = capiocl::engine::Engine();
+        capiocl::serializer::Serializer::dump(engine, "");
+    } catch (const capiocl::serializer::SerializerException &e) {
+        EXPECT_TRUE(demangled_name(e) == "capiocl::serializer::SerializerException");
+        EXPECT_GT(strlen(e.what()), 0);
+    }
+}
+
 TEST(EXCEPTION_SUITE_NAME, testFailedDump) {
     const std::vector<std::filesystem::path> json_path = {"/tmp/capio_cl_jsons/V1/test24.json",
                                                           "/tmp/capio_cl_jsons/V1_1/test24.json"};
