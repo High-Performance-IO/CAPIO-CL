@@ -22,11 +22,9 @@ TEST(EXCEPTION_SUITE_NAME, testWhatMEthods) {
 }
 
 TEST(EXCEPTION_SUITE_NAME, testFailedDump) {
-    const std::vector<std::filesystem::path> json_path = {"/tmp/capio_cl_jsons/V1/test24.json",
-                                                          "/tmp/capio_cl_jsons/V1.1/test24.json"};
-
-    for (const auto &source : json_path) {
-        auto engine = capiocl::parser::Parser::parse(source, "/tmp");
+    for (const auto &version : CAPIO_CL_AVAIL_VERSIONS) {
+        const std::filesystem::path source = "/tmp/capio_cl_jsons/V" + version + "/test24.json";
+        auto engine                        = capiocl::parser::Parser::parse(source, "/tmp");
 
         EXPECT_THROW(capiocl::serializer::Serializer::dump(*engine, "/"),
                      capiocl::serializer::SerializerException);
@@ -34,11 +32,9 @@ TEST(EXCEPTION_SUITE_NAME, testFailedDump) {
 }
 
 TEST(EXCEPTION_SUITE_NAME, testFailedserializeVersion) {
-    const std::vector<std::filesystem::path> json_path = {"/tmp/capio_cl_jsons/V1/test24.json",
-                                                          "/tmp/capio_cl_jsons/V1.1/test24.json"};
-
-    for (const auto &source : json_path) {
-        auto engine = capiocl::parser::Parser::parse(source, "/tmp");
+    for (const auto &version : CAPIO_CL_AVAIL_VERSIONS) {
+        const std::filesystem::path source = "/tmp/capio_cl_jsons/V" + version + "/test24.json";
+        auto engine                        = capiocl::parser::Parser::parse(source, "/tmp");
 
         EXPECT_THROW(capiocl::serializer::Serializer::dump(*engine, "test.json", "1234.5678"),
                      capiocl::serializer::SerializerException);

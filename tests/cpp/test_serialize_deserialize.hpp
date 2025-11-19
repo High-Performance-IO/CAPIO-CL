@@ -154,40 +154,28 @@ TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testSerializeCommitOnCloseCountNoCommitRu
     }
 }
 
-TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testParserResolveAbsoluteV1) {
-    const std::filesystem::path json_path("/tmp/capio_cl_jsons/V1/test0.json");
-    auto engine = capiocl::parser::Parser::parse(json_path, "/tmp");
-    EXPECT_TRUE(engine->getWorkflowName() == "test");
-    EXPECT_TRUE(engine->contains("/tmp/file"));
-    EXPECT_TRUE(engine->contains("/tmp/file1"));
-    EXPECT_TRUE(engine->contains("/tmp/file2"));
-    EXPECT_TRUE(engine->contains("/tmp/file3"));
+TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testParserResolveAbsolute) {
+    for (const auto &_cl_version : CAPIO_CL_AVAIL_VERSIONS) {
+        const std::filesystem::path json_path("/tmp/capio_cl_jsons/V" + _cl_version +
+                                              "/test0.json");
+        auto engine = capiocl::parser::Parser::parse(json_path, "/tmp");
+        EXPECT_TRUE(engine->getWorkflowName() == "test");
+        EXPECT_TRUE(engine->contains("/tmp/file"));
+        EXPECT_TRUE(engine->contains("/tmp/file1"));
+        EXPECT_TRUE(engine->contains("/tmp/file2"));
+        EXPECT_TRUE(engine->contains("/tmp/file3"));
+    }
 }
 
-TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testNoStorageSectionV1) {
-    const std::filesystem::path json_path("/tmp/capio_cl_jsons/V1/test24.json");
-    auto engine = capiocl::parser::Parser::parse(json_path, "/tmp");
-    EXPECT_TRUE(engine->getWorkflowName() == "test");
-    EXPECT_TRUE(engine->contains("/tmp/file"));
-    EXPECT_TRUE(engine->contains("/tmp/file1"));
-}
+TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testNoStorageSection) {
 
-TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testParserResolveAbsoluteV1_1) {
-    const std::filesystem::path json_path("/tmp/capio_cl_jsons/V1.1/test0.json");
-    auto engine = capiocl::parser::Parser::parse(json_path, "/tmp");
-    EXPECT_TRUE(engine->getWorkflowName() == "test");
-    EXPECT_TRUE(engine->contains("/tmp/file"));
-    EXPECT_TRUE(engine->contains("/tmp/file1"));
-    EXPECT_TRUE(engine->contains("/tmp/file2"));
-    EXPECT_TRUE(engine->contains("/tmp/file3"));
+    for (const auto &_cl_version : CAPIO_CL_AVAIL_VERSIONS) {
+        const std::filesystem::path json_path("/tmp/capio_cl_jsons/V" + _cl_version +
+                                              "/test24.json");
+        auto engine = capiocl::parser::Parser::parse(json_path, "/tmp");
+        EXPECT_TRUE(engine->getWorkflowName() == "test");
+        EXPECT_TRUE(engine->contains("/tmp/file"));
+        EXPECT_TRUE(engine->contains("/tmp/file1"));
+    }
 }
-
-TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testNoStorageSectionV1_1) {
-    const std::filesystem::path json_path("/tmp/capio_cl_jsons/V1.1/test24.json");
-    auto engine = capiocl::parser::Parser::parse(json_path, "/tmp");
-    EXPECT_TRUE(engine->getWorkflowName() == "test");
-    EXPECT_TRUE(engine->contains("/tmp/file"));
-    EXPECT_TRUE(engine->contains("/tmp/file1"));
-}
-
 #endif // CAPIO_CL_TEST_SERIALIZE_DESERIALIZE_HPP
