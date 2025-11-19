@@ -1,0 +1,232 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CAPIO-CL Configuration Schema",
+  "type": "object",
+
+  "definitions": {
+    "streaming_name_rule": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "array",
+          "description": "Filenames to which the rule applies.",
+          "items": { "type": "string" }
+        },
+        "committed": {
+          "type": "string",
+          "description": "Commit rule associated with the file.",
+          "pattern": "^(on_close(:[0-9]+)?|on_file|on_termination)$"
+        },
+        "mode": {
+          "type": "string",
+          "description": "Firing rule associated with the files.",
+          "enum": ["update", "no_update"]
+        },
+        "file_deps": {
+          "type": "array",
+          "description": "List of dependent files required when committed = on_file.",
+          "items": { "type": "string" }
+        },
+        "n_files": {
+          "type": "integer",
+          "description": "Number of files expected when commit rule == n_files."
+        }
+      },
+      "required": ["name"],
+      "additionalProperties": false,
+
+      "if": {
+        "properties": {
+          "committed": { "pattern": "^on_file" }
+        },
+        "required": ["committed"]
+      },
+      "then": {
+        "required": ["file_deps"]
+      }
+    },
+
+    "streaming_dirname_rule": {
+      "type": "object",
+      "properties": {
+        "dirname": {
+          "type": "array",
+          "description": "Directory names to which the rule applies.",
+          "items": { "type": "string" }
+        },
+        "committed": {
+          "type": "string",
+          "description": "Commit rule associated with the directory.",
+          "pattern": "^(on_close(:[0-9]+)?|on_file|on_n_files|on_termination)$"
+        },
+        "mode": {
+          "type": "string",
+          "description": "Firing rule associated with the directory contents.",
+          "enum": ["update", "no_update"]
+        },
+        "file_deps": {
+          "type": "array",
+          "description": "List of dependent files required when committed = on_file.",
+          "items": { "type": "string" }
+        },
+        "n_files": {
+          "type": "integer",
+          "description": "Number of files expected when commit rule == n_files."
+        }
+      },
+      "required": ["dirname"],
+      "additionalProperties": false,
+
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "committed": { "pattern": "^on_file" }
+            },
+            "required": ["committed"]
+          },
+          "then": {
+            "required": ["file_deps"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "committed": { "pattern": "^on_n_files" }
+            },
+            "required": ["committed"]
+          },
+          "then": {
+            "required": ["n_files"]
+          }
+        }
+      ]
+    }
+  },
+  "properties": {
+
+    "version": {
+      "type": "number",
+      "description": "Version of the CAPIO-CL configuration file",
+      "default": 1.0
+    },
+
+    "configuration": {
+      "type": "string",
+      "description": "TOML configuration file for runtime CAPIO-CL parameters"
+    },
+
+    "name": {
+      "type": "string",
+      "description": "Identifies the application workflow."
+    },
+
+    "aliases": {
+      "type": "array",
+      "description": "Groups files or directories under a convenient name.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "group_name": { "type": "string" },
+          "files": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "required": ["group_name", "files"],
+        "additionalProperties": false
+      }
+    },
+
+    "IO_Graph": {
+      "type": "array",
+      "description": "Describes file data dependencies among application modules.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+
+          "input_stream": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+
+          "output_stream": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+
+          "streaming": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                { "$ref": "#/definitions/streaming_name_rule" },
+                { "$ref": "#/definitions/streaming_dirname_rule" }
+              ]
+            }
+          }
+        },
+        "required": ["name", "input_stream", "output_stream"],
+        "additionalProperties": false
+      }
+    },
+
+    "permanent": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+
+    "exclude": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+
+    "home_node_policies": {
+      "type": "object",
+      "properties": {
+        "create": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "hashing": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "manual": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "app_node": { "type": "string" }
+            },
+            "required": ["name", "app_node"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "storage": {
+      "type": "object",
+      "properties": {
+        "memory": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "fs": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+
+  "required": ["name", "IO_Graph", "version"],
+  "additionalProperties": false
+}

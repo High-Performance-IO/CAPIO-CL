@@ -1,7 +1,6 @@
 #include <filesystem>
 #include <fstream>
 
-#include "capio_cl_json_schemas.hpp"
 #include "capiocl.hpp"
 #include "include/engine.h"
 #include "include/parser.h"
@@ -9,6 +8,11 @@
 
 capiocl::parser::ParserException::ParserException(const std::string &msg) : message(msg) {
     printer::print(printer::CLI_LEVEL_ERROR, msg);
+}
+
+jsoncons::jsonschema::json_schema<jsoncons::json>
+capiocl::parser::Parser::loadSchema(const char *data) {
+    return jsoncons::jsonschema::make_json_schema(jsoncons::json::parse(data));
 }
 
 std::filesystem::path capiocl::parser::Parser::resolve(std::filesystem::path path,
@@ -28,13 +32,9 @@ std::filesystem::path capiocl::parser::Parser::resolve(std::filesystem::path pat
     return resolved;
 }
 
-jsoncons::jsonschema::json_schema<jsoncons::json>
-capiocl::parser::Parser::loadSchema(const char *data) {
-    return jsoncons::jsonschema::make_json_schema(jsoncons::json::parse(data));
-}
-
-void capiocl::parser::Parser::validate_json(const jsoncons::json &doc) {
-    jsoncons::jsonschema::json_schema<jsoncons::json> schema = loadSchema(schema_v1);
+void capiocl::parser::Parser::validate_json(const jsoncons::json &doc,
+                                            const char* str_schema) {
+    jsoncons::jsonschema::json_schema<jsoncons::json> schema = loadSchema(str_schema);
     try {
         // throws jsoncons::jsonschema::validation_error on failure
         [[maybe_unused]] auto status = schema.validate(doc);

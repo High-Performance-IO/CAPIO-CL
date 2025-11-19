@@ -4,6 +4,7 @@
 #include "include/engine.h"
 #include "include/parser.h"
 #include "include/printer.h"
+#include "capio_cl_json_schemas.hpp"
 
 capiocl::engine::Engine *
 capiocl::parser::Parser::available_parsers::parse_v1(const std::filesystem::path &source,
@@ -18,7 +19,7 @@ capiocl::parser::Parser::available_parsers::parse_v1(const std::filesystem::path
     std::ifstream file(source);
 
     jsoncons::json doc = jsoncons::json::parse(file);
-    validate_json(doc);
+    validate_json(doc, schema_v1);
 
     // ---- workflow name ----
     workflow_name = doc["name"].as<std::string>();

@@ -5,41 +5,27 @@
 #include "include/serializer.h"
 
 TEST(EXCEPTION_SUITE_NAME, testFailedDump) {
-    const std::filesystem::path json_path("/tmp/capio_cl_jsons/V1_test24.json");
-    auto engine            = capiocl::parser::Parser::parse(json_path, "/tmp");
-    bool exception_catched = false;
+    const std::vector<std::filesystem::path> json_path = {"/tmp/capio_cl_jsons/V1/test24.json",
+                                                          "/tmp/capio_cl_jsons/V1_1/test24.json"};
 
-    try {
-        capiocl::serializer::Serializer::dump(*engine, "/");
-    } catch (std::exception &e) {
-        exception_catched = true;
-        auto demangled    = demangled_name(e);
-        capiocl::printer::print(capiocl::printer::CLI_LEVEL_INFO,
-                                "Caught exception of type =" + demangled);
-        EXPECT_TRUE(demangled == "capiocl::serializer::SerializerException");
-        EXPECT_GT(std::string(e.what()).size(), 0);
+    for (const auto &source : json_path) {
+        auto engine = capiocl::parser::Parser::parse(source, "/tmp");
+
+        EXPECT_THROW(capiocl::serializer::Serializer::dump(*engine, "/"),
+                     capiocl::serializer::SerializerException);
     }
-
-    EXPECT_TRUE(exception_catched);
 }
 
 TEST(EXCEPTION_SUITE_NAME, testFailedserializeVersion) {
-    const std::filesystem::path json_path("/tmp/capio_cl_jsons/V1_test24.json");
-    auto engine            = capiocl::parser::Parser::parse(json_path, "/tmp");
-    bool exception_catched = false;
+    const std::vector<std::filesystem::path> json_path = {"/tmp/capio_cl_jsons/V1/test24.json",
+                                                          "/tmp/capio_cl_jsons/V1_1/test24.json"};
 
-    try {
-        capiocl::serializer::Serializer::dump(*engine, "test.json", "1234.5678");
-    } catch (std::exception &e) {
-        exception_catched = true;
-        auto demangled    = demangled_name(e);
-        capiocl::printer::print(capiocl::printer::CLI_LEVEL_INFO,
-                                "Caught exception of type =" + demangled);
-        EXPECT_TRUE(demangled == "capiocl::serializer::SerializerException");
-        EXPECT_GT(std::string(e.what()).size(), 0);
+    for (const auto &source : json_path) {
+        auto engine = capiocl::parser::Parser::parse(source, "/tmp");
+
+        EXPECT_THROW(capiocl::serializer::Serializer::dump(*engine, "test.json", "1234.5678"),
+                     capiocl::serializer::SerializerException);
     }
-
-    EXPECT_TRUE(exception_catched);
 }
 
 TEST(EXCEPTION_SUITE_NAME, testParserException) {
