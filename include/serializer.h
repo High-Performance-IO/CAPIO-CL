@@ -41,6 +41,17 @@ class Serializer final {
          */
         static void serialize_v1(const engine::Engine &engine,
                                  const std::filesystem::path &filename);
+
+        /**
+         * @brief Dump the current configuration loaded into an instance of  Engine to a CAPIO-CL
+         * VERSION 1.1 configuration file.
+         *
+         * @param engine instance of Engine to dump
+         * @param filename path of output file
+         * @throws SerializerException
+         */
+        static void serialize_v1_1(const engine::Engine &engine,
+                                   const std::filesystem::path &filename);
     };
 
   public:
