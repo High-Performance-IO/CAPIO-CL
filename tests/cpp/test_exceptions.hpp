@@ -43,56 +43,48 @@ TEST(EXCEPTION_SUITE_NAME, testFailedserializeVersion) {
 }
 
 TEST(EXCEPTION_SUITE_NAME, testParserException) {
-    std::filesystem::path JSON_DIR = "/tmp/capio_cl_jsons";
+    std::filesystem::path JSON_DIR    = "/tmp/capio_cl_jsons/";
+    std::vector<std::string> VERSIONS = {"V1", "V1_1"};
     capiocl::printer::print(capiocl::printer::CLI_LEVEL_INFO,
                             "Loading jsons from " + JSON_DIR.string());
-    bool exception_catched = false;
 
     std::vector<std::filesystem::path> test_filenames = {
         "",
         "ANonExistingFile",
-        JSON_DIR / "V1_test1.json",
-        JSON_DIR / "V1_test2.json",
-        JSON_DIR / "V1_test3.json",
-        JSON_DIR / "V1_test4.json",
-        JSON_DIR / "V1_test5.json",
-        JSON_DIR / "V1_test6.json",
-        JSON_DIR / "V1_test7.json",
-        JSON_DIR / "V1_test8.json",
-        JSON_DIR / "V1_test9.json",
-        JSON_DIR / "V1_test10.json",
-        JSON_DIR / "V1_test11.json",
-        JSON_DIR / "V1_test12.json",
-        JSON_DIR / "V1_test13.json",
-        JSON_DIR / "V1_test14.json",
-        JSON_DIR / "V1_test15.json",
-        JSON_DIR / "V1_test16.json",
-        JSON_DIR / "V1_test17.json",
-        JSON_DIR / "V1_test18.json",
-        JSON_DIR / "V1_test19.json",
-        JSON_DIR / "V1_test20.json",
-        JSON_DIR / "V1_test21.json",
-        JSON_DIR / "V1_test22.json",
-        JSON_DIR / "V1_test23.json",
-        JSON_DIR / "V1_test25.json",
+        "test1.json",
+        "test2.json",
+        "test3.json",
+        "test4.json",
+        "test5.json",
+        "test6.json",
+        "test7.json",
+        "test8.json",
+        "test9.json",
+        "test10.json",
+        "test11.json",
+        "test12.json",
+        "test13.json",
+        "test14.json",
+        "test15.json",
+        "test16.json",
+        "test17.json",
+        "test18.json",
+        "test19.json",
+        "test20.json",
+        "test21.json",
+        "test22.json",
+        "test23.json",
+        "test25.json",
     };
-
-    for (const auto &test : test_filenames) {
-        exception_catched = false;
-        try {
+    for (const auto &version : VERSIONS) {
+        for (const auto &test : test_filenames) {
+            const auto test_file_path = test.empty() ? test : JSON_DIR / version / test;
             capiocl::printer::print(capiocl::printer::CLI_LEVEL_WARNING,
-                                    "Testing on file " + test.string());
-            capiocl::parser::Parser::parse(test);
-        } catch (std::exception &e) {
-            exception_catched = true;
-            auto demangled    = demangled_name(e);
-            capiocl::printer::print(capiocl::printer::CLI_LEVEL_INFO,
-                                    "Caught exception of type =" + demangled);
-            EXPECT_TRUE(demangled == "capiocl::parser::ParserException");
-            EXPECT_GT(std::string(e.what()).size(), 0);
+                                    "Testing on file " + test_file_path.string());
+
+            EXPECT_THROW(capiocl::parser::Parser::parse(test_file_path),
+                         capiocl::parser::ParserException);
         }
-        EXPECT_TRUE(exception_catched);
-        capiocl::printer::print(capiocl::printer::CLI_LEVEL_INFO, "Test failed successfully\n\n");
     }
 }
 

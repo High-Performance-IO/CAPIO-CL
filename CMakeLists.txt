@@ -48,7 +48,7 @@ add_compile_options(-Wall -Wextra -Wpedantic)
 FetchContent_Declare(
         tomlplusplus
         GIT_REPOSITORY https://github.com/marzer/tomlplusplus.git
-        GIT_TAG        v3.4.0
+        GIT_TAG v3.4.0
 )
 
 FetchContent_Declare(
@@ -196,8 +196,10 @@ if (CAPIO_CL_BUILD_TESTS)
     add_custom_command(
             TARGET CAPIO_CL_tests PRE_BUILD
             COMMAND ${CMAKE_COMMAND} -E make_directory "/tmp/capio_cl_jsons"
-            COMMAND ${CMAKE_COMMAND} -E copy_directory ${TEST_JSON_DIR} "/tmp/capio_cl_jsons"
-            COMMENT "Copying JSON test files to build directory"
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${TEST_JSON_DIR}"
+            "/tmp/capio_cl_jsons"
+            COMMENT "Copying JSON test files with full directory structure"
     )
 
     #####################################
@@ -207,13 +209,8 @@ if (CAPIO_CL_BUILD_TESTS)
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     )
 
-    install(DIRECTORY ${TEST_JSON_DIR}
-            DESTINATION ${CMAKE_INSTALL_BINDIR}/jsons
-            FILES_MATCHING PATTERN "*.json"
-    )
-
     #####################################
-    # Targget to execute tests
+    # Target to execute tests
     #####################################
     add_custom_target(run_tests
             DEPENDS CAPIO_CL_tests

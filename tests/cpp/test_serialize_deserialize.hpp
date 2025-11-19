@@ -144,8 +144,8 @@ TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testSerializeCommitOnCloseCountNoCommitRu
     std::filesystem::remove(path);
 }
 
-TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testParserResolveAbsolute) {
-    const std::filesystem::path json_path("/tmp/capio_cl_jsons/V1_test0.json");
+TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testParserResolveAbsoluteV1) {
+    const std::filesystem::path json_path("/tmp/capio_cl_jsons/V1/test0.json");
     auto engine = capiocl::parser::Parser::parse(json_path, "/tmp");
     EXPECT_TRUE(engine->getWorkflowName() == "test");
     EXPECT_TRUE(engine->contains("/tmp/file"));
@@ -154,8 +154,26 @@ TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testParserResolveAbsolute) {
     EXPECT_TRUE(engine->contains("/tmp/file3"));
 }
 
-TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testNoStorageSection) {
-    const std::filesystem::path json_path("/tmp/capio_cl_jsons/V1_test24.json");
+TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testNoStorageSectionV1) {
+    const std::filesystem::path json_path("/tmp/capio_cl_jsons/V1/test24.json");
+    auto engine = capiocl::parser::Parser::parse(json_path, "/tmp");
+    EXPECT_TRUE(engine->getWorkflowName() == "test");
+    EXPECT_TRUE(engine->contains("/tmp/file"));
+    EXPECT_TRUE(engine->contains("/tmp/file1"));
+}
+
+TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testParserResolveAbsoluteV1_1) {
+    const std::filesystem::path json_path("/tmp/capio_cl_jsons/V1_1/test0.json");
+    auto engine = capiocl::parser::Parser::parse(json_path, "/tmp");
+    EXPECT_TRUE(engine->getWorkflowName() == "test");
+    EXPECT_TRUE(engine->contains("/tmp/file"));
+    EXPECT_TRUE(engine->contains("/tmp/file1"));
+    EXPECT_TRUE(engine->contains("/tmp/file2"));
+    EXPECT_TRUE(engine->contains("/tmp/file3"));
+}
+
+TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testNoStorageSectionV1_1) {
+    const std::filesystem::path json_path("/tmp/capio_cl_jsons/V1_1/test24.json");
     auto engine = capiocl::parser::Parser::parse(json_path, "/tmp");
     EXPECT_TRUE(engine->getWorkflowName() == "test");
     EXPECT_TRUE(engine->contains("/tmp/file"));

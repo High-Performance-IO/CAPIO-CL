@@ -1,0 +1,15 @@
+{
+  "version": "1234.5678",
+  "name": "test",
+  "IO_Graph": [
+    {
+      "name": "step",
+      "input_stream": [
+        "file"
+      ],
+      "output_stream": [
+        "file1"
+      ]
+    }
+  ]
+}

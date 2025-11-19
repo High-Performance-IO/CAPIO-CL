@@ -1,0 +1,28 @@
+{
+  "version": 1.1,
+  "name": "test",
+  "IO_Graph": [
+    {
+      "name": "step",
+      "input_stream": [
+        "file"
+      ],
+      "output_stream": [
+        "file1"
+      ],
+      "streaming": [
+        {
+          "name": [
+            "test"
+          ],
+          "committed": "on_termination",
+          "mode": "no_update"
+        }
+      ]
+    }
+  ],
+  "storage": {
+    "memory": [],
+    "fs": "failMe"
+  }
+}
