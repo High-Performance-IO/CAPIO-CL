@@ -25,7 +25,7 @@ class capiocl::configuration::CapioClConfiguration {
 
   protected:
     void set(const std::string &key, std::string value);
-    void set(ConfigurationEntry entry);
+    void set(const ConfigurationEntry &entry);
 
   public:
     explicit CapioClConfiguration();
@@ -34,6 +34,26 @@ class capiocl::configuration::CapioClConfiguration {
     void load(const std::filesystem::path &path);
     void getParameter(const std::string &key, int *value) const;
     void getParameter(const std::string &key, std::string *value) const;
+};
+
+/**
+ * @brief Custom exception thrown when handling a CAPIO-CL TOML configuration file
+ */
+class capiocl::configuration::CapioClConfigurationException final : public std::exception {
+    std::string message;
+
+  public:
+    /**
+     * @brief Construct a new CAPIO-CL Exception
+     * @param msg Error Message that raised this exception
+     */
+    explicit CapioClConfigurationException(const std::string &msg);
+
+    /**
+     * Get the description of the error causing the exception
+     * @return
+     */
+    [[nodiscard]] const char *what() const noexcept override { return message.c_str(); }
 };
 
 #endif

@@ -2,11 +2,18 @@
 #define CAPIO_CL_TEST_CONFIGURATION_HPP
 
 #define CONFIGURATION_SUITE_NAME TestTOMLConfiguration
+#include "include/configuration.h"
 
 TEST(CONFIGURATION_SUITE_NAME, TestLoadConfiguration) {
     capiocl::engine::Engine engine;
     engine.loadConfiguration("/tmp/capio_cl_tomls/sample1.toml");
     EXPECT_TRUE(true);
+}
+
+TEST(CONFIGURATION_SUITE_NAME, TestLoadEmptyPath) {
+    capiocl::engine::Engine engine;
+    EXPECT_THROW(engine.loadConfiguration(""),
+                 capiocl::configuration::CapioClConfigurationException);
 }
 
 #endif // CAPIO_CL_TEST_CONFIGURATION_HPP
