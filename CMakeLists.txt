@@ -214,6 +214,20 @@ if (CAPIO_CL_BUILD_TESTS)
     )
 
     #####################################
+    # Copy TOMLS test files
+    #####################################
+    set(TEST_TOMLS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tests/tomls")
+
+    add_custom_command(
+            TARGET CAPIO_CL_tests PRE_BUILD
+            COMMAND ${CMAKE_COMMAND} -E make_directory "/tmp/capio_cl_tomls"
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${TEST_TOMLS_DIR}"
+            "/tmp/capio_cl_tomls"
+            COMMENT "Copying TOMLS test files with full directory structure"
+    )
+
+    #####################################
     # Install rules for tests
     #####################################
     install(TARGETS CAPIO_CL_tests

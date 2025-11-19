@@ -14,7 +14,12 @@ void flatten_table(const toml::table &tbl, std::unordered_map<std::string, std::
         if (value.is_table()) {
             flatten_table(*value.as_table(), map, full_key);
         } else {
-            map[full_key] = value.as_string()->get();
+            const auto itm = value.as_string();
+            if (itm == nullptr) {
+                map[full_key] = std::to_string(value.as_integer()->get());
+            }else {
+                map[full_key] = itm->get();
+            }
         }
     }
 }

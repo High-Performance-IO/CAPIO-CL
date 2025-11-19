@@ -1,0 +1,10 @@
+[monitor.mcast]
+delay_ms = 300
+
+[monitor.mcast.commit]
+ip = "224.224.224.3"
+port = 11223
+
+[monitor.mcast.homenode]
+ip = "224.224.224.4"
+port = 22334
