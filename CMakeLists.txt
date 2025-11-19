@@ -88,22 +88,33 @@ file(WRITE ${OUTPUT_HEADER} "// Bundled CAPIO-CL encoded JSON schemas\n")
 file(APPEND ${OUTPUT_HEADER} "#pragma once\n\n")
 
 foreach (SCHEMA_FILE ${SCHEMA_FILES})
-    get_filename_component(SCHEMA_NAME ${SCHEMA_FILE} NAME_WE)
     get_filename_component(SCHEMA_BASENAME ${SCHEMA_FILE} NAME)
     message(STATUS "Bundling CAPIO-CL schema: ${SCHEMA_BASENAME}")
 
     execute_process(
-            COMMAND bash -c "echo 'constexpr char schema_${SCHEMA_NAME}[] = R\"(' && cat ${SCHEMA_BASENAME} && echo ')\";'"
+            COMMAND bash -c "echo ${SCHEMA_BASENAME} | sed 's/\\.json$//'"
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/schema
+            OUTPUT_VARIABLE SCHEMA_NAME_RAW
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
+    string(REPLACE "." "_" SCHEMA_NAME "${SCHEMA_NAME_RAW}")
+
+    execute_process(
+            COMMAND bash -c
+            "echo \"// CAPIO-CL version: ${SCHEMA_NAME_RAW}\" && \
+             echo \"constexpr char schema_${SCHEMA_NAME}[] = R\\\"(\" && \
+             cat \"${SCHEMA_BASENAME}\" && \
+             echo \")\\\";\""
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/schema
             OUTPUT_VARIABLE HEXDATA
             RESULT_VARIABLE RES
     )
+
     if (NOT RES EQUAL 0)
-        message(FATAL_ERROR "Failed bundling for ${SCHEMA_FILE}: Error code is ${RES}")
+        message(FATAL_ERROR "Failed to bundle ${SCHEMA_BASENAME}: exit ${RES}")
     endif ()
 
-
-    file(APPEND ${OUTPUT_HEADER} "// CAPIO-CL version: ${SCHEMA_NAME}\n")
     file(APPEND ${OUTPUT_HEADER} "${HEXDATA}\n\n")
 endforeach ()
 

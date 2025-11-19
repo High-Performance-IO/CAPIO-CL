@@ -23,7 +23,7 @@ TEST(EXCEPTION_SUITE_NAME, testWhatMEthods) {
 
 TEST(EXCEPTION_SUITE_NAME, testFailedDump) {
     const std::vector<std::filesystem::path> json_path = {"/tmp/capio_cl_jsons/V1/test24.json",
-                                                          "/tmp/capio_cl_jsons/V1_1/test24.json"};
+                                                          "/tmp/capio_cl_jsons/V1.1/test24.json"};
 
     for (const auto &source : json_path) {
         auto engine = capiocl::parser::Parser::parse(source, "/tmp");
@@ -35,7 +35,7 @@ TEST(EXCEPTION_SUITE_NAME, testFailedDump) {
 
 TEST(EXCEPTION_SUITE_NAME, testFailedserializeVersion) {
     const std::vector<std::filesystem::path> json_path = {"/tmp/capio_cl_jsons/V1/test24.json",
-                                                          "/tmp/capio_cl_jsons/V1_1/test24.json"};
+                                                          "/tmp/capio_cl_jsons/V1.1/test24.json"};
 
     for (const auto &source : json_path) {
         auto engine = capiocl::parser::Parser::parse(source, "/tmp");
@@ -46,8 +46,7 @@ TEST(EXCEPTION_SUITE_NAME, testFailedserializeVersion) {
 }
 
 TEST(EXCEPTION_SUITE_NAME, testParserException) {
-    std::filesystem::path JSON_DIR    = "/tmp/capio_cl_jsons/";
-    std::vector<std::string> VERSIONS = {"V1", "V1_1"};
+    std::filesystem::path JSON_DIR = "/tmp/capio_cl_jsons/";
     capiocl::printer::print(capiocl::printer::CLI_LEVEL_INFO,
                             "Loading jsons from " + JSON_DIR.string());
 
@@ -79,9 +78,9 @@ TEST(EXCEPTION_SUITE_NAME, testParserException) {
         "test23.json",
         "test25.json",
     };
-    for (const auto &version : VERSIONS) {
+    for (const auto &version : CAPIO_CL_AVAIL_VERSIONS) {
         for (const auto &test : test_filenames) {
-            const auto test_file_path = test.empty() ? test : JSON_DIR / version / test;
+            const auto test_file_path = test.empty() ? test : JSON_DIR / ("V" + version) / test;
             capiocl::printer::print(capiocl::printer::CLI_LEVEL_WARNING,
                                     "Testing on file " + test_file_path.string());
 

@@ -173,7 +173,7 @@ TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testNoStorageSectionV1) {
 }
 
 TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testParserResolveAbsoluteV1_1) {
-    const std::filesystem::path json_path("/tmp/capio_cl_jsons/V1_1/test0.json");
+    const std::filesystem::path json_path("/tmp/capio_cl_jsons/V1.1/test0.json");
     auto engine = capiocl::parser::Parser::parse(json_path, "/tmp");
     EXPECT_TRUE(engine->getWorkflowName() == "test");
     EXPECT_TRUE(engine->contains("/tmp/file"));
@@ -183,7 +183,7 @@ TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testParserResolveAbsoluteV1_1) {
 }
 
 TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testNoStorageSectionV1_1) {
-    const std::filesystem::path json_path("/tmp/capio_cl_jsons/V1_1/test24.json");
+    const std::filesystem::path json_path("/tmp/capio_cl_jsons/V1.1/test24.json");
     auto engine = capiocl::parser::Parser::parse(json_path, "/tmp");
     EXPECT_TRUE(engine->getWorkflowName() == "test");
     EXPECT_TRUE(engine->contains("/tmp/file"));
