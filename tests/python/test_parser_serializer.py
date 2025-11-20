@@ -68,7 +68,7 @@ def test_serialize_parse_py_capio_cl_v1(tmp_path):
 
 
 def test_parser_resolve_absolute():
-    json_path = "/tmp/capio_cl_jsons/V1_test0.json"
+    json_path = "/tmp/capio_cl_jsons/V1.0/test0.json"
 
     engine = py_capio_cl.Parser.parse(str(json_path), "/tmp")
     assert engine.getWorkflowName() == "test"
