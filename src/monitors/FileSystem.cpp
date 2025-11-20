@@ -1,5 +1,5 @@
 #include <fstream>
-#include <iostream>
+#include <unistd.h>
 
 #include "capiocl.hpp"
 #include "include/monitor.h"

@@ -1,5 +1,4 @@
 #include <fstream>
-#include <iostream>
 
 #include "capiocl.hpp"
 #include "include/engine.h"

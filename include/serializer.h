@@ -1,7 +1,7 @@
 #ifndef CAPIO_CL_SERIALIZER_H
 #define CAPIO_CL_SERIALIZER_H
 
-#include <capiocl.hpp>
+#include "capiocl.hpp"
 
 /// @brief Namespace containing the CAPIO-CL Serializer component
 namespace capiocl::serializer {

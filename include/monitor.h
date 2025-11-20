@@ -1,9 +1,6 @@
 #ifndef CAPIO_CL_MONITOR_H
 #define CAPIO_CL_MONITOR_H
 
-#include "configuration.h"
-
-#include <climits>
 #include <filesystem>
 #include <mutex>
 #include <set>
@@ -11,6 +8,8 @@
 #include <thread>
 #include <unordered_map>
 #include <vector>
+
+#include "configuration.h"
 
 #ifndef PATH_MAX
 #define PATH_MAX 4096

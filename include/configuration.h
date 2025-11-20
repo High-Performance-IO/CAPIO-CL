@@ -41,7 +41,7 @@ class capiocl::configuration::CapioClConfiguration {
     void set(const std::string &key, std::string value);
 
     /**
-     * Set a capio-cl configuration option trough a ConfigurationEntry object
+     * Set a capio-cl configuration option through a ConfigurationEntry object
      * @param entry
      */
     void set(const ConfigurationEntry &entry);

@@ -1,17 +1,8 @@
 #ifndef CAPIO_CL_CAPIOCL_HPP
 #define CAPIO_CL_CAPIOCL_HPP
 
-#include <climits>
-#include <cstring>
-#include <filesystem>
-#include <iostream>
 #include <jsoncons/basic_json.hpp>
-#include <jsoncons_ext/jsonschema/jsonschema.hpp>
 #include <string>
-#include <thread>
-#include <unistd.h>
-#include <unordered_map>
-#include <vector>
 
 /// @brief Namespace containing all the CAPIO-CL related code
 namespace capiocl {

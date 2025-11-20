@@ -32,8 +32,7 @@ std::filesystem::path capiocl::parser::Parser::resolve(std::filesystem::path pat
     return resolved;
 }
 
-void capiocl::parser::Parser::validate_json(const jsoncons::json &doc,
-                                            const char* str_schema) {
+void capiocl::parser::Parser::validate_json(const jsoncons::json &doc, const char *str_schema) {
     jsoncons::jsonschema::json_schema<jsoncons::json> schema = loadSchema(str_schema);
     try {
         // throws jsoncons::jsonschema::validation_error on failure
