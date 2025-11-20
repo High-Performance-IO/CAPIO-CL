@@ -54,7 +54,9 @@ jobs:
       - name: "Build and Install Python package"
         run: |
           mkdir -p /tmp/capio_cl_jsons
-          cp tests/jsons/*.json /tmp/capio_cl_jsons
+          mkdir -p /tmp/capio_cl_tomls
+          cp -r tests/jsons/ /tmp/capio_cl_jsons
+          cp -r tests/tomls/ /tmp/capio_cl_tomls
           . ./venv/bin/activate
           pip install .
 
