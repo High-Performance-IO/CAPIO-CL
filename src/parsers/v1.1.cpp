@@ -1,10 +1,10 @@
 #include <fstream>
 
+#include "capio_cl_json_schemas.hpp"
 #include "capiocl.hpp"
 #include "include/engine.h"
 #include "include/parser.h"
 #include "include/printer.h"
-#include "capio_cl_json_schemas.hpp"
 
 capiocl::engine::Engine *
 capiocl::parser::Parser::available_parsers::parse_v1_1(const std::filesystem::path &source,
@@ -27,6 +27,7 @@ capiocl::parser::Parser::available_parsers::parse_v1_1(const std::filesystem::pa
     // ---- CAPIO-CL TOML CONFIGURATION ----
     if (doc.contains("configuration")) {
         auto toml_config_path = doc["configuration"].as<std::string>();
+        printer::print(printer::CLI_LEVEL_JSON, "Using configuration file : " + toml_config_path);
         engine->loadConfiguration(toml_config_path);
     } else {
         engine->useDefaultConfiguration();

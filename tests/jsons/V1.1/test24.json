@@ -11,5 +11,6 @@
         "file1"
       ]
     }
-  ]
+  ],
+  "configuration" : "/tmp/capio_cl_tomls/sample1.toml"
 }
