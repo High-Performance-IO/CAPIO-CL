@@ -1,10 +1,10 @@
 #include <fstream>
 
+#include "capio_cl_json_schemas.hpp"
 #include "capiocl.hpp"
 #include "include/engine.h"
 #include "include/parser.h"
 #include "include/printer.h"
-#include "capio_cl_json_schemas.hpp"
 
 capiocl::engine::Engine *
 capiocl::parser::Parser::available_parsers::parse_v1(const std::filesystem::path &source,

@@ -79,7 +79,7 @@ class Parser final {
      * @param doc The loaded CAPIO-CL configuration file
      * @param str_schema Raw JSON schema to use
      */
-    static void validate_json(const jsoncons::json &doc, const char* str_schema);
+    static void validate_json(const jsoncons::json &doc, const char *str_schema);
 
     /**
      * @brief Perform the parsing of the capio_server configuration file
