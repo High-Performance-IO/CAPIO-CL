@@ -137,7 +137,6 @@ capiocl::engine::Engine::Engine(const bool use_default_settings) {
         this->workflow_name = CAPIO_CL_DEFAULT_WF_NAME;
     }
 
-    configuration = new configuration::CapioClConfiguration();
     if (use_default_settings) {
         this->useDefaultConfiguration();
     }
@@ -755,9 +754,9 @@ bool capiocl::engine::Engine::operator==(const capiocl::engine::Engine &other) c
     return true;
 }
 void capiocl::engine::Engine::loadConfiguration(const std::string &path) {
-    configuration->load(path);
+    configuration.load(path);
 
-    monitor.registerMonitorBackend(new monitor::MulticastMonitor(*configuration));
+    monitor.registerMonitorBackend(new monitor::MulticastMonitor(configuration));
     monitor.registerMonitorBackend(new monitor::FileSystemMonitor());
 }
 void capiocl::engine::Engine::useDefaultConfiguration() {

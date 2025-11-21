@@ -28,7 +28,7 @@ class Engine final {
     bool store_all_in_memory = false;
 
     ///@brief Configuration imported from CAPIO-CL config TOML file
-    configuration::CapioClConfiguration *configuration;
+    configuration::CapioClConfiguration configuration;
 
     /// @brief Monitor instance to check runtime information of CAPIO-CL files
     monitor::Monitor monitor;
