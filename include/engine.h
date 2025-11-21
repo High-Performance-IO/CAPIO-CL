@@ -100,7 +100,7 @@ class Engine final {
     void compute_directory_entry_count(const std::filesystem::path &path) const;
 
   public:
-    /// @brief Class constructorw
+    /// @brief Class constructor
     explicit Engine(bool use_default_settings = true);
 
     /// @brief Print the current CAPIO-CL configuration.

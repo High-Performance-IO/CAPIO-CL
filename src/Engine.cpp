@@ -201,12 +201,9 @@ void capiocl::engine::Engine::compute_directory_entry_count(
 }
 
 bool capiocl::engine::Engine::contains(const std::filesystem::path &file) const {
-    for (auto &[fst, snd] : _capio_cl_entries) {
-        if (fnmatch(fst.c_str(), file.c_str(), FNM_PATHNAME) == 0) {
-            return true;
-        }
-    }
-    return false;
+    return std::any_of(_capio_cl_entries.begin(), _capio_cl_entries.end(), [&](auto const &entry) {
+        return fnmatch(entry.first.c_str(), file.c_str(), FNM_PATHNAME) == 0;
+    });
 }
 
 size_t capiocl::engine::Engine::size() const { return this->_capio_cl_entries.size(); }
