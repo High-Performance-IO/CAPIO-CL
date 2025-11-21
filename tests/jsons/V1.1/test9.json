@@ -1,0 +1,12 @@
+{
+  "version": 1.1,
+  "name": "test",
+  "IO_Graph": [
+    {
+      "name": "step",
+      "input_stream": [
+        "file"
+      ]
+    }
+  ]
+}

@@ -7,24 +7,31 @@
 #include "include/printer.h"
 
 capiocl::engine::Engine *
-capiocl::parser::Parser::available_parsers::parse_v1(const std::filesystem::path &source,
-                                                     const std::filesystem::path &resolve_prefix,
-                                                     bool store_only_in_memory) {
+capiocl::parser::Parser::available_parsers::parse_v1_1(const std::filesystem::path &source,
+                                                       const std::filesystem::path &resolve_prefix,
+                                                       bool store_only_in_memory) {
     std::string workflow_name = CAPIO_CL_DEFAULT_WF_NAME;
-    auto engine               = new engine::Engine(true);
-
-    engine->useDefaultConfiguration();
+    auto engine               = new engine::Engine(false);
 
     // ---- Load JSON ----
     std::ifstream file(source);
 
     jsoncons::json doc = jsoncons::json::parse(file);
-    validate_json(doc, schema_v1);
+    validate_json(doc, schema_v1_1);
 
     // ---- workflow name ----
     workflow_name = doc["name"].as<std::string>();
     engine->setWorkflowName(workflow_name);
     printer::print(printer::CLI_LEVEL_JSON, "Parsing configuration for workflow: " + workflow_name);
+
+    // ---- CAPIO-CL TOML CONFIGURATION ----
+    if (doc.contains("configuration")) {
+        auto toml_config_path = doc["configuration"].as<std::string>();
+        printer::print(printer::CLI_LEVEL_JSON, "Using configuration file : " + toml_config_path);
+        engine->loadConfiguration(toml_config_path);
+    } else {
+        engine->useDefaultConfiguration();
+    }
 
     // ---- IO_Graph ----
     for (const auto &app : doc["IO_Graph"].array_range()) {

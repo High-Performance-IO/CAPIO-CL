@@ -1,17 +1,8 @@
 #ifndef CAPIO_CL_CAPIOCL_HPP
 #define CAPIO_CL_CAPIOCL_HPP
 
-#include <climits>
-#include <cstring>
-#include <filesystem>
-#include <iostream>
 #include <jsoncons/basic_json.hpp>
-#include <jsoncons_ext/jsonschema/jsonschema.hpp>
 #include <string>
-#include <thread>
-#include <unistd.h>
-#include <unordered_map>
-#include <vector>
 
 /// @brief Namespace containing all the CAPIO-CL related code
 namespace capiocl {
@@ -76,7 +67,9 @@ inline std::string sanitize(const std::string &input) {
 /// @brief Available versions of CAPIO-CL language
 struct CAPIO_CL_VERSION final {
     /// @brief Release 1.0 of CAPIO-CL
-    static constexpr char V1[] = "1.0";
+    static constexpr char V1[]   = "1.0";
+    /// @brief Release 1.1 of CAPIO-CL
+    static constexpr char V1_1[] = "1.1";
 };
 
 namespace serializer {
@@ -92,6 +85,12 @@ class MonitorException;
 namespace engine {
 class Engine;
 }
+
+namespace configuration {
+class CapioClConfiguration;
+class CapioClConfigurationException;
+struct defaults;
+} // namespace configuration
 } // namespace capiocl
 
 #endif // CAPIO_CL_CAPIOCL_HPP

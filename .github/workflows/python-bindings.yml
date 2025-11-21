@@ -54,7 +54,9 @@ jobs:
       - name: "Build and Install Python package"
         run: |
           mkdir -p /tmp/capio_cl_jsons
-          cp tests/jsons/*.json /tmp/capio_cl_jsons
+          mkdir -p /tmp/capio_cl_tomls
+          cp -r tests/jsons/* /tmp/capio_cl_jsons
+          cp -r tests/tomls/* /tmp/capio_cl_tomls
           . ./venv/bin/activate
           pip install .
 
@@ -128,7 +130,9 @@ jobs:
             python3 -m pip install -r build-requirements.txt
             
             mkdir -p /tmp/capio_cl_jsons
-            cp tests/jsons/*.json /tmp/capio_cl_jsons
+            mkdir -p /tmp/capio_cl_tomls
+            cp -r tests/jsons/* /tmp/capio_cl_jsons
+            cp -r tests/tomls/* /tmp/capio_cl_tomls
             
             python3 -m build \
               -Ccmake.define.ENABLE_COVERAGE=OFF \
@@ -137,6 +141,5 @@ jobs:
             
             pip install dist/*.whl
             python3 -m pip install -r test-requirements.txt
-            
-            echo "✅ Running unit tests"
+
             pytest -v tests/python/test_* | tee pytest-riscv.log

@@ -5,10 +5,11 @@
 #include "include/printer.h"
 #include "include/serializer.h"
 
-void capiocl::serializer::Serializer::available_serializers::serialize_v1(
+void capiocl::serializer::Serializer::available_serializers::serialize_v1_1(
     const engine::Engine &engine, const std::filesystem::path &filename) {
     jsoncons::json doc;
-    doc["name"] = engine.getWorkflowName();
+    doc["version"] = 1.1;
+    doc["name"]    = engine.getWorkflowName();
 
     const auto files = engine._capio_cl_entries;
 

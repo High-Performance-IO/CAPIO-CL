@@ -943,12 +943,14 @@ WARN_LOGFILE           =
 # spaces. See also FILE_PATTERNS and EXTENSION_MAPPING
 # Note: If this tag is empty the current directory is searched.
 
-INPUT                  = .README.md     \
-                         ../src         \
-                         ../include     \
-                         ../capiocl.hpp \
-                         semantics.md   \
-                         syntax_v1.md
+INPUT                  = .README.md         \
+                         ../src             \
+                         ../include         \
+                         ../capiocl.hpp     \
+                         semantics.md       \
+                         syntax_v1.md       \
+                         syntax_v1_1.md     \
+                         configuration.md
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
@@ -2425,7 +2427,7 @@ INCLUDE_PATH           =
 # used.
 # This tag requires that the tag ENABLE_PREPROCESSING is set to YES.
 
-INCLUDE_FILE_PATTERNS  =
+INCLUDE_FILE_PATTERNS  = *.md
 
 # The PREDEFINED tag can be used to specify one or more macro names that are
 # defined before the preprocessor is started (similar to the -D option of e.g.

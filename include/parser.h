@@ -42,6 +42,18 @@ class Parser final {
         static engine::Engine *parse_v1(const std::filesystem::path &source,
                                         const std::filesystem::path &resolve_prefix,
                                         bool store_only_in_memory);
+
+        /**
+         * Parser for the V1.1 Specification of the CAPIO-CL language
+         * @param source Path of CAPIO-CL configuration file
+         * @param resolve_prefix Prefix to prepend to path if found to be relative
+         * @param store_only_in_memory Flag to set to returned instance of Engine if required to
+         * store all files in memory
+         * @return Parsed Engine.
+         */
+        static engine::Engine *parse_v1_1(const std::filesystem::path &source,
+                                          const std::filesystem::path &resolve_prefix,
+                                          bool store_only_in_memory);
     };
 
     /**
@@ -65,8 +77,9 @@ class Parser final {
     /**
      * Validate a CAPIO-CL configuration file according to the JSON schema of the language
      * @param doc The loaded CAPIO-CL configuration file
+     * @param str_schema Raw JSON schema to use
      */
-    static void validate_json(const jsoncons::json &doc);
+    static void validate_json(const jsoncons::json &doc, const char *str_schema);
 
     /**
      * @brief Perform the parsing of the capio_server configuration file

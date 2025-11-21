@@ -1,7 +1,6 @@
 #ifndef CAPIO_CL_MONITOR_H
 #define CAPIO_CL_MONITOR_H
 
-#include <climits>
 #include <filesystem>
 #include <mutex>
 #include <set>
@@ -9,6 +8,8 @@
 #include <thread>
 #include <unordered_map>
 #include <vector>
+
+#include "configuration.h"
 
 #ifndef PATH_MAX
 #define PATH_MAX 4096
@@ -148,9 +149,12 @@ class MulticastMonitor final : public MonitorInterface {
     /**
      * @brief Multicast port number.
      */
-    int MULTICAST_COMMIT_PORT;
+    int MULTICAST_COMMIT_PORT{};
 
-    int MULTICAST_HOME_NODE_PORT;
+    int MULTICAST_HOME_NODE_PORT{};
+
+    ///@brief Delay in milliseconds before checking again for a status change
+    int MULTICAST_DELAY_MILLIS{};
 
     /**
      * @brief Supported network command types for commit messages.
@@ -204,13 +208,9 @@ class MulticastMonitor final : public MonitorInterface {
     /**
      * @brief Construct a multicast-based monitor.
      *
-     * @param commit_ip_addr Multicast commit group address to use.
-     * @param commit_ip_port Multicast commit port to use.
-     * @param home_node_ip_addr Multicast home node group address to use.
-     * @param home_node_ip_port Multicast home node port to use.
+     *@param config const reference to CAPIO-CL configuration
      */
-    MulticastMonitor(const std::string &commit_ip_addr, int commit_ip_port,
-                     const std::string &home_node_ip_addr, int home_node_ip_port);
+    MulticastMonitor(const capiocl::configuration::CapioClConfiguration &config);
 
     /**
      * @brief Destructor; stops listener thread and cleans resources.

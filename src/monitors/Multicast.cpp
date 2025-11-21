@@ -183,14 +183,13 @@ void capiocl::monitor::MulticastMonitor::_send_message(const std::string &ip_add
     close(out_s);
 }
 
-capiocl::monitor::MulticastMonitor::MulticastMonitor(const std::string &commit_ip_addr,
-                                                     const int commit_ip_port,
-                                                     const std::string &home_node_ip_addr,
-                                                     int home_node_ip_port) {
-    MULTICAST_COMMIT_ADDR    = commit_ip_addr;
-    MULTICAST_COMMIT_PORT    = commit_ip_port;
-    MULTICAST_HOME_NODE_ADDR = home_node_ip_addr;
-    MULTICAST_HOME_NODE_PORT = home_node_ip_port;
+capiocl::monitor::MulticastMonitor::MulticastMonitor(
+    const configuration::CapioClConfiguration &config) {
+    config.getParameter("monitor.mcast.commit.ip", &MULTICAST_COMMIT_ADDR);
+    config.getParameter("monitor.mcast.commit.port", &MULTICAST_COMMIT_PORT);
+    config.getParameter("monitor.mcast.homenode.ip", &MULTICAST_HOME_NODE_ADDR);
+    config.getParameter("monitor.mcast.homenode.port", &MULTICAST_HOME_NODE_PORT);
+    config.getParameter("monitor.mcast.delay_ms", &MULTICAST_DELAY_MILLIS);
 
     commit_thread =
         std::thread(&commit_listener, std::ref(_committed_files), std::ref(committed_lock),
@@ -221,7 +220,7 @@ bool capiocl::monitor::MulticastMonitor::isCommitted(const std::filesystem::path
     }
 
     _send_message(MULTICAST_COMMIT_ADDR, MULTICAST_COMMIT_PORT, path, GET);
-    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    std::this_thread::sleep_for(std::chrono::milliseconds(MULTICAST_DELAY_MILLIS));
 
     {
         const std::lock_guard lg(committed_lock);
@@ -258,7 +257,7 @@ capiocl::monitor::MulticastMonitor::getHomeNode(const std::filesystem::path &pat
     }
 
     _send_message(MULTICAST_HOME_NODE_ADDR, MULTICAST_HOME_NODE_PORT, path.string(), GET);
-    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    std::this_thread::sleep_for(std::chrono::milliseconds(MULTICAST_DELAY_MILLIS));
 
     const std::lock_guard lg(home_node_lock);
     if (const auto itm = _home_nodes.find(path); itm != _home_nodes.end()) {

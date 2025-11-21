@@ -4,95 +4,85 @@
 #define EXCEPTION_SUITE_NAME TestThrowExceptions
 #include "include/serializer.h"
 
-TEST(EXCEPTION_SUITE_NAME, testFailedDump) {
-    const std::filesystem::path json_path("/tmp/capio_cl_jsons/V1_test24.json");
-    auto engine            = capiocl::parser::Parser::parse(json_path, "/tmp");
-    bool exception_catched = false;
-
+TEST(EXCEPTION_SUITE_NAME, testWhatMEthods) {
     try {
-        capiocl::serializer::Serializer::dump(*engine, "/");
-    } catch (std::exception &e) {
-        exception_catched = true;
-        auto demangled    = demangled_name(e);
-        capiocl::printer::print(capiocl::printer::CLI_LEVEL_INFO,
-                                "Caught exception of type =" + demangled);
-        EXPECT_TRUE(demangled == "capiocl::serializer::SerializerException");
-        EXPECT_GT(std::string(e.what()).size(), 0);
+        capiocl::parser::Parser::parse("");
+    } catch (const capiocl::parser::ParserException &e) {
+        EXPECT_TRUE(demangled_name(e) == "capiocl::parser::ParserException");
+        EXPECT_GT(strlen(e.what()), 0);
     }
 
-    EXPECT_TRUE(exception_catched);
+    try {
+        const auto engine = capiocl::engine::Engine();
+        capiocl::serializer::Serializer::dump(engine, "");
+    } catch (const capiocl::serializer::SerializerException &e) {
+        EXPECT_TRUE(demangled_name(e) == "capiocl::serializer::SerializerException");
+        EXPECT_GT(strlen(e.what()), 0);
+    }
+}
+
+TEST(EXCEPTION_SUITE_NAME, testFailedDump) {
+    for (const auto &version : CAPIO_CL_AVAIL_VERSIONS) {
+        const std::filesystem::path source = "/tmp/capio_cl_jsons/V" + version + "/test24.json";
+        auto engine                        = capiocl::parser::Parser::parse(source, "/tmp");
+
+        EXPECT_THROW(capiocl::serializer::Serializer::dump(*engine, "/"),
+                     capiocl::serializer::SerializerException);
+    }
 }
 
 TEST(EXCEPTION_SUITE_NAME, testFailedserializeVersion) {
-    const std::filesystem::path json_path("/tmp/capio_cl_jsons/V1_test24.json");
-    auto engine            = capiocl::parser::Parser::parse(json_path, "/tmp");
-    bool exception_catched = false;
+    for (const auto &version : CAPIO_CL_AVAIL_VERSIONS) {
+        const std::filesystem::path source = "/tmp/capio_cl_jsons/V" + version + "/test24.json";
+        auto engine                        = capiocl::parser::Parser::parse(source, "/tmp");
 
-    try {
-        capiocl::serializer::Serializer::dump(*engine, "test.json", "1234.5678");
-    } catch (std::exception &e) {
-        exception_catched = true;
-        auto demangled    = demangled_name(e);
-        capiocl::printer::print(capiocl::printer::CLI_LEVEL_INFO,
-                                "Caught exception of type =" + demangled);
-        EXPECT_TRUE(demangled == "capiocl::serializer::SerializerException");
-        EXPECT_GT(std::string(e.what()).size(), 0);
+        EXPECT_THROW(capiocl::serializer::Serializer::dump(*engine, "test.json", "1234.5678"),
+                     capiocl::serializer::SerializerException);
     }
-
-    EXPECT_TRUE(exception_catched);
 }
 
 TEST(EXCEPTION_SUITE_NAME, testParserException) {
-    std::filesystem::path JSON_DIR = "/tmp/capio_cl_jsons";
+    std::filesystem::path JSON_DIR = "/tmp/capio_cl_jsons/";
     capiocl::printer::print(capiocl::printer::CLI_LEVEL_INFO,
                             "Loading jsons from " + JSON_DIR.string());
-    bool exception_catched = false;
 
     std::vector<std::filesystem::path> test_filenames = {
         "",
         "ANonExistingFile",
-        JSON_DIR / "V1_test1.json",
-        JSON_DIR / "V1_test2.json",
-        JSON_DIR / "V1_test3.json",
-        JSON_DIR / "V1_test4.json",
-        JSON_DIR / "V1_test5.json",
-        JSON_DIR / "V1_test6.json",
-        JSON_DIR / "V1_test7.json",
-        JSON_DIR / "V1_test8.json",
-        JSON_DIR / "V1_test9.json",
-        JSON_DIR / "V1_test10.json",
-        JSON_DIR / "V1_test11.json",
-        JSON_DIR / "V1_test12.json",
-        JSON_DIR / "V1_test13.json",
-        JSON_DIR / "V1_test14.json",
-        JSON_DIR / "V1_test15.json",
-        JSON_DIR / "V1_test16.json",
-        JSON_DIR / "V1_test17.json",
-        JSON_DIR / "V1_test18.json",
-        JSON_DIR / "V1_test19.json",
-        JSON_DIR / "V1_test20.json",
-        JSON_DIR / "V1_test21.json",
-        JSON_DIR / "V1_test22.json",
-        JSON_DIR / "V1_test23.json",
-        JSON_DIR / "V1_test25.json",
+        "test1.json",
+        "test2.json",
+        "test3.json",
+        "test4.json",
+        "test5.json",
+        "test6.json",
+        "test7.json",
+        "test8.json",
+        "test9.json",
+        "test10.json",
+        "test11.json",
+        "test12.json",
+        "test13.json",
+        "test14.json",
+        "test15.json",
+        "test16.json",
+        "test17.json",
+        "test18.json",
+        "test19.json",
+        "test20.json",
+        "test21.json",
+        "test22.json",
+        "test23.json",
+        "test25.json",
     };
-
-    for (const auto &test : test_filenames) {
-        exception_catched = false;
-        try {
+    for (const auto &version : CAPIO_CL_AVAIL_VERSIONS) {
+        for (const auto &test : test_filenames) {
+            const auto test_file_path = test.empty() ? test : JSON_DIR / ("V" + version) / test;
             capiocl::printer::print(capiocl::printer::CLI_LEVEL_WARNING,
-                                    "Testing on file " + test.string());
-            capiocl::parser::Parser::parse(test);
-        } catch (std::exception &e) {
-            exception_catched = true;
-            auto demangled    = demangled_name(e);
-            capiocl::printer::print(capiocl::printer::CLI_LEVEL_INFO,
-                                    "Caught exception of type =" + demangled);
-            EXPECT_TRUE(demangled == "capiocl::parser::ParserException");
-            EXPECT_GT(std::string(e.what()).size(), 0);
+                                    "Testing on file " + test_file_path.string());
+
+            EXPECT_THROW(capiocl::parser::Parser::parse(test_file_path),
+                         capiocl::parser::ParserException);
         }
-        EXPECT_TRUE(exception_catched);
-        capiocl::printer::print(capiocl::printer::CLI_LEVEL_INFO, "Test failed successfully\n\n");
     }
 }
 

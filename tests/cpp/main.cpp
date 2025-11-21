@@ -1,7 +1,11 @@
+#include "capiocl.hpp"
 #include <cstdlib>
 #include <cstring>
 #include <cxxabi.h>
 #include <gtest/gtest.h>
+
+const std::vector<std::string> CAPIO_CL_AVAIL_VERSIONS = {capiocl::CAPIO_CL_VERSION::V1,
+                                                          capiocl::CAPIO_CL_VERSION::V1_1};
 
 template <typename T> std::string demangled_name(const T &obj) {
     int status;
@@ -11,13 +15,13 @@ template <typename T> std::string demangled_name(const T &obj) {
     return status == 0 ? demangled.get() : mangled;
 }
 
-#include "capiocl.hpp"
 #include "include/engine.h"
 #include "include/monitor.h"
 #include "include/parser.h"
 #include "include/printer.h"
 #include "include/serializer.h"
 
+#include "test_configuration.hpp"
 #include "test_engine.hpp"
 #include "test_exceptions.hpp"
 #include "test_monitor.hpp"
