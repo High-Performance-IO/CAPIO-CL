@@ -405,6 +405,14 @@ void capiocl::engine::Engine::setCommitted(const std::filesystem::path &path) co
     monitor.setCommitted(path);
 }
 
+std::vector<std::string> capiocl::engine::Engine::getPaths() const {
+    std::vector<std::string> paths;
+    for (const auto &[k, v] : _capio_cl_entries) {
+        paths.push_back(k);
+    }
+    return paths;
+}
+
 void capiocl::engine::Engine::setExclude(const std::filesystem::path &path, const bool value) {
     if (path.empty()) {
         return;

@@ -597,4 +597,19 @@ TEST(ENGINE_SUITE_NAME, testOnEmptyPath) {
     EXPECT_TRUE(engine.isExcluded(empty_file_name));
 }
 
+TEST(ENGINE_SUITE_NAME, TestGetPaths) {
+    capiocl::engine::Engine engine;
+    engine.newFile("A");
+    engine.newFile("B");
+    engine.newFile("/tmp");
+
+    std::vector<std::string> paths = engine.getPaths();
+
+    EXPECT_TRUE(!paths.empty());
+    EXPECT_EQ(paths.size(), 3);
+    EXPECT_TRUE(std::find(paths.begin(), paths.end(), "A") != paths.end());
+    EXPECT_TRUE(std::find(paths.begin(), paths.end(), "B") != paths.end());
+    EXPECT_TRUE(std::find(paths.begin(), paths.end(), "/tmp") != paths.end());
+}
+
 #endif // CAPIO_CL_ENGINE_HPP
