@@ -79,6 +79,7 @@ PYBIND11_MODULE(_py_capio_cl, m) {
         .def("setCommitted", &capiocl::engine::Engine::setCommitted)
         .def("isCommitted", &capiocl::engine::Engine::isCommitted)
         .def("setHomeNode", &capiocl::engine::Engine::setHomeNode)
+        .def("getPaths", &capiocl::engine::Engine::getPaths)
         .def("__str__", &capiocl::engine::Engine::print)
         .def("__repr__",
              [](const capiocl::engine::Engine &e) {

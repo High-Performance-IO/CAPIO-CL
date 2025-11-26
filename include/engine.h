@@ -382,6 +382,12 @@ class Engine final {
     void setCommitted(const std::filesystem::path &path) const;
 
     /**
+     * Get all the paths that are presents within the Current instance of Engine
+     * @return
+     */
+    std::vector<std::string> getPaths() const;
+
+    /**
      * @brief Check for equality between two instances of Engine
      * @param other reference to another Engine class instance
      * @return true if both this instance and other are equivalent. false otherwise.
