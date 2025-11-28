@@ -15,11 +15,11 @@ template <typename T> std::string demangled_name(const T &obj) {
     return status == 0 ? demangled.get() : mangled;
 }
 
-#include "include/engine.h"
-#include "include/monitor.h"
-#include "include/parser.h"
-#include "include/printer.h"
-#include "include/serializer.h"
+#include "capiocl/engine.h"
+#include "capiocl/monitor.h"
+#include "capiocl/parser.h"
+#include "capiocl/printer.h"
+#include "capiocl/serializer.h"
 
 #include "test_configuration.hpp"
 #include "test_engine.hpp"

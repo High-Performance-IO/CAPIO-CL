@@ -1,6 +1,6 @@
-#include "include/monitor.h"
+#include "capiocl/monitor.h"
 #include "capiocl.hpp"
-#include "include/printer.h"
+#include "capiocl/printer.h"
 
 capiocl::monitor::MonitorException::MonitorException(const std::string &msg) : message(msg) {
     printer::print(printer::CLI_LEVEL_ERROR, msg);

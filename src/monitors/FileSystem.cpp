@@ -2,7 +2,7 @@
 #include <unistd.h>
 
 #include "capiocl.hpp"
-#include "include/monitor.h"
+#include "capiocl/monitor.h"
 
 std::filesystem::path
 capiocl::monitor::FileSystemMonitor::compute_capiocl_token_name(const std::filesystem::path &path,

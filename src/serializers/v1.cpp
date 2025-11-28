@@ -1,9 +1,9 @@
 #include <fstream>
 
 #include "capiocl.hpp"
-#include "include/engine.h"
-#include "include/printer.h"
-#include "include/serializer.h"
+#include "capiocl/engine.h"
+#include "capiocl/printer.h"
+#include "capiocl/serializer.h"
 
 void capiocl::serializer::Serializer::available_serializers::serialize_v1(
     const engine::Engine &engine, const std::filesystem::path &filename) {

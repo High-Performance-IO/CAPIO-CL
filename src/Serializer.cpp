@@ -3,9 +3,9 @@
 #include <jsoncons/json.hpp>
 
 #include "capiocl.hpp"
-#include "include/engine.h"
-#include "include/printer.h"
-#include "include/serializer.h"
+#include "capiocl/engine.h"
+#include "capiocl/printer.h"
+#include "capiocl/serializer.h"
 
 void capiocl::serializer::Serializer::dump(const engine::Engine &engine,
                                            const std::filesystem::path &filename,

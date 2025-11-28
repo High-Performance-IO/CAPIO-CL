@@ -2,9 +2,9 @@
 #include <fstream>
 
 #include "capiocl.hpp"
-#include "include/engine.h"
-#include "include/parser.h"
-#include "include/printer.h"
+#include "capiocl/engine.h"
+#include "capiocl/parser.h"
+#include "capiocl/printer.h"
 
 capiocl::parser::ParserException::ParserException(const std::string &msg) : message(msg) {
     printer::print(printer::CLI_LEVEL_ERROR, msg);

@@ -1,4 +1,4 @@
-#include "include/configuration.h"
+#include "capiocl//configuration.h"
 
 ConfigurationEntry capiocl::configuration::defaults::DEFAULT_MONITOR_MCAST_IP{
     "monitor.mcast.commit.ip", "224.224.224.1"};
