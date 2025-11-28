@@ -1,8 +1,8 @@
 #include <string>
 #include <utility>
 
-#include "include/configuration.h"
-#include "include/printer.h"
+#include "capiocl/configuration.h"
+#include "capiocl/printer.h"
 #include "toml++/toml.hpp"
 
 void flatten_table(const toml::table &tbl, std::unordered_map<std::string, std::string> &map,

@@ -1,5 +1,5 @@
 #include "capiocl.hpp"
-#include "include/monitor.h"
+#include "capiocl/monitor.h"
 
 bool capiocl::monitor::MonitorInterface::isCommitted(const std::filesystem::path &path) const {
     std::string msg = "Attempted to use MonitorInterface as Monitor backend to check commit for: ";

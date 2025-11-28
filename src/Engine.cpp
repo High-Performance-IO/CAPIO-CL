@@ -3,9 +3,9 @@
 #include <sstream>
 
 #include "capiocl.hpp"
-#include "include/configuration.h"
-#include "include/engine.h"
-#include "include/printer.h"
+#include "capiocl/configuration.h"
+#include "capiocl/engine.h"
+#include "capiocl/printer.h"
 
 void capiocl::engine::Engine::print() const {
     // First message

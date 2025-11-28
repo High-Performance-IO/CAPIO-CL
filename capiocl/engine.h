@@ -3,8 +3,8 @@
 #include <vector>
 
 #include "capiocl.hpp"
-#include "include/monitor.h"
-#include "include/serializer.h"
+#include "capiocl/monitor.h"
+#include "capiocl/serializer.h"
 
 /// @brief Namespace containing the CAPIO-CL Engine
 namespace capiocl::engine {

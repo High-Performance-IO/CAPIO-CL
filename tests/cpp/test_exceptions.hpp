@@ -2,7 +2,7 @@
 #define CAPIO_CL_EXCEPTIONS_HPP
 
 #define EXCEPTION_SUITE_NAME TestThrowExceptions
-#include "include/serializer.h"
+#include "capiocl/serializer.h"
 
 TEST(EXCEPTION_SUITE_NAME, testWhatMEthods) {
     try {

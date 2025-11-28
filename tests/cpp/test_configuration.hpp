@@ -2,7 +2,7 @@
 #define CAPIO_CL_TEST_CONFIGURATION_HPP
 
 #define CONFIGURATION_SUITE_NAME TestTOMLConfiguration
-#include "include/configuration.h"
+#include "capiocl/configuration.h"
 
 TEST(CONFIGURATION_SUITE_NAME, TestLoadConfiguration) {
     capiocl::engine::Engine engine;

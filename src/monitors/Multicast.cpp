@@ -3,8 +3,8 @@
 #include <sys/socket.h>
 
 #include "capiocl.hpp"
-#include "include/monitor.h"
-#include "include/printer.h"
+#include "capiocl/monitor.h"
+#include "capiocl/printer.h"
 
 static std::tuple<int, sockaddr_in> outgoing_socket_multicast(const std::string &address,
                                                               const int port) {

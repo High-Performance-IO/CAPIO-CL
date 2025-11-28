@@ -2,9 +2,9 @@
 
 #include "capio_cl_json_schemas.hpp"
 #include "capiocl.hpp"
-#include "include/engine.h"
-#include "include/parser.h"
-#include "include/printer.h"
+#include "capiocl/engine.h"
+#include "capiocl/parser.h"
+#include "capiocl/printer.h"
 
 capiocl::engine::Engine *
 capiocl::parser::Parser::available_parsers::parse_v1_1(const std::filesystem::path &source,
