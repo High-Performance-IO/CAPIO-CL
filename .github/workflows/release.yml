@@ -62,7 +62,9 @@ jobs:
       - name: "Build Python wheel"
         run: |
           mkdir -p /tmp/capio_cl_jsons
-          cp tests/jsons/*.json /tmp/capio_cl_jsons
+          mkdir -p /tmp/capio_cl_tomls
+          cp -r tests/jsons/* /tmp/capio_cl_jsons
+          cp -r tests/tomls/* /tmp/capio_cl_tomls
           python -m pip install --upgrade pip
           python -m pip install -r build-requirements.txt
 
@@ -120,7 +122,9 @@ jobs:
             python3 -m pip install -r build-requirements.txt
 
             mkdir -p /tmp/capio_cl_jsons
-            cp tests/jsons/*.json /tmp/capio_cl_jsons
+            mkdir -p /tmp/capio_cl_tomls
+            cp -r tests/jsons/* /tmp/capio_cl_jsons
+            cp -r tests/tomls/* /tmp/capio_cl_tomls
 
             python3 -m build \
               -Ccmake.define.ENABLE_COVERAGE=OFF \
@@ -169,8 +173,8 @@ jobs:
           host: capio.hpc4ai.it
           key: ${{ secrets.CAPIO_CL_DOC_DEPLOY_KEY }}
           rm: true
-          source: "doxygen/generated/html"
-          strip_components: 2
+          source: "doxygen/generated/html/"
+          strip_components: 3
           target: /mnt/services/capio/nginx/html/capiocl
           username: capio-user
 
