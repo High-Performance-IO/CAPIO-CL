@@ -163,6 +163,16 @@ jobs:
         with:
           path: "doxygen/documentation*.pdf"
           name: "documentation.pdf"
+      - name: "Deploy documentation page"
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: capio.hpc4ai.it
+          key: ${{ secrets.CAPIO_CL_DOC_DEPLOY_KEY }}
+          rm: true
+          source: "doxygen/generated/html"
+          strip_components: 2
+          target: /mnt/services/capio/nginx/html/capiocl
+          username: capio-user
 
 
 
