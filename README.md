@@ -14,9 +14,9 @@
 #### Platform support
 
 | OS / Arch | ![x86_64](https://img.shields.io/badge/x86__64-121212?logo=intel&logoColor=blue) | ![ARM](https://img.shields.io/badge/ARM-121212?logo=arm&logoColor=0091BD) | ![RISC-V](https://img.shields.io/badge/RISC--V-121212?logo=riscv&logoColor=F9A825) |
-|-----------|----------------------------------------------------------------------------------|----------------------------------------------|----------------------------------------------|
-| ![Ubuntu](https://img.shields.io/badge/Ubuntu-121212?logo=ubuntu&logoColor=E95420) | ✅                                                                                | ✅ | ✅ |
-| ![macOS](https://img.shields.io/badge/macOS-121212?logo=apple&logoColor=white)     | ✅                                                                                | ✅ | |
+|-----------|----------------------------------------------------------------------------------|---------------------------------------------------------------------------|------------------------------------------------------------------------------------|
+| ![Ubuntu](https://img.shields.io/badge/Ubuntu-121212?logo=ubuntu&logoColor=E95420) | YES                                                                              | YES                                                                       | YES                                                                                |
+| ![macOS](https://img.shields.io/badge/macOS-121212?logo=apple&logoColor=white)     | YES                                                                              | YES                                                                       | N.A.                                                                               |
 
 
 #### Documentation
