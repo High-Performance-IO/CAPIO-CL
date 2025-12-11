@@ -26,3 +26,35 @@ capiocl::serializer::SerializerException::SerializerException(const std::string 
     : message(msg) {
     printer::print(printer::CLI_LEVEL_ERROR, msg);
 }
+
+bool capiocl::serializer::Serializer::entryCanBeCompressed(const bool compress,
+                                                           const std::filesystem::path &path,
+                                                           const engine::Engine &engine) {
+
+    if (!compress) {
+        return false;
+    }
+
+    if (engine.isDirectory(path)) {
+        return false;
+    }
+
+    const auto parent_path = path.parent_path();
+
+    if (!engine.contains(parent_path)) {
+        return false;
+    }
+
+    return engine.getCommitRule(path) == engine.getCommitRule(parent_path) &&
+           engine.getFireRule(path) == engine.getFireRule(parent_path);
+}
+
+
+void capiocl::serializer::Serializer::sortPathsByDecreasingLength(std::vector<std::string> &paths) {
+    std::sort(paths.begin(), paths.end(), [](const std::string &a, const std::string &b) {
+        if (a.length() != b.length()) {
+            return a.length() > b.length();
+        }
+        return a > b;
+    });
+}

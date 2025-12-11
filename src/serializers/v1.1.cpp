@@ -7,23 +7,17 @@
 
 void capiocl::serializer::Serializer::available_serializers::serialize_v1_1(
     const engine::Engine &engine, const std::filesystem::path &filename, const bool compress) {
+
+    if (compress) {
+        printer::print(printer::CLI_LEVEL_WARNING,
+                       "Using configuration compression to directories!");
+    }
+
     jsoncons::json doc;
     doc["version"] = 1.1;
     doc["name"]    = engine.getWorkflowName();
 
     const auto files = engine._capio_cl_entries;
-
-    std::vector<std::string> keys;
-    keys.reserve(files.size());
-    for (const auto &[k, v] : files) {
-        keys.push_back(k);
-    }
-    std::sort(keys.begin(), keys.end(), [](const std::string &a, const std::string &b) {
-        if (a.length() != b.length()) {
-            return a.length() < b.length();
-        }
-        return a < b;
-    });
 
     std::unordered_map<std::string, std::vector<std::string>> app_inputs;
     std::unordered_map<std::string, std::vector<std::string>> app_outputs;
@@ -36,17 +30,20 @@ void capiocl::serializer::Serializer::available_serializers::serialize_v1_1(
     jsoncons::json storage  = jsoncons::json::object();
     jsoncons::json io_graph = jsoncons::json::array();
 
+    std::vector<std::string> keys;
+    keys.reserve(files.size());
+    for (const auto &[k, v] : files) {
+        keys.push_back(k);
+    }
+
+    sortPathsByDecreasingLength(keys);
+
     for (const auto &path : keys) {
         const auto entry = files.at(path);
 
-        if (compress) {
-            if (const std::filesystem::path p(path); files.find(p.parent_path()) != files.end()) {
-                if (const auto &parent = files.at(p.parent_path());
-                    parent.fire_rule == entry.fire_rule &&
-                    parent.commit_rule == entry.commit_rule && entry.is_file) {
-                    continue;
-                }
-            }
+        if (entryCanBeCompressed(compress, path, engine)) {
+            printer::print(printer::CLI_LEVEL_WARNING, "Compressing entry " + path);
+            continue;
         }
 
         if (entry.permanent) {
@@ -65,12 +62,21 @@ void capiocl::serializer::Serializer::available_serializers::serialize_v1_1(
         }
     }
 
-    for (const auto &[app_name, outputs] : app_outputs) {
+    for (auto &[app_name, outputs] : app_outputs) {
         jsoncons::json app       = jsoncons::json::object();
         jsoncons::json streaming = jsoncons::json::array();
+        std::vector<std::string> filtered_outputs;
+
+        sortPathsByDecreasingLength(outputs);
 
         for (const auto &path : outputs) {
             const auto &entry = files.at(path);
+
+            if (entryCanBeCompressed(compress, path, engine)) {
+                continue;
+            }
+
+            filtered_outputs.push_back(path);
 
             jsoncons::json streaming_item = jsoncons::json::object();
             std::string committed         = entry.commit_rule;
@@ -111,7 +117,7 @@ void capiocl::serializer::Serializer::available_serializers::serialize_v1_1(
 
         app["name"]          = app_name;
         app["input_stream"]  = app_inputs[app_name];
-        app["output_stream"] = outputs;
+        app["output_stream"] = filtered_outputs;
         app["streaming"]     = streaming;
 
         io_graph.push_back(app);
