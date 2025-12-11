@@ -42,7 +42,7 @@ TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testSerializeParseCAPIOCLV1) {
 
         engine.print();
 
-        capiocl::serializer::Serializer::dump(engine, path, _cl_version);
+        capiocl::serializer::Serializer::dump(engine, path, false, _cl_version);
 
         std::filesystem::path resolve = "";
         auto new_engine               = capiocl::parser::Parser::parse(path, resolve);
@@ -73,7 +73,7 @@ TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testSerializeParseCAPIOCLV1NcloseNfiles) 
         engine.addProducer(file_1_name, producer_name);
         engine.addConsumer(file_1_name, consumer_name);
 
-        capiocl::serializer::Serializer::dump(engine, path, _cl_version);
+        capiocl::serializer::Serializer::dump(engine, path, false, _cl_version);
 
         std::filesystem::path resolve = "";
         auto new_engine               = capiocl::parser::Parser::parse(path, resolve);
@@ -108,7 +108,7 @@ TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testSerializeParseCAPIOCLV1FileDeps) {
         engine.setFileDeps(file_3_name, {file_1_name, file_2_name});
 
         engine.print();
-        capiocl::serializer::Serializer::dump(engine, path, _cl_version);
+        capiocl::serializer::Serializer::dump(engine, path, false, _cl_version);
 
         std::filesystem::path resolve = "";
         auto new_engine               = capiocl::parser::Parser::parse(path, resolve);
@@ -136,7 +136,7 @@ TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testSerializeCommitOnCloseCountNoCommitRu
         engine.setCommitedCloseNumber(file_1_name, 10);
 
         engine.print();
-        capiocl::serializer::Serializer::dump(engine, path, _cl_version);
+        capiocl::serializer::Serializer::dump(engine, path, false, _cl_version);
 
         std::filesystem::path resolve = "";
         auto new_engine               = capiocl::parser::Parser::parse(path, resolve);
