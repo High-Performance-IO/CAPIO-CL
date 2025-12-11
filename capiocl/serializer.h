@@ -28,6 +28,22 @@ class SerializerException final : public std::exception {
 /// @brief Dump the current loaded CAPIO-CL configuration from class Engine to a CAPIO-CL
 /// configuration file.
 class Serializer final {
+    /**
+     * Check whether a CAPIO-CL entry has a parent entry for which the same rules applies, and tell
+     * whether this entry can be omitted by using rule inheritance.
+     * @param compress
+     * @param path
+     * @param engine
+     * @return
+     */
+    static bool entryCanBeCompressed(bool compress, const std::filesystem::path &path,
+                                       const engine::Engine &engine);
+
+    /**
+     * Sort path entries from longest to shortest
+     * @param paths
+     */
+    static void sortPathsByDecreasingLength(std::vector<std::string> &paths);
 
     /// @brief Available serializers for CAPIO-CL
     struct available_serializers {
