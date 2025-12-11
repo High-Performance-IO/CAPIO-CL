@@ -99,5 +99,6 @@ PYBIND11_MODULE(_py_capio_cl, m) {
         });
 
     m.def("serialize", &capiocl::serializer::Serializer::dump, py::arg("engine"),
-          py::arg("filename"), py::arg("version") = capiocl::CAPIO_CL_VERSION::V1);
+          py::arg("filename"), py::arg("compress") = false,
+          py::arg("version") = capiocl::CAPIO_CL_VERSION::V1);
 }

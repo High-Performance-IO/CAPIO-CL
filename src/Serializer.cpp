@@ -9,13 +9,13 @@
 
 void capiocl::serializer::Serializer::dump(const engine::Engine &engine,
                                            const std::filesystem::path &filename,
-                                           const std::string &version) {
+                                           const bool compress, const std::string &version) {
     if (version == CAPIO_CL_VERSION::V1) {
         printer::print(printer::CLI_LEVEL_INFO, "Serializing engine with V1 specification");
-        available_serializers::serialize_v1(engine, filename);
+        available_serializers::serialize_v1(engine, filename, compress);
     } else if (version == CAPIO_CL_VERSION::V1_1) {
         printer::print(printer::CLI_LEVEL_INFO, "Serializing engine with V1.1 specification");
-        available_serializers::serialize_v1_1(engine, filename);
+        available_serializers::serialize_v1_1(engine, filename, compress);
     } else {
         const auto message = "No serializer available for CAPIO-CL version: " + version;
         throw SerializerException(message);

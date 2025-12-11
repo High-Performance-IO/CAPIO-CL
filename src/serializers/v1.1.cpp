@@ -6,12 +6,24 @@
 #include "capiocl/serializer.h"
 
 void capiocl::serializer::Serializer::available_serializers::serialize_v1_1(
-    const engine::Engine &engine, const std::filesystem::path &filename) {
+    const engine::Engine &engine, const std::filesystem::path &filename, const bool compress) {
     jsoncons::json doc;
     doc["version"] = 1.1;
     doc["name"]    = engine.getWorkflowName();
 
     const auto files = engine._capio_cl_entries;
+
+    std::vector<std::string> keys;
+    keys.reserve(files.size());
+    for (const auto &[k, v] : files) {
+        keys.push_back(k);
+    }
+    std::sort(keys.begin(), keys.end(), [](const std::string &a, const std::string &b) {
+        if (a.length() != b.length()) {
+            return a.length() < b.length();
+        }
+        return a < b;
+    });
 
     std::unordered_map<std::string, std::vector<std::string>> app_inputs;
     std::unordered_map<std::string, std::vector<std::string>> app_outputs;
@@ -24,7 +36,19 @@ void capiocl::serializer::Serializer::available_serializers::serialize_v1_1(
     jsoncons::json storage  = jsoncons::json::object();
     jsoncons::json io_graph = jsoncons::json::array();
 
-    for (const auto &[path, entry] : files) {
+    for (const auto &path : keys) {
+        const auto entry = files.at(path);
+
+        if (compress) {
+            if (const std::filesystem::path p(path); files.find(p.parent_path()) != files.end()) {
+                if (const auto &parent = files.at(p.parent_path());
+                    parent.fire_rule == entry.fire_rule &&
+                    parent.commit_rule == entry.commit_rule && entry.is_file) {
+                    continue;
+                }
+            }
+        }
+
         if (entry.permanent) {
             permanent.push_back(path);
         }
