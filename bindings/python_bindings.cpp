@@ -36,56 +36,74 @@ PYBIND11_MODULE(_py_capio_cl, m) {
     py::class_<capiocl::engine::Engine>(
         m, "Engine", "The main CAPIO-CL engine for managing data communication and I/O operations.")
         .def(py::init<>())
-        .def("newFile", &capiocl::engine::Engine::newFile)
+        .def("newFile", &capiocl::engine::Engine::newFile, py::arg("filename"))
         .def("print", &capiocl::engine::Engine::print)
-        .def("contains", &capiocl::engine::Engine::contains)
+        .def("contains", &capiocl::engine::Engine::contains, py::arg("path"))
         .def("size", &capiocl::engine::Engine::size)
-        .def("add", &capiocl::engine::Engine::add)
-        .def("addProducer", &capiocl::engine::Engine::addProducer)
-        .def("addConsumer", &capiocl::engine::Engine::addConsumer)
-        .def("addFileDependency", &capiocl::engine::Engine::addFileDependency)
-        .def("remove", &capiocl::engine::Engine::remove)
-        .def("setCommitRule", &capiocl::engine::Engine::setCommitRule)
-        .def("setFireRule", &capiocl::engine::Engine::setFireRule)
-        .def("setPermanent", &capiocl::engine::Engine::setPermanent)
-        .def("setExclude", &capiocl::engine::Engine::setExclude)
-        .def("setDirectory", &capiocl::engine::Engine::setDirectory)
-        .def("setFile", &capiocl::engine::Engine::setFile)
-        .def("setCommittedCloseNumber", &capiocl::engine::Engine::setCommitedCloseNumber)
-        .def("setDirectoryFileCount", &capiocl::engine::Engine::setDirectoryFileCount)
-        .def("setFileDeps", &capiocl::engine::Engine::setFileDeps)
-        .def("setStoreFileInMemory", &capiocl::engine::Engine::setStoreFileInMemory)
-        .def("setStoreFileInFileSystem", &capiocl::engine::Engine::setStoreFileInFileSystem)
-        .def("getDirectoryFileCount", &capiocl::engine::Engine::getDirectoryFileCount)
-        .def("getCommitRule", &capiocl::engine::Engine::getCommitRule)
-        .def("getFireRule", &capiocl::engine::Engine::getFireRule)
-        .def("getProducers", &capiocl::engine::Engine::getProducers)
-        .def("getConsumers", &capiocl::engine::Engine::getConsumers)
-        .def("getCommitCloseCount", &capiocl::engine::Engine::getCommitCloseCount)
-        .def("getCommitOnFileDependencies", &capiocl::engine::Engine::getCommitOnFileDependencies)
+        .def("add", &capiocl::engine::Engine::add, py::arg("path"), py::arg("producers"),
+             py::arg("consumers"), py::arg("commit_rule"), py::arg("fire_rule"),
+             py::arg("permanent"), py::arg("exclude"), py::arg("dependencies"))
+        .def("addProducer", &capiocl::engine::Engine::addProducer, py::arg("path"),
+             py::arg("producer"))
+        .def("addConsumer", &capiocl::engine::Engine::addConsumer, py::arg("path"),
+             py::arg("consumer"))
+        .def("addFileDependency", &capiocl::engine::Engine::addFileDependency, py::arg("path"),
+             py::arg("file_dependency"))
+        .def("remove", &capiocl::engine::Engine::remove, py::arg("path"))
+        .def("setCommitRule", &capiocl::engine::Engine::setCommitRule, py::arg("path"),
+             py::arg("commit_rule"))
+        .def("setFireRule", &capiocl::engine::Engine::setFireRule, py::arg("path"),
+             py::arg("fire_rule"))
+        .def("setPermanent", &capiocl::engine::Engine::setPermanent, py::arg("path"),
+             py::arg("permanent"))
+        .def("setExclude", &capiocl::engine::Engine::setExclude, py::arg("path"),
+             py::arg("exclude"))
+        .def("setDirectory", &capiocl::engine::Engine::setDirectory, py::arg("path"))
+        .def("setFile", &capiocl::engine::Engine::setFile, py::arg("path"))
+        .def("setCommittedCloseNumber", &capiocl::engine::Engine::setCommitedCloseNumber,
+             py::arg("path"), py::arg("num"))
+        .def("setDirectoryFileCount", &capiocl::engine::Engine::setDirectoryFileCount,
+             py::arg("path"), py::arg("num"))
+        .def("setFileDeps", &capiocl::engine::Engine::setFileDeps, py::arg("path"),
+             py::arg("dependencies"))
+        .def("setStoreFileInMemory", &capiocl::engine::Engine::setStoreFileInMemory,
+             py::arg("path"))
+        .def("setStoreFileInFileSystem", &capiocl::engine::Engine::setStoreFileInFileSystem,
+             py::arg("path"))
+        .def("getDirectoryFileCount", &capiocl::engine::Engine::getDirectoryFileCount,
+             py::arg("path"))
+        .def("getCommitRule", &capiocl::engine::Engine::getCommitRule, py::arg("path"))
+        .def("getFireRule", &capiocl::engine::Engine::getFireRule, py::arg("path"))
+        .def("getProducers", &capiocl::engine::Engine::getProducers, py::arg("path"))
+        .def("getConsumers", &capiocl::engine::Engine::getConsumers, py::arg("path"))
+        .def("getCommitCloseCount", &capiocl::engine::Engine::getCommitCloseCount, py::arg("path"))
+        .def("getCommitOnFileDependencies", &capiocl::engine::Engine::getCommitOnFileDependencies,
+             py::arg("path"))
         .def("getFileToStoreInMemory", &capiocl::engine::Engine::getFileToStoreInMemory)
-        .def("getHomeNode", &capiocl::engine::Engine::getHomeNode)
-        .def("isProducer", &capiocl::engine::Engine::isProducer)
-        .def("isConsumer", &capiocl::engine::Engine::isConsumer)
-        .def("isFirable", &capiocl::engine::Engine::isFirable)
-        .def("isFile", &capiocl::engine::Engine::isFile)
-        .def("isExcluded", &capiocl::engine::Engine::isExcluded)
-        .def("isDirectory", &capiocl::engine::Engine::isDirectory)
-        .def("isStoredInMemory", &capiocl::engine::Engine::isStoredInMemory)
-        .def("isPermanent", &capiocl::engine::Engine::isPermanent)
+        .def("getHomeNode", &capiocl::engine::Engine::getHomeNode, py::arg("path"))
+        .def("isProducer", &capiocl::engine::Engine::isProducer, py::arg("path"),
+             py::arg("app_name"))
+        .def("isConsumer", &capiocl::engine::Engine::isConsumer, py::arg("path"),
+             py::arg("app_name"))
+        .def("isFirable", &capiocl::engine::Engine::isFirable, py::arg("path"))
+        .def("isFile", &capiocl::engine::Engine::isFile, py::arg("path"))
+        .def("isExcluded", &capiocl::engine::Engine::isExcluded, py::arg("path"))
+        .def("isDirectory", &capiocl::engine::Engine::isDirectory, py::arg("path"))
+        .def("isStoredInMemory", &capiocl::engine::Engine::isStoredInMemory, py::arg("path"))
+        .def("isPermanent", &capiocl::engine::Engine::isPermanent, py::arg("path"))
         .def("setAllStoreInMemory", &capiocl::engine::Engine::setAllStoreInMemory)
         .def("getWorkflowName", &capiocl::engine::Engine::getWorkflowName)
-        .def("setWorkflowName", &capiocl::engine::Engine::setWorkflowName)
-        .def("setCommitted", &capiocl::engine::Engine::setCommitted)
-        .def("isCommitted", &capiocl::engine::Engine::isCommitted)
-        .def("setHomeNode", &capiocl::engine::Engine::setHomeNode)
+        .def("setWorkflowName", &capiocl::engine::Engine::setWorkflowName, py::arg("name"))
+        .def("setCommitted", &capiocl::engine::Engine::setCommitted, py::arg("path"))
+        .def("isCommitted", &capiocl::engine::Engine::isCommitted, py::arg("path"))
+        .def("setHomeNode", &capiocl::engine::Engine::setHomeNode, py::arg("path"))
         .def("getPaths", &capiocl::engine::Engine::getPaths)
         .def("__str__", &capiocl::engine::Engine::print)
         .def("__repr__",
              [](const capiocl::engine::Engine &e) {
                  return "<Engine repr at " + std::to_string(reinterpret_cast<uintptr_t>(&e)) + ">";
              })
-        .def(pybind11::self == pybind11::self);
+        .def(py::self == py::self);
 
     py::class_<capiocl::parser::Parser>(m, "Parser", "The CAPIO-CL Parser component.")
         .def_static("parse", &capiocl::parser::Parser::parse, py::arg("source"),
