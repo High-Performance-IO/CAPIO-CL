@@ -154,7 +154,7 @@ void capiocl::engine::Engine::_newFile(const std::filesystem::path &path) const 
         std::string matchKey;
         size_t matchSize = 0;
         for (const auto &[filename, data] : _capio_cl_entries) {
-            if (const bool match = fnmatch(filename.c_str(), path.c_str(), FNM_PATHNAME) == 0;
+            if (const bool match = fnmatch(filename.c_str(), path.c_str(), FNM_NOESCAPE) == 0;
                 match && filename.length() > matchSize) {
                 matchSize = filename.length();
                 matchKey  = filename;
@@ -202,7 +202,7 @@ void capiocl::engine::Engine::compute_directory_entry_count(
 
 bool capiocl::engine::Engine::contains(const std::filesystem::path &file) const {
     return std::any_of(_capio_cl_entries.begin(), _capio_cl_entries.end(), [&](auto const &entry) {
-        return fnmatch(entry.first.c_str(), file.c_str(), FNM_PATHNAME) == 0;
+        return fnmatch(entry.first.c_str(), file.c_str(), FNM_NOESCAPE) == 0;
     });
 }
 
@@ -524,7 +524,7 @@ bool capiocl::engine::Engine::isConsumer(const std::filesystem::path &path,
     }
 
     for (const auto &[pattern, entry] : _capio_cl_entries) {
-        if (fnmatch(pattern.c_str(), path.c_str(), FNM_PATHNAME) == 0) {
+        if (fnmatch(pattern.c_str(), path.c_str(), FNM_NOESCAPE) == 0) {
             const auto &consumers = entry.consumers;
             if (std::find(consumers.begin(), consumers.end(), app_name) != consumers.end()) {
                 return true;
@@ -556,7 +556,7 @@ bool capiocl::engine::Engine::isProducer(const std::filesystem::path &path,
     }
 
     for (const auto &[pattern, entry] : _capio_cl_entries) {
-        if (fnmatch(pattern.c_str(), path.c_str(), FNM_PATHNAME) == 0) {
+        if (fnmatch(pattern.c_str(), path.c_str(), FNM_NOESCAPE) == 0) {
             const auto &producers = entry.producers;
             if (std::find(producers.begin(), producers.end(), app_name) != producers.end()) {
                 return true;
