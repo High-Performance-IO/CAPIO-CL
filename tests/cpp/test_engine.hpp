@@ -612,4 +612,30 @@ TEST(ENGINE_SUITE_NAME, TestGetPaths) {
     EXPECT_TRUE(std::find(paths.begin(), paths.end(), "/tmp") != paths.end());
 }
 
+TEST(ENGINE_SUITE_NAME, TestSubfolderMatching) {
+    capiocl::engine::Engine engine;
+    std::string producer_name = "producer";
+    engine.addProducer("/a/*", producer_name);
+    EXPECT_TRUE(engine.isProducer("/a/b", producer_name));
+    EXPECT_TRUE(engine.isProducer("/a/b/", producer_name));
+    EXPECT_TRUE(engine.isProducer("/a/b/c", producer_name));
+}
+
+TEST(ENGINE_SUITE_NAME, TestInheritanceFromParentPaths) {
+    capiocl::engine::Engine engine;
+
+    engine.newFile("/test/*");
+    engine.setCommitRule("/test/*", capiocl::commitRules::ON_CLOSE);
+    engine.setFireRule("/test/*", capiocl::fireRules::NO_UPDATE);
+
+    engine.newFile("/test/a/b/c/d");
+    EXPECT_TRUE(engine.getCommitRule("/test/a/b/c/d") == capiocl::commitRules::ON_CLOSE);
+    EXPECT_TRUE(engine.getFireRule("/test/a/b/c/d") == capiocl::fireRules::NO_UPDATE);
+
+    engine.setCommitRule("/test/*", capiocl::commitRules::ON_TERMINATION);
+    engine.setFireRule("/test/*", capiocl::fireRules::UPDATE);
+    EXPECT_TRUE(engine.getCommitRule("/test/a/b/c/d") == capiocl::commitRules::ON_CLOSE);
+    EXPECT_TRUE(engine.getFireRule("/test/a/b/c/d") == capiocl::fireRules::NO_UPDATE);
+}
+
 #endif // CAPIO_CL_ENGINE_HPP
