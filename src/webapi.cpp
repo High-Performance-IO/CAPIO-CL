@@ -38,38 +38,9 @@
         ERROR_RESPONSE(res, e);                                                                    \
     }
 
-void server(const std::string &address, int port, capiocl::engine::Engine *engine,
-            char secret_term_key[256]);
-
-capiocl::webapi::CapioClWebApiServer::CapioClWebApiServer(engine::Engine *engine,
-                                                          const std::string &web_server_address,
-                                                          const int web_server_port)
-    : _webApiThread(std::thread(server, web_server_address, web_server_port, engine, _secretKey)),
-      _port(web_server_port) {
-    FILE *f = fopen("/dev/urandom", "rb");
-    if (!f) {
-        perror("fopen");
-        exit(1);
-    }
-
-    if (fread(_secretKey, 1, 256, f) != 256) {
-        perror("fread");
-        fclose(f);
-        exit(1);
-    }
-
-    fclose(f);
-    _webApiThread.detach();
-}
-
-capiocl::webapi::CapioClWebApiServer::~CapioClWebApiServer() {
-
-    httplib::Client client("http://127.0.0.1:" + std::to_string(_port));
-    client.Get("/terminate");
-}
-
+/// @brief Main WebServer thread function
 void server(const std::string &address, const int port, capiocl::engine::Engine *engine,
-            char secret_term_key[256]) {
+            const char secret_term_key[256]) {
 
     capiocl::printer::print(capiocl::printer::CLI_LEVEL_INFO,
                             "Starting API server @ " + address + ":" + std::to_string(port));
@@ -275,4 +246,21 @@ void server(const std::string &address, const int port, capiocl::engine::Engine 
     });
 
     _server.listen(address, port);
+}
+
+capiocl::webapi::CapioClWebApiServer::CapioClWebApiServer(engine::Engine *engine,
+                                                          const std::string &web_server_address,
+                                                          const int web_server_port)
+    : _webApiThread(std::thread(server, web_server_address, web_server_port, engine, _secretKey)),
+      _port(web_server_port) {
+    FILE *f = fopen("/dev/urandom", "rb");
+    fread(_secretKey, 1, 256, f);
+    fclose(f);
+    _webApiThread.detach();
+}
+
+capiocl::webapi::CapioClWebApiServer::~CapioClWebApiServer() {
+
+    httplib::Client client("http://127.0.0.1:" + std::to_string(_port));
+    client.Get("/terminate");
 }

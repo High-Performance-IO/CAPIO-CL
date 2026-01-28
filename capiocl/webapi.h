@@ -4,16 +4,25 @@
 
 #include "capiocl.hpp"
 
+/// @brief Class that exposes a REST Web Server to interact with the current configuration
 class capiocl::webapi::CapioClWebApiServer {
 
+    /// @brief asynchronous running webserver thread
     std::thread _webApiThread;
+
+    /// @brief port on which the current server runs
     int _port;
 
-    char _secretKey[256];
+    /// @brief secret key initialized at random. used when requesting shutdown so that the
+    /// termination can only occur when called from the main CAPIO-CL thread
+    char _secretKey[256]{};
 
   public:
+    /// @brief default constructor.
     CapioClWebApiServer(engine::Engine *engine, const std::string &web_server_address,
                         int web_server_port);
+
+    /// @brief Default Destructor
     ~CapioClWebApiServer();
 };
 
