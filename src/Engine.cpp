@@ -5,6 +5,7 @@
 #include "capiocl.hpp"
 #include "capiocl/configuration.h"
 #include "capiocl/engine.h"
+#include "capiocl/monitor.h"
 #include "capiocl/printer.h"
 
 void capiocl::engine::Engine::print() const {
@@ -126,7 +127,8 @@ void capiocl::engine::Engine::print() const {
     printer::print(printer::CLI_LEVEL_JSON, "");
 }
 
-capiocl::engine::Engine::Engine(const bool use_default_settings) {
+capiocl::engine::Engine::Engine(const bool use_default_settings)
+    : webapi_server(this, "127.0.0.1", 5520) {
     node_name = std::string(1024, '\0');
     gethostname(node_name.data(), node_name.size());
     node_name.resize(std::strlen(node_name.c_str()));

@@ -57,11 +57,19 @@ FetchContent_Declare(
         GIT_TAG v1.4.3
 )
 
+FetchContent_Declare(
+        httplib
+        GIT_REPOSITORY https://github.com/yhirose/cpp-httplib.git
+        GIT_TAG v0.30.1
+)
+
+
 set(JSONCONS_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(JSONCONS_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(JSONCONS_BUILD_FUZZERS OFF CACHE BOOL "" FORCE)
+set(HTTPLIB_USE_ZSTD_IF_AVAILABLE OFF CACHE BOOL "" FORCE)
 
-FetchContent_MakeAvailable(jsoncons tomlplusplus)
+FetchContent_MakeAvailable(jsoncons tomlplusplus httplib)
 
 if (BUILD_PYTHON_BINDINGS)
     FetchContent_Declare(
@@ -135,10 +143,19 @@ target_include_directories(libcapio_cl PUBLIC
         ${jsoncons_SOURCE_DIR}/include
         ${CAPIOCL_JSON_SCHEMAS_DIRECTORY}
         ${TOMLPLUSPLUS_SOURCE_DIR}/include
+        ${httplib_SOURCE_DIR}
 )
 
 target_link_libraries(libcapio_cl PUBLIC)
-target_link_libraries(libcapio_cl PRIVATE tomlplusplus::tomlplusplus)
+target_link_libraries(libcapio_cl PRIVATE
+        tomlplusplus::tomlplusplus
+        httplib::httplib
+)
+
+find_library(LIBANL anl)
+if(LIBANL)
+    target_link_libraries(libcapio_cl PRIVATE ${LIBANL})
+endif ()
 
 #####################################
 # Install rules
@@ -190,6 +207,10 @@ if (CAPIO_CL_BUILD_TESTS)
             libcapio_cl
             GTest::gtest_main
     )
+
+    if(LIBANL)
+        target_link_libraries(CAPIO_CL_tests PRIVATE ${LIBANL})
+    endif ()
 
     target_include_directories(CAPIO_CL_tests PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}
