@@ -38,35 +38,52 @@
         ERROR_RESPONSE(res, e);                                                                    \
     }
 
-void server(httplib::Server *_server, const std::string &address, int port,
-            capiocl::engine::Engine *engine);
+void server(const std::string &address, int port, capiocl::engine::Engine *engine,
+            char secret_term_key[256]);
 
 capiocl::webapi::CapioClWebApiServer::CapioClWebApiServer(engine::Engine *engine,
                                                           const std::string &web_server_address,
                                                           const int web_server_port)
-    : _webApiThread(
-          std::thread(server, &_webApiServer, web_server_address, web_server_port, engine)) {}
+    : _webApiThread(std::thread(server, web_server_address, web_server_port, engine, _secretKey)),
+      _port(web_server_port) {
+    FILE *f = fopen("/dev/urandom", "rb");
+    if (!f) {
+        perror("fopen");
+        exit(1);
+    }
 
-capiocl::webapi::CapioClWebApiServer::~CapioClWebApiServer() {
-    _webApiServer.stop();
-    _webApiThread.join();
-    printer::print(printer::CLI_LEVEL_INFO, "API server stopped");
+    if (fread(_secretKey, 1, 256, f) != 256) {
+        perror("fread");
+        fclose(f);
+        exit(1);
+    }
+
+    fclose(f);
+    _webApiThread.detach();
 }
 
-void server(httplib::Server *_server, const std::string &address, const int port,
-            capiocl::engine::Engine *engine) {
+capiocl::webapi::CapioClWebApiServer::~CapioClWebApiServer() {
+
+    httplib::Client client("http://127.0.0.1:" + std::to_string(_port));
+    client.Get("/terminate");
+}
+
+void server(const std::string &address, const int port, capiocl::engine::Engine *engine,
+            char secret_term_key[256]) {
 
     capiocl::printer::print(capiocl::printer::CLI_LEVEL_INFO,
                             "Starting API server @ " + address + ":" + std::to_string(port));
 
-    _server->Post("/new", [&](const httplib::Request &req, httplib::Response &res) {
+    httplib::Server _server;
+
+    _server.Post("/new", [&](const httplib::Request &req, httplib::Response &res) {
         PROCESS_POST_REQUEST(req, res, {
             const auto path = request_body["path"].as<std::string>();
             engine->newFile(path);
         })
     });
 
-    _server->Post("/producer", [&](const httplib::Request &req, httplib::Response &res) {
+    _server.Post("/producer", [&](const httplib::Request &req, httplib::Response &res) {
         PROCESS_POST_REQUEST(req, res, {
             const auto path = request_body["path"].as<std::string>();
             auto producer   = request_body["producer"].as<std::string>();
@@ -74,14 +91,14 @@ void server(httplib::Server *_server, const std::string &address, const int port
         });
     });
 
-    _server->Get("/producer", [&](const httplib::Request &req, httplib::Response &res) {
+    _server.Get("/producer", [&](const httplib::Request &req, httplib::Response &res) {
         PROCESS_GET_REQUEST(req, res, {
             const auto path    = request_body["path"].as<std::string>();
             reply["producers"] = engine->getProducers(path);
         });
     });
 
-    _server->Post("/consumer", [&](const httplib::Request &req, httplib::Response &res) {
+    _server.Post("/consumer", [&](const httplib::Request &req, httplib::Response &res) {
         PROCESS_POST_REQUEST(req, res, {
             const auto path = request_body["path"].as<std::string>();
             auto consumer   = request_body["consumer"].as<std::string>();
@@ -89,14 +106,14 @@ void server(httplib::Server *_server, const std::string &address, const int port
         });
     });
 
-    _server->Get("/consumer", [&](const httplib::Request &req, httplib::Response &res) {
+    _server.Get("/consumer", [&](const httplib::Request &req, httplib::Response &res) {
         PROCESS_GET_REQUEST(req, res, {
             const auto path    = request_body["path"].as<std::string>();
             reply["consumers"] = engine->getConsumers(path);
         });
     });
 
-    _server->Post("/dependency", [&](const httplib::Request &req, httplib::Response &res) {
+    _server.Post("/dependency", [&](const httplib::Request &req, httplib::Response &res) {
         PROCESS_POST_REQUEST(req, res, {
             const auto path = request_body["path"].as<std::string>();
             auto dependency = std::filesystem::path(request_body["dependency"].as<std::string>());
@@ -104,7 +121,7 @@ void server(httplib::Server *_server, const std::string &address, const int port
         });
     });
 
-    _server->Get("/dependency", [&](const httplib::Request &req, httplib::Response &res) {
+    _server.Get("/dependency", [&](const httplib::Request &req, httplib::Response &res) {
         PROCESS_GET_REQUEST(req, res, {
             const auto path = request_body["path"].as<std::string>();
             std::vector<std::string> deps;
@@ -115,7 +132,7 @@ void server(httplib::Server *_server, const std::string &address, const int port
         });
     });
 
-    _server->Post("/commit", [&](const httplib::Request &req, httplib::Response &res) {
+    _server.Post("/commit", [&](const httplib::Request &req, httplib::Response &res) {
         PROCESS_POST_REQUEST(req, res, {
             const auto path  = request_body["path"].as<std::string>();
             auto commit_rule = request_body["commit"].as<std::string>();
@@ -123,14 +140,14 @@ void server(httplib::Server *_server, const std::string &address, const int port
         });
     });
 
-    _server->Get("/commit", [&](const httplib::Request &req, httplib::Response &res) {
+    _server.Get("/commit", [&](const httplib::Request &req, httplib::Response &res) {
         PROCESS_GET_REQUEST(req, res, {
             const auto path = request_body["path"].as<std::string>();
             reply["commit"] = engine->getCommitRule(path);
         });
     });
 
-    _server->Post("/commit/file-count", [&](const httplib::Request &req, httplib::Response &res) {
+    _server.Post("/commit/file-count", [&](const httplib::Request &req, httplib::Response &res) {
         PROCESS_POST_REQUEST(req, res, {
             const auto path = request_body["path"].as<std::string>();
             auto count      = request_body["count"].as<int>();
@@ -138,14 +155,14 @@ void server(httplib::Server *_server, const std::string &address, const int port
         });
     });
 
-    _server->Get("/commit/file-count", [&](const httplib::Request &req, httplib::Response &res) {
+    _server.Get("/commit/file-count", [&](const httplib::Request &req, httplib::Response &res) {
         PROCESS_GET_REQUEST(req, res, {
             const auto path = request_body["path"].as<std::string>();
             reply["count"]  = engine->getDirectoryFileCount(path);
         });
     });
 
-    _server->Post("/commit/close-count", [&](const httplib::Request &req, httplib::Response &res) {
+    _server.Post("/commit/close-count", [&](const httplib::Request &req, httplib::Response &res) {
         PROCESS_POST_REQUEST(req, res, {
             const auto path = request_body["path"].as<std::string>();
             auto count      = request_body["count"].as<int>();
@@ -153,14 +170,14 @@ void server(httplib::Server *_server, const std::string &address, const int port
         });
     });
 
-    _server->Get("/commit/close-count", [&](const httplib::Request &req, httplib::Response &res) {
+    _server.Get("/commit/close-count", [&](const httplib::Request &req, httplib::Response &res) {
         PROCESS_GET_REQUEST(req, res, {
             const auto path = request_body["path"].as<std::string>();
             reply["count"]  = engine->getCommitCloseCount(path);
         });
     });
 
-    _server->Post("/fire", [&](const httplib::Request &req, httplib::Response &res) {
+    _server.Post("/fire", [&](const httplib::Request &req, httplib::Response &res) {
         PROCESS_POST_REQUEST(req, res, {
             const auto path = request_body["path"].as<std::string>();
             auto fire_rule  = request_body["fire"].as<std::string>();
@@ -168,14 +185,14 @@ void server(httplib::Server *_server, const std::string &address, const int port
         });
     });
 
-    _server->Get("/fire", [&](const httplib::Request &req, httplib::Response &res) {
+    _server.Get("/fire", [&](const httplib::Request &req, httplib::Response &res) {
         PROCESS_GET_REQUEST(req, res, {
             const auto path = request_body["path"].as<std::string>();
             reply["fire"]   = engine->getFireRule(path);
         });
     });
 
-    _server->Post("/permanent", [&](const httplib::Request &req, httplib::Response &res) {
+    _server.Post("/permanent", [&](const httplib::Request &req, httplib::Response &res) {
         PROCESS_POST_REQUEST(req, res, {
             const auto path      = request_body["path"].as<std::string>();
             const auto permanent = request_body["permanent"].as<bool>();
@@ -183,14 +200,14 @@ void server(httplib::Server *_server, const std::string &address, const int port
         });
     });
 
-    _server->Get("/permanent", [&](const httplib::Request &req, httplib::Response &res) {
+    _server.Get("/permanent", [&](const httplib::Request &req, httplib::Response &res) {
         PROCESS_GET_REQUEST(req, res, {
             const auto path    = request_body["path"].as<std::string>();
             reply["permanent"] = engine->isPermanent(path);
         });
     });
 
-    _server->Post("/exclude", [&](const httplib::Request &req, httplib::Response &res) {
+    _server.Post("/exclude", [&](const httplib::Request &req, httplib::Response &res) {
         PROCESS_POST_REQUEST(req, res, {
             const auto path     = request_body["path"].as<std::string>();
             const auto excluded = request_body["excluded"].as<bool>();
@@ -198,14 +215,14 @@ void server(httplib::Server *_server, const std::string &address, const int port
         });
     });
 
-    _server->Get("/exclude", [&](const httplib::Request &req, httplib::Response &res) {
+    _server.Get("/exclude", [&](const httplib::Request &req, httplib::Response &res) {
         PROCESS_GET_REQUEST(req, res, {
             const auto path  = request_body["path"].as<std::string>();
             reply["exclude"] = engine->isExcluded(path);
         });
     });
 
-    _server->Post("/directory", [&](const httplib::Request &req, httplib::Response &res) {
+    _server.Post("/directory", [&](const httplib::Request &req, httplib::Response &res) {
         PROCESS_POST_REQUEST(req, res, {
             const auto path = request_body["path"].as<std::string>();
             if (request_body["directory"].as<bool>()) {
@@ -216,30 +233,46 @@ void server(httplib::Server *_server, const std::string &address, const int port
         });
     });
 
-    _server->Get("/directory", [&](const httplib::Request &req, httplib::Response &res) {
+    _server.Get("/directory", [&](const httplib::Request &req, httplib::Response &res) {
         PROCESS_GET_REQUEST(req, res, {
             const auto path    = request_body["path"].as<std::string>();
             reply["directory"] = engine->isDirectory(path);
         });
     });
 
-    _server->Post("/workflow", [&](const httplib::Request &req, httplib::Response &res) {
+    _server.Post("/workflow", [&](const httplib::Request &req, httplib::Response &res) {
         PROCESS_POST_REQUEST(req, res, {
             const auto workflow_name = request_body["name"].as<std::string>();
             engine->setWorkflowName(workflow_name);
         });
     });
 
-    _server->Get("/workflow", [&](const httplib::Request &req, httplib::Response &res) {
+    _server.Get("/workflow", [&](const httplib::Request &req, httplib::Response &res) {
         PROCESS_GET_REQUEST(req, res, { reply["name"] = engine->getWorkflowName(); });
     });
 
-    _server->Delete("/", [&](const httplib::Request &req, httplib::Response &res) {
+    _server.Delete("/", [&](const httplib::Request &req, httplib::Response &res) {
         PROCESS_POST_REQUEST(req, res, {
             const auto path = request_body["path"].as<std::string>();
             engine->remove(path);
         });
     });
 
-    _server->listen(address, port);
+    _server.Get("/terminate", [&]([[maybe_unused]] const httplib::Request &req,
+                                  [[maybe_unused]] httplib::Response &res) {
+        PROCESS_GET_REQUEST(req, res, {
+            const auto req_key = request_body["key"].as<std::string>();
+            bool match         = true;
+            for (size_t i = 0; i < req_key.size() && match; i++) {
+                match = secret_term_key[i] == req_key[i];
+            }
+
+            if (match) {
+                capiocl::printer::print(capiocl::printer::CLI_LEVEL_INFO, "API server stopped");
+                _server.stop();
+            }
+        })
+    });
+
+    _server.listen(address, port);
 }
