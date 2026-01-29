@@ -7,13 +7,13 @@
 
 #define OK_RESPONSE(res)                                                                           \
     res.status = 200;                                                                              \
-    res.set_content("OK", "text/plain");
+    res.set_content("{\"status\" : \"OK\"}", "application/json");
 
 #define ERROR_RESPONSE(res, e)                                                                     \
     res.status = 400;                                                                              \
-    res.set_content("{\"error\" : \"" + std::string("Invalid request BODY data: ") + e.what() +    \
-                        "\"}",                                                                     \
-                    "text/plain");
+    res.set_content("{\"status\" : \"error\", \"what\" : \"" +                                     \
+                        std::string("Invalid request BODY data: ") + e.what() + "\"}",             \
+                    "application/json");
 
 #define JSON_RESPONSE(res, json_body)                                                              \
     res.status = 200;                                                                              \
