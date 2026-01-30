@@ -253,7 +253,7 @@ capiocl::webapi::CapioClWebApiServer::~CapioClWebApiServer() {
     client.Get("/terminate");
     if (_webApiThread.joinable()) {
         _webApiThread.join();
-    }else {
+    } else {
         return;
     }
 }
