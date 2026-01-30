@@ -10,14 +10,12 @@
 ![C++](https://img.shields.io/badge/C%2B%2B-%E2%89%A517-blueviolet?logo=c%2B%2B&logoColor=white)
 ![Python Bindings](https://img.shields.io/badge/Python_Bindings-3.10–3.14-darkgreen?style=flat&logo=python&logoColor=white&labelColor=gray)
 
-
 #### Platform support
 
-| OS / Arch | ![x86_64](https://img.shields.io/badge/x86__64-121212?logo=intel&logoColor=blue) | ![ARM](https://img.shields.io/badge/ARM-121212?logo=arm&logoColor=0091BD) | ![RISC-V](https://img.shields.io/badge/RISC--V-121212?logo=riscv&logoColor=F9A825) |
-|-----------|----------------------------------------------------------------------------------|---------------------------------------------------------------------------|------------------------------------------------------------------------------------|
+| OS / Arch                                                                          | ![x86_64](https://img.shields.io/badge/x86__64-121212?logo=intel&logoColor=blue) | ![ARM](https://img.shields.io/badge/ARM-121212?logo=arm&logoColor=0091BD) | ![RISC-V](https://img.shields.io/badge/RISC--V-121212?logo=riscv&logoColor=F9A825) |
+|------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|---------------------------------------------------------------------------|------------------------------------------------------------------------------------|
 | ![Ubuntu](https://img.shields.io/badge/Ubuntu-121212?logo=ubuntu&logoColor=E95420) | YES                                                                              | YES                                                                       | YES                                                                                |
 | ![macOS](https://img.shields.io/badge/macOS-121212?logo=apple&logoColor=white)     | YES                                                                              | YES                                                                       | N.A.                                                                               |
-
 
 #### Documentation
 
@@ -25,13 +23,12 @@
 - [![Metadata Streaming](https://img.shields.io/badge/Metadata%20Streaming-10.1145%2F3731599.3767577-%23cc5500?logo=doi&logoColor=white&labelColor=2b2b2b)](https://doi.org/10.1145/3731599.3767577)
 - [![Doxygen documentation](https://img.shields.io/github/v/release/High-Performance-IO/CAPIO-CL?label=Doxygen%20documentation&labelColor=2b2b2b&color=brown&logo=readthedocs&logoColor=white)](https://github.com/High-Performance-IO/CAPIO-CL/releases/latest/download/documentation.pdf)
 
-
 **CAPIO-CL** is a novel I/O coordination language that enables users to annotate file-based workflow data dependencies
 with **synchronization semantics** for files and directories.
 Designed to facilitate **transparent overlap between computation and I/O operations**, CAPIO-CL allows multiple
 producer–consumer application modules to coordinate efficiently using a **JSON-based syntax**.
 
-For detailed documentation and examples, please visit: 
+For detailed documentation and examples, please visit:
 
 [![CAPIO Website](https://img.shields.io/badge/CAPIO%20Website-Documentation-brightgreen?logo=readthedocs&logoColor=white)](https://capio.hpc4ai.it/docs/coord-language/)
 
@@ -184,7 +181,435 @@ engine.print()
 Serializer.dump(engine, "my_workflow", "my_workflow.json")
 ```
 
-# Team
+# CapioCL Web API Documentation
+
+## Overview
+
+This section describes the REST-style Web API exposed by the CapioCL Web Server.
+The server provides HTTP endpoints for configuring and querying the CapioCL engine at runtime.
+
+All endpoints communicate using JSON over HTTP. To enable the webserver, users needs to explicitly start it with:
+
+```cpp
+capiocl::engine::Engine engine();
+
+// start engine with default parameters
+engine.startApiServer();
+
+// or by specifying the address and port:
+engine.startApiServer("127.0.0.1", 5520);
+```
+
+
+or equivalently in python with:
+
+```python
+engine = py_capio_cl.Engine()
+
+#start engine with default parameters
+engine.startApiServer()
+
+# or by specifying the address and port:
+engine.startApiServer("127.0.0.1", 5520)
+```
+
+By default, the webserver listens only on local connection at the following address: ```127.0.0.1:5520```. No
+authentication
+services are currently available, and as such, users should put particular care when allowing connections from external
+endpoints.
+
+---
+
+## Common Behavior
+
+### Content Type
+
+All requests and responses use:
+
+```
+Content-Type: application/json
+```
+
+### Error Handling
+
+If a request body is invalid or missing required fields, the server responds with:
+
+```json
+{
+  "status": "error",
+  "what": "Invalid request BODY data: <details>"
+}
+```
+
+HTTP status code: **400**
+
+### Success Responses
+
+For POST endpoints:
+
+```json
+{
+  "status": "OK"
+}
+```
+
+For GET endpoints, a JSON object with the requested data is returned.
+
+HTTP status code: **200**
+
+---
+
+## API Endpoints
+
+### POST /producer
+
+Registers a producer for a given path.
+
+**Request Body**
+
+```json
+{
+  "path": "string",
+  "producer": "string"
+}
+```
+
+**Example**
+
+```bash
+curl -X POST http://localhost:PORT/producer \
+     -H "Content-Type: application/json" \
+     -d '{"path":"src/file.cpp","producer":"compile"}'
+```
+
+---
+
+### GET /producer
+
+Returns all producers associated with a path.
+
+**Request Body**
+
+```json
+{
+  "path": "string"
+}
+```
+
+**Response**
+
+```json
+{
+  "producers": [
+    "compile",
+    "link"
+  ]
+}
+```
+
+---
+
+### POST /consumer
+
+Registers a consumer for a given path.
+
+**Request Body**
+
+```json
+{
+  "path": "string",
+  "consumer": "string"
+}
+```
+
+---
+
+### GET /consumer
+
+Returns all consumers associated with a path.
+
+**Response**
+
+```json
+{
+  "consumers": [
+    "test",
+    "package"
+  ]
+}
+```
+
+---
+
+### POST /dependency
+
+Adds a file dependency for a path.
+
+**Request Body**
+
+```json
+{
+  "path": "string",
+  "dependency": "relative/or/absolute/path"
+}
+```
+
+---
+
+### GET /dependency
+
+Returns file dependencies that trigger commits.
+
+**Response**
+
+```json
+{
+  "dependencies": [
+    "file1.cpp",
+    "file2.hpp"
+  ]
+}
+```
+
+---
+
+### POST /commit
+
+Sets the commit rule for a path.
+
+**Request Body**
+
+```json
+{
+  "path": "string",
+  "commit": "rule-expression"
+}
+```
+
+---
+
+### GET /commit
+
+Gets the commit rule for a path.
+
+**Response**
+
+```json
+{
+  "commit": "rule-expression"
+}
+```
+
+---
+
+### POST /commit/file-count
+
+Sets the file count required to commit a directory.
+
+**Request Body**
+
+```json
+{
+  "path": "string",
+  "count": 5
+}
+```
+
+---
+
+### GET /commit/file-count
+
+Returns the directory file count.
+
+**Response**
+
+```json
+{
+  "count": 5
+}
+```
+
+---
+
+### POST /commit/close-count
+
+Sets the close count required to commit.
+
+**Request Body**
+
+```json
+{
+  "path": "string",
+  "count": 2
+}
+```
+
+---
+
+### GET /commit/close-count
+
+Returns the commit close count.
+
+**Response**
+
+```json
+{
+  "count": 2
+}
+```
+
+---
+
+### POST /fire
+
+Sets the fire rule for a path.
+
+**Request Body**
+
+```json
+{
+  "path": "string",
+  "fire": "rule-expression"
+}
+```
+
+---
+
+### GET /fire
+
+Returns the fire rule.
+
+**Response**
+
+```json
+{
+  "fire": "rule-expression"
+}
+```
+
+---
+
+### POST /permanent
+
+Marks a path as permanent or temporary.
+
+**Request Body**
+
+```json
+{
+  "path": "string",
+  "permanent": true
+}
+```
+
+---
+
+### GET /permanent
+
+Returns permanent status.
+
+**Response**
+
+```json
+{
+  "permanent": true
+}
+```
+
+---
+
+### POST /exclude
+
+Marks a path as excluded or included.
+
+**Request Body**
+
+```json
+{
+  "path": "string",
+  "exclude": true
+}
+```
+
+---
+
+### GET /exclude
+
+Returns exclusion status.
+
+**Response**
+
+```json
+{
+  "exclude": false
+}
+```
+
+---
+
+### POST /directory
+
+Marks a path as a directory or file.
+
+**Request Body**
+
+```json
+{
+  "path": "string",
+  "directory": true
+}
+```
+
+---
+
+### GET /directory
+
+Returns directory status.
+
+**Response**
+
+```json
+{
+  "directory": true
+}
+```
+
+---
+
+### POST /workflow
+
+Sets the workflow name.
+
+**Request Body**
+
+```json
+{
+  "name": "build-and-test"
+}
+```
+
+---
+
+### GET /workflow
+
+Returns the workflow name.
+
+**Response**
+
+```json
+{
+  "name": "build-and-test"
+}
+```
+
+---
+
+## Notes
+
+- All GET endpoints expect a JSON body containing the targeted file path.
+- The API is intended for local control and orchestration, not public exposure.
+
+---
 
 ## Developing team
 

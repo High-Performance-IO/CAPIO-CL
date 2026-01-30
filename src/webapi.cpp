@@ -46,13 +46,6 @@ void server(const std::string &address, const int port, capiocl::engine::Engine 
 
     httplib::Server _server;
 
-    _server.Post("/new", [&](const httplib::Request &req, httplib::Response &res) {
-        PROCESS_POST_REQUEST(req, res, {
-            const auto path = request_body["path"].as<std::string>();
-            engine->newFile(path);
-        })
-    });
-
     _server.Post("/producer", [&](const httplib::Request &req, httplib::Response &res) {
         PROCESS_POST_REQUEST(req, res, {
             const auto path = request_body["path"].as<std::string>();
@@ -221,13 +214,6 @@ void server(const std::string &address, const int port, capiocl::engine::Engine 
         PROCESS_GET_REQUEST(req, res, { reply["name"] = engine->getWorkflowName(); });
     });
 
-    _server.Delete("/", [&](const httplib::Request &req, httplib::Response &res) {
-        PROCESS_POST_REQUEST(req, res, {
-            const auto path = request_body["path"].as<std::string>();
-            engine->remove(path);
-        });
-    });
-
     _server.Get("/terminate", [&]([[maybe_unused]] const httplib::Request &req,
                                   [[maybe_unused]] httplib::Response &res) {
         PROCESS_GET_REQUEST(req, res, {
@@ -236,11 +222,7 @@ void server(const std::string &address, const int port, capiocl::engine::Engine 
         })
     });
 
-    if (!_server.bind_to_port(address, port)) {
-        throw std::runtime_error("Could not bind to" + address + "@" + std::to_string(port) +
-                                 ". Error is: " + std::strerror(errno));
-    }
-    _server.listen_after_bind();
+    _server.listen(address, port);
 }
 
 capiocl::webapi::CapioClWebApiServer::CapioClWebApiServer(engine::Engine *engine,
