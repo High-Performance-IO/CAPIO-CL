@@ -65,9 +65,7 @@ inline jsoncons::json perform_request(const std::string &url,
     if (res != CURLE_OK) {
         throw std::runtime_error(curl_easy_strerror(res));
     }
-    if (http_code < 200 || http_code >= 300) {
-        throw std::runtime_error("HTTP error " + std::to_string(http_code));
-    }
+
     std::cout << "DBG RES: " << response << std::endl;
     return jsoncons::json::parse(std::string(response));
 }
@@ -191,6 +189,16 @@ TEST(WEBSERVER_SUITE_NAME, close_count) {
     EXPECT_EQ(result["count"], 12345);
 }
 
+TEST(WEBSERVER_SUITE_NAME, test_error) {
+    capiocl::engine::Engine engine;
+    engine.startApiServer();
+    sleep(1);
+
+    auto result = perform_request("http://localhost:5520/commit", R"({})", HttpMethod::POST);
+    EXPECT_TRUE(result["status"] == "error");
+    EXPECT_GT(result["what"].as_string().size(), 0);
+}
+
 TEST(WEBSERVER_SUITE_NAME, boolean_flag) {
 
     capiocl::engine::Engine engine;
@@ -218,6 +226,13 @@ TEST(WEBSERVER_SUITE_NAME, boolean_flag) {
     result = perform_request("http://localhost:5520/directory", R"({"path" : "/tmp/test.txt"})",
                              HttpMethod::GET);
     EXPECT_TRUE(result["directory"].as_bool());
+
+    result = perform_request("http://localhost:5520/directory",
+                             R"({"path" : "/tmp/test.txt","directory" : false})", HttpMethod::POST);
+    EXPECT_TRUE(result["status"] == "OK");
+    result = perform_request("http://localhost:5520/directory", R"({"path" : "/tmp/test.txt"})",
+                             HttpMethod::GET);
+    EXPECT_FALSE(result["directory"].as_bool());
 }
 
 #endif // CAPIO_CL_TEST_APIS_HPP

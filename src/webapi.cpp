@@ -97,7 +97,7 @@ void server(const std::string &address, const int port, capiocl::engine::Engine 
         process_get_request(req, res, [&](jsoncons::json &request_body, jsoncons::json &reply) {
             const auto path = request_body["path"].as<std::string>();
             std::vector<std::string> deps;
-            for (const auto& file : engine->getCommitOnFileDependencies(path)) {
+            for (const auto &file : engine->getCommitOnFileDependencies(path)) {
                 deps.emplace_back(file);
             }
             reply["dependencies"] = deps;
