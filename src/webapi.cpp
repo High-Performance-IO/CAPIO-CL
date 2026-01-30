@@ -25,7 +25,7 @@ template <typename Res> void json_response(Res &res, const jsoncons::json &body)
 template <typename Req, typename Res, typename Fn>
 void process_post_request(const Req &req, Res &res, Fn &&handler) {
     try {
-        jsoncons::json request_body = jsoncons::json::parse(req.body.empty() ? "{}" : req.body);
+        jsoncons::json request_body = jsoncons::json::parse(req.body);
 
         handler(request_body);
         ok_response(res);
@@ -37,7 +37,7 @@ void process_post_request(const Req &req, Res &res, Fn &&handler) {
 template <typename Req, typename Res, typename Fn>
 void process_get_request(const Req &req, Res &res, Fn &&handler) {
     try {
-        jsoncons::json request_body = jsoncons::json::parse(req.body.empty() ? "{}" : req.body);
+        jsoncons::json request_body = jsoncons::json::parse(req.body);
 
         jsoncons::json reply;
         handler(request_body, reply);
@@ -253,5 +253,7 @@ capiocl::webapi::CapioClWebApiServer::~CapioClWebApiServer() {
     client.Get("/terminate");
     if (_webApiThread.joinable()) {
         _webApiThread.join();
+    }else {
+        return;
     }
 }
