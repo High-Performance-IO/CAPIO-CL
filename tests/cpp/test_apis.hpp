@@ -68,7 +68,7 @@ inline jsoncons::json perform_request(const std::string &url,
     if (http_code < 200 || http_code >= 300) {
         throw std::runtime_error("HTTP error " + std::to_string(http_code));
     }
-
+    std::cout << "DBG RES: " << response << std::endl;
     return jsoncons::json::parse(std::string(response));
 }
 
@@ -92,6 +92,132 @@ TEST(WEBSERVER_SUITE_NAME, testGetAndSetWorkflowName) {
     response = perform_request("http://localhost:5520/workflow", "{}", HttpMethod::GET);
     EXPECT_FALSE(response.empty());
     EXPECT_TRUE(response["name"] == "test_workflow_0");
+}
+
+TEST(WEBSERVER_SUITE_NAME, consumer) {
+    capiocl::engine::Engine engine;
+    engine.startApiServer();
+    sleep(1);
+
+    auto result =
+        perform_request("http://localhost:5520/consumer",
+                        R"({"path" : "/tmp/test.txt", "consumer" : "sample2"})", HttpMethod::POST);
+    EXPECT_TRUE(result["status"] == "OK");
+    result = perform_request("http://localhost:5520/consumer", R"({"path" : "/tmp/test.txt"})",
+                             HttpMethod::GET);
+    EXPECT_TRUE(result["consumers"][0] == "sample2");
+}
+
+TEST(WEBSERVER_SUITE_NAME, producer) {
+    capiocl::engine::Engine engine;
+    engine.startApiServer();
+    sleep(1);
+
+    auto result =
+        perform_request("http://localhost:5520/producer",
+                        R"({"path" : "/tmp/test.txt", "producer" : "sample1"})", HttpMethod::POST);
+    EXPECT_TRUE(result["status"] == "OK");
+    result = perform_request("http://localhost:5520/producer", R"({"path" : "/tmp/test.txt"})",
+                             HttpMethod::GET);
+    EXPECT_TRUE(result["producers"][0] == "sample1");
+}
+
+TEST(WEBSERVER_SUITE_NAME, commit) {
+    capiocl::engine::Engine engine;
+    engine.startApiServer();
+    sleep(1);
+
+    auto result =
+        perform_request("http://localhost:5520/commit",
+                        R"({"path" : "/tmp/test.txt","commit" : "on_file"})", HttpMethod::POST);
+    EXPECT_TRUE(result["status"] == "OK");
+    result = perform_request("http://localhost:5520/commit", R"({"path" : "/tmp/test.txt"})",
+                             HttpMethod::GET);
+    EXPECT_TRUE(result["commit"] == "on_file");
+}
+
+TEST(WEBSERVER_SUITE_NAME, fire) {
+    capiocl::engine::Engine engine;
+    engine.startApiServer();
+    sleep(1);
+
+    auto result =
+        perform_request("http://localhost:5520/fire",
+                        R"({"path" : "/tmp/test.txt","fire" : "no_update"})", HttpMethod::POST);
+    EXPECT_TRUE(result["status"] == "OK");
+    result = perform_request("http://localhost:5520/fire", R"({"path" : "/tmp/test.txt"})",
+                             HttpMethod::GET);
+    EXPECT_TRUE(result["fire"] == "no_update");
+}
+
+TEST(WEBSERVER_SUITE_NAME, fileDependency) {
+    capiocl::engine::Engine engine;
+    engine.startApiServer();
+    sleep(1);
+
+    auto result = perform_request("http://localhost:5520/dependency",
+                                  R"({"path" : "/tmp/test.txt", "dependency" : "myFile.dat"})",
+                                  HttpMethod::POST);
+    EXPECT_TRUE(result["status"] == "OK");
+    result = perform_request("http://localhost:5520/dependency", R"({"path" : "/tmp/test.txt"})",
+                             HttpMethod::GET);
+    EXPECT_TRUE(result["dependencies"][0] == "myFile.dat");
+}
+
+TEST(WEBSERVER_SUITE_NAME, on_n_files) {
+    capiocl::engine::Engine engine;
+    engine.startApiServer();
+    sleep(1);
+
+    auto result = perform_request("http://localhost:5520/commit/file-count",
+                                  R"({"path" : "/tmp/test.txt","count" : 7892})", HttpMethod::POST);
+    EXPECT_TRUE(result["status"] == "OK");
+    result = perform_request("http://localhost:5520/commit/file-count",
+                             R"({"path" : "/tmp/test.txt"})", HttpMethod::GET);
+    EXPECT_EQ(result["count"], 7892);
+}
+
+TEST(WEBSERVER_SUITE_NAME, close_count) {
+    capiocl::engine::Engine engine;
+    engine.startApiServer();
+    sleep(1);
+
+    auto result =
+        perform_request("http://localhost:5520/commit/close-count",
+                        R"({"path" : "/tmp/test.txt","count" : 12345})", HttpMethod::POST);
+    EXPECT_TRUE(result["status"] == "OK");
+    result = perform_request("http://localhost:5520/commit/close-count",
+                             R"({"path" : "/tmp/test.txt"})", HttpMethod::GET);
+    EXPECT_EQ(result["count"], 12345);
+}
+
+TEST(WEBSERVER_SUITE_NAME, boolean_flag) {
+
+    capiocl::engine::Engine engine;
+    engine.startApiServer();
+    sleep(1);
+
+    auto result =
+        perform_request("http://localhost:5520/permanent",
+                        R"({"path" : "/tmp/test.txt","permanent" : true})", HttpMethod::POST);
+    EXPECT_TRUE(result["status"] == "OK");
+    result = perform_request("http://localhost:5520/permanent", R"({"path" : "/tmp/test.txt"})",
+                             HttpMethod::GET);
+    EXPECT_TRUE(result["permanent"].as_bool());
+
+    result = perform_request("http://localhost:5520/exclude",
+                             R"({"path" : "/tmp/test.txt","exclude" : true})", HttpMethod::POST);
+    EXPECT_TRUE(result["status"] == "OK");
+    result = perform_request("http://localhost:5520/exclude", R"({"path" : "/tmp/test.txt"})",
+                             HttpMethod::GET);
+    EXPECT_TRUE(result["exclude"].as_bool());
+
+    result = perform_request("http://localhost:5520/directory",
+                             R"({"path" : "/tmp/test.txt","directory" : true})", HttpMethod::POST);
+    EXPECT_TRUE(result["status"] == "OK");
+    result = perform_request("http://localhost:5520/directory", R"({"path" : "/tmp/test.txt"})",
+                             HttpMethod::GET);
+    EXPECT_TRUE(result["directory"].as_bool());
 }
 
 #endif // CAPIO_CL_TEST_APIS_HPP

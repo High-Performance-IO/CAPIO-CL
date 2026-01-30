@@ -180,7 +180,7 @@ void server(const std::string &address, const int port, capiocl::engine::Engine 
     _server.Post("/exclude", [&](const httplib::Request &req, httplib::Response &res) {
         PROCESS_POST_REQUEST(req, res, {
             const auto path     = request_body["path"].as<std::string>();
-            const auto excluded = request_body["excluded"].as<bool>();
+            const auto excluded = request_body["exclude"].as<bool>();
             engine->setExclude(path, excluded);
         });
     });
