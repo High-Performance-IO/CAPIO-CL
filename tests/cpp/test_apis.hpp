@@ -3,8 +3,7 @@
 
 #define WEBSERVER_SUITE_NAME TestWebServerAPIS
 
-#include <curl/curl.h>
-
+#include "jsoncons/json.hpp"
 #include <curl/curl.h>
 #include <sstream>
 #include <stdexcept>
@@ -13,38 +12,16 @@
 
 enum class HttpMethod { GET, POST, DELETE };
 
-static size_t write_cb(const char *ptr, const size_t size, size_t nmemb, void *userdata) {
+static size_t curl_write_response_handler(const char *ptr, const size_t size, size_t nmemb,
+                                          void *userdata) {
     auto *response = static_cast<std::string *>(userdata);
     response->append(ptr, size * nmemb);
     return size * nmemb;
 }
 
-static std::unordered_map<std::string, std::string> from_json(const std::string &json) {
-    std::unordered_map<std::string, std::string> result;
-    size_t pos = 0;
-
-    while (true) {
-        auto k1 = json.find('"', pos);
-        if (k1 == std::string::npos) {
-            break;
-        }
-        const auto k2 = json.find('"', k1 + 1);
-
-        const auto v1 = json.find('"', k2 + 1);
-        const auto v2 = json.find('"', v1 + 1);
-
-        std::string key       = json.substr(k1 + 1, k2 - k1 - 1);
-        const std::string val = json.substr(v1 + 1, v2 - v1 - 1);
-
-        result[key] = val;
-        pos         = v2 + 1;
-    }
-    return result;
-}
-
-inline std::unordered_map<std::string, std::string>
-perform_request(const std::string &url, const std::string &request_params_json_encode,
-                HttpMethod method = HttpMethod::GET) {
+inline jsoncons::json perform_request(const std::string &url,
+                                      const std::string &request_params_json_encode,
+                                      HttpMethod method = HttpMethod::GET) {
     CURL *curl = curl_easy_init();
     if (!curl) {
         throw std::runtime_error("curl_easy_init failed");
@@ -60,7 +37,7 @@ perform_request(const std::string &url, const std::string &request_params_json_e
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, request_params_json_encode.c_str());
     curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, request_params_json_encode.size());
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_cb);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_write_response_handler);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
 
     switch (method) {
@@ -92,12 +69,12 @@ perform_request(const std::string &url, const std::string &request_params_json_e
         throw std::runtime_error("HTTP error " + std::to_string(http_code));
     }
 
-    return from_json(response);
+    return jsoncons::json::parse(std::string(response));
 }
 
 TEST(WEBSERVER_SUITE_NAME, testGetAndSetWorkflowName) {
 
-    //clean environment for wf name
+    // clean environment for wf name
     unsetenv("WORKFLOW_NAME");
 
     auto engine = capiocl::engine::Engine();
@@ -106,11 +83,6 @@ TEST(WEBSERVER_SUITE_NAME, testGetAndSetWorkflowName) {
     sleep(1);
 
     auto response = perform_request("http://localhost:5520/workflow", "{}", HttpMethod::GET);
-    if (response["name"] != capiocl::CAPIO_CL_DEFAULT_WF_NAME) {
-        for (const auto &[key, val] : response) {
-            std::cout << key << " : " << val << std::endl;
-        }
-    }
 
     EXPECT_FALSE(response.empty());
     EXPECT_TRUE(response["name"] == capiocl::CAPIO_CL_DEFAULT_WF_NAME);
