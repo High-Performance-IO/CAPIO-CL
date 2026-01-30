@@ -181,9 +181,7 @@ engine.print()
 Serializer.dump(engine, "my_workflow", "my_workflow.json")
 ```
 
-# CapioCL Web API Documentation
-
-## Overview
+## CapioCL Web API Documentation
 
 This section describes the REST-style Web API exposed by the CapioCL Web Server.
 The server provides HTTP endpoints for configuring and querying the CapioCL engine at runtime.
@@ -219,8 +217,6 @@ services are currently available, and as such, users should put particular care 
 endpoints.
 
 ---
-
-## Common Behavior
 
 ### Content Type
 
@@ -258,8 +254,6 @@ For GET endpoints, a JSON object with the requested data is returned.
 HTTP status code: **200**
 
 ---
-
-## API Endpoints
 
 ### POST /producer
 
