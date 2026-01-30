@@ -39,8 +39,7 @@
     }
 
 /// @brief Main WebServer thread function
-void server(const std::string &address, const int port, capiocl::engine::Engine *engine,
-            const char secret_term_key[256]) {
+void server(const std::string &address, const int port, capiocl::engine::Engine *engine) {
 
     capiocl::printer::print(capiocl::printer::CLI_LEVEL_INFO,
                             "Starting API server @ " + address + ":" + std::to_string(port));
@@ -232,16 +231,8 @@ void server(const std::string &address, const int port, capiocl::engine::Engine 
     _server.Get("/terminate", [&]([[maybe_unused]] const httplib::Request &req,
                                   [[maybe_unused]] httplib::Response &res) {
         PROCESS_GET_REQUEST(req, res, {
-            const auto req_key = request_body["key"].as<std::string>();
-            bool match         = true;
-            for (size_t i = 0; i < req_key.size() && match; i++) {
-                match = secret_term_key[i] == req_key[i];
-            }
-
-            if (match) {
-                capiocl::printer::print(capiocl::printer::CLI_LEVEL_INFO, "API server stopped");
-                _server.stop();
-            }
+            capiocl::printer::print(capiocl::printer::CLI_LEVEL_INFO, "API server stopped");
+            _server.stop();
         })
     });
 
@@ -250,22 +241,20 @@ void server(const std::string &address, const int port, capiocl::engine::Engine 
                                  ". Error is: " + std::strerror(errno));
     }
     _server.listen_after_bind();
-    capiocl::printer::print(capiocl::printer::CLI_LEVEL_INFO, "terminated API webserver");
 }
 
 capiocl::webapi::CapioClWebApiServer::CapioClWebApiServer(engine::Engine *engine,
                                                           const std::string &web_server_address,
                                                           const int web_server_port)
-    : _webApiThread(std::thread(server, web_server_address, web_server_port, engine, _secretKey)),
-      _port(web_server_port) {
-    FILE *f = fopen("/dev/urandom", "rb");
-    fread(_secretKey, 1, 256, f);
-    fclose(f);
-    _webApiThread.detach();
+    : _port(web_server_port) {
+    _webApiThread = std::thread(server, web_server_address, web_server_port, engine);
 }
 
 capiocl::webapi::CapioClWebApiServer::~CapioClWebApiServer() {
 
     httplib::Client client("http://127.0.0.1:" + std::to_string(_port));
     client.Get("/terminate");
+    if (_webApiThread.joinable()) {
+        _webApiThread.join();
+    }
 }

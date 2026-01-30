@@ -13,10 +13,6 @@ class capiocl::webapi::CapioClWebApiServer {
     /// @brief port on which the current server runs
     int _port;
 
-    /// @brief secret key initialized at random. used when requesting shutdown so that the
-    /// termination can only occur when called from the main CAPIO-CL thread
-    char _secretKey[256]{};
-
   public:
     /// @brief default constructor.
     CapioClWebApiServer(engine::Engine *engine, const std::string &web_server_address,
