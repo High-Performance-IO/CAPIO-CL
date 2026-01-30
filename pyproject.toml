@@ -17,6 +17,9 @@ requires-python = ">=3.10"
 authors = [
     { name = "Marco Edoardo Santimaria", email = "marcoedoardo.santimaria@unito.it" }
 ]
+dependencies = [
+    "requests==2.32.5"
+]
 
 [project.urls]
 Homepage = "https://capio.hpc4ai.it"

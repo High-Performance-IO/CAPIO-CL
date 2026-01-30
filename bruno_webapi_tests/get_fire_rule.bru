@@ -1,0 +1,22 @@
+meta {
+  name: get_fire_rule
+  type: http
+  seq: 19
+}
+
+get {
+  url: http://localhost:5520/fire
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "path" : "/tmp/test.txt"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

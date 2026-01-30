@@ -5,6 +5,7 @@
 #include "capiocl.hpp"
 #include "capiocl/configuration.h"
 #include "capiocl/engine.h"
+#include "capiocl/monitor.h"
 #include "capiocl/printer.h"
 
 void capiocl::engine::Engine::print() const {
@@ -770,4 +771,9 @@ void capiocl::engine::Engine::useDefaultConfiguration() {
 
     monitor.registerMonitorBackend(new monitor::MulticastMonitor(def_config));
     monitor.registerMonitorBackend(new monitor::FileSystemMonitor());
+}
+
+void capiocl::engine::Engine::startApiServer(const std::string &address, const int port) {
+    webapi_server = std::unique_ptr<webapi::CapioClWebApiServer>(
+        new webapi::CapioClWebApiServer(this, address, port));
 }

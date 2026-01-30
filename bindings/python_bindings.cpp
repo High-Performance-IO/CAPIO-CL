@@ -98,6 +98,8 @@ PYBIND11_MODULE(_py_capio_cl, m) {
         .def("isCommitted", &capiocl::engine::Engine::isCommitted, py::arg("path"))
         .def("setHomeNode", &capiocl::engine::Engine::setHomeNode, py::arg("path"))
         .def("getPaths", &capiocl::engine::Engine::getPaths)
+        .def("startApiServer", &capiocl::engine::Engine::startApiServer,
+             py::arg("address") = "127.0.0.1", py::arg("port") = 5520)
         .def("__str__", &capiocl::engine::Engine::print)
         .def("__repr__",
              [](const capiocl::engine::Engine &e) {

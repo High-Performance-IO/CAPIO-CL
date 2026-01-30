@@ -10,14 +10,12 @@
 ![C++](https://img.shields.io/badge/C%2B%2B-%E2%89%A517-blueviolet?logo=c%2B%2B&logoColor=white)
 ![Python Bindings](https://img.shields.io/badge/Python_Bindings-3.10–3.14-darkgreen?style=flat&logo=python&logoColor=white&labelColor=gray)
 
-
 #### Platform support
 
-| OS / Arch | ![x86_64](https://img.shields.io/badge/x86__64-121212?logo=intel&logoColor=blue) | ![ARM](https://img.shields.io/badge/ARM-121212?logo=arm&logoColor=0091BD) | ![RISC-V](https://img.shields.io/badge/RISC--V-121212?logo=riscv&logoColor=F9A825) |
-|-----------|----------------------------------------------------------------------------------|---------------------------------------------------------------------------|------------------------------------------------------------------------------------|
+| OS / Arch                                                                          | ![x86_64](https://img.shields.io/badge/x86__64-121212?logo=intel&logoColor=blue) | ![ARM](https://img.shields.io/badge/ARM-121212?logo=arm&logoColor=0091BD) | ![RISC-V](https://img.shields.io/badge/RISC--V-121212?logo=riscv&logoColor=F9A825) |
+|------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|---------------------------------------------------------------------------|------------------------------------------------------------------------------------|
 | ![Ubuntu](https://img.shields.io/badge/Ubuntu-121212?logo=ubuntu&logoColor=E95420) | YES                                                                              | YES                                                                       | YES                                                                                |
 | ![macOS](https://img.shields.io/badge/macOS-121212?logo=apple&logoColor=white)     | YES                                                                              | YES                                                                       | N.A.                                                                               |
-
 
 #### Documentation
 
@@ -25,13 +23,12 @@
 - [![Metadata Streaming](https://img.shields.io/badge/Metadata%20Streaming-10.1145%2F3731599.3767577-%23cc5500?logo=doi&logoColor=white&labelColor=2b2b2b)](https://doi.org/10.1145/3731599.3767577)
 - [![Doxygen documentation](https://img.shields.io/github/v/release/High-Performance-IO/CAPIO-CL?label=Doxygen%20documentation&labelColor=2b2b2b&color=brown&logo=readthedocs&logoColor=white)](https://github.com/High-Performance-IO/CAPIO-CL/releases/latest/download/documentation.pdf)
 
-
 **CAPIO-CL** is a novel I/O coordination language that enables users to annotate file-based workflow data dependencies
 with **synchronization semantics** for files and directories.
 Designed to facilitate **transparent overlap between computation and I/O operations**, CAPIO-CL allows multiple
 producer–consumer application modules to coordinate efficiently using a **JSON-based syntax**.
 
-For detailed documentation and examples, please visit: 
+For detailed documentation and examples, please visit:
 
 [![CAPIO Website](https://img.shields.io/badge/CAPIO%20Website-Documentation-brightgreen?logo=readthedocs&logoColor=white)](https://capio.hpc4ai.it/docs/coord-language/)
 
@@ -184,7 +181,49 @@ engine.print()
 Serializer.dump(engine, "my_workflow", "my_workflow.json")
 ```
 
-# Team
+## CapioCL Web API Documentation
+
+This section describes the REST-style Web API exposed by the CapioCL Web Server.
+The server provides HTTP endpoints for configuring and querying the CapioCL engine at runtime. 
+Within the `bruno_webapi_tests` you can find several tests and examples on how to perform
+requests to the API webserver using [bruno](https://www.usebruno.com).
+
+All endpoints communicate using JSON over HTTP. To enable the webserver, users needs to explicitly start it with:
+
+```cpp
+capiocl::engine::Engine engine();
+
+// start engine with default parameters
+engine.startApiServer();
+
+// or by specifying the address and port:
+engine.startApiServer("127.0.0.1", 5520);
+```
+
+
+or equivalently in python with:
+
+```python
+engine = py_capio_cl.Engine()
+
+#start engine with default parameters
+engine.startApiServer()
+
+# or by specifying the address and port:
+engine.startApiServer("127.0.0.1", 5520)
+```
+
+By default, the webserver listens only on local connection at the following address: ```127.0.0.1:5520```. No
+authentication
+services are currently available, and as such, users should put particular care when allowing connections from external
+endpoints.
+
+## Notes
+
+- All GET endpoints expect a JSON body containing the targeted file path.
+- The API is intended for local control and orchestration, not public exposure.
+
+---
 
 ## Developing team
 

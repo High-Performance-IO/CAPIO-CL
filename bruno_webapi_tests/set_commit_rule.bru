@@ -1,0 +1,23 @@
+meta {
+  name: set_commit_rule
+  type: http
+  seq: 5
+}
+
+post {
+  url: http://localhost:5520/commit
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "path" : "/tmp/test.txt",
+    "commit" : "on_close"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

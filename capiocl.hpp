@@ -28,7 +28,7 @@ inline std::string sanitize(const std::string &input) {
     } else if (input == UPDATE) {
         return UPDATE;
     } else {
-        throw std::invalid_argument("Input commit rule is not a vlid CAPIO-CL rule");
+        throw std::invalid_argument("Input fire rule: " + input + " is not a valid CAPIO-CL rule");
     }
 }
 } // namespace fireRules
@@ -59,7 +59,8 @@ inline std::string sanitize(const std::string &input) {
     } else if (input == ON_TERMINATION) {
         return ON_TERMINATION;
     } else {
-        throw std::invalid_argument("Input commit rule is not a vlid CAPIO-CL rule");
+        throw std::invalid_argument("Input commit rule: " + input +
+                                    " is not a valid CAPIO-CL rule");
     }
 }
 } // namespace commitRules
@@ -91,6 +92,11 @@ class CapioClConfiguration;
 class CapioClConfigurationException;
 struct defaults;
 } // namespace configuration
+
+namespace webapi {
+class CapioClWebApiServer;
+}
+
 } // namespace capiocl
 
 #endif // CAPIO_CL_CAPIOCL_HPP

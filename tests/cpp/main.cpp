@@ -21,6 +21,7 @@ template <typename T> std::string demangled_name(const T &obj) {
 #include "capiocl/printer.h"
 #include "capiocl/serializer.h"
 
+#include "test_apis.hpp"
 #include "test_configuration.hpp"
 #include "test_engine.hpp"
 #include "test_exceptions.hpp"

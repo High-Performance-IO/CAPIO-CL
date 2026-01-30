@@ -1,0 +1,23 @@
+meta {
+  name: set_permanent
+  type: http
+  seq: 9
+}
+
+post {
+  url: http://localhost:5520/permanent
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "path" : "/tmp/test.txt",
+    "permanent" : true
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

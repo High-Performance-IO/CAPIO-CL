@@ -1,0 +1,23 @@
+meta {
+  name: set_commit_close_count
+  type: http
+  seq: 7
+}
+
+post {
+  url: http://localhost:5520/commit/close-count
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "path" : "/tmp/test.txt",
+    "count" : 123
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

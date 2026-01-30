@@ -1,0 +1,22 @@
+meta {
+  name: get_producer
+  type: http
+  seq: 13
+}
+
+get {
+  url: http://localhost:5520/producer
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "path" : "/tmp/test.txt"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

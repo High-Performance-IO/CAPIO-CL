@@ -1,0 +1,23 @@
+meta {
+  name: add_file_dependency
+  type: http
+  seq: 4
+}
+
+post {
+  url: http://localhost:5520/dependency
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "path" : "/tmp/test.txt",
+    "dependency" : "myFile.dat"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

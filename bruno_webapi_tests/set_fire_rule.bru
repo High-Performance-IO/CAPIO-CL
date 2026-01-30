@@ -1,0 +1,23 @@
+meta {
+  name: set_fire_rule
+  type: http
+  seq: 8
+}
+
+post {
+  url: http://localhost:5520/fire
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "path" : "/tmp/test.txt",
+    "fire" : "no_update"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -1,0 +1,23 @@
+meta {
+  name: set_excluded
+  type: http
+  seq: 10
+}
+
+post {
+  url: http://localhost:5520/exclude
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "path" : "/tmp/test.txt",
+    "exclude" : true
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

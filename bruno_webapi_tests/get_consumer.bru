@@ -1,0 +1,22 @@
+meta {
+  name: get_consumer
+  type: http
+  seq: 14
+}
+
+get {
+  url: http://localhost:5520/consumer
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "path" : "/tmp/test.txt"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

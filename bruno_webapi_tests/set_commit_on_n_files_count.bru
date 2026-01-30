@@ -1,0 +1,23 @@
+meta {
+  name: set_commit_on_n_files_count
+  type: http
+  seq: 6
+}
+
+post {
+  url: http://localhost:5520/commit/file-count
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "path" : "/tmp/test.txt",
+    "count" : 10
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

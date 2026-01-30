@@ -33,7 +33,7 @@ jobs:
       # Install platform build dependencies
       - name: "Install system packages (Ubuntu)"
         if: startsWith(matrix.on, 'ubuntu-')
-        run: sudo apt-get update && sudo apt-get install -y ninja-build g++ cmake
+        run: sudo apt-get update && sudo apt-get install -y ninja-build g++ cmake libcurl4-gnutls-dev
 
       - name: "Setup Homebrew (macOS)"
         if: startsWith(matrix.on, 'macos-')
@@ -41,7 +41,7 @@ jobs:
 
       - name: "Install system packages (macOS)"
         if: startsWith(matrix.on, 'macos-')
-        run: brew install ninja gcc cmake
+        run: brew install ninja gcc cmake curl
 
       - name: "Create virtual environment"
         run: |

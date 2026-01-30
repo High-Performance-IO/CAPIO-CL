@@ -1,0 +1,23 @@
+meta {
+  name: set_directory
+  type: http
+  seq: 11
+}
+
+post {
+  url: http://localhost:5520/directory
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "path" : "/tmp/test.txt",
+    "directory" : true
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
