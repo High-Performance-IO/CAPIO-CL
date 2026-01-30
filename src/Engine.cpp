@@ -127,8 +127,7 @@ void capiocl::engine::Engine::print() const {
     printer::print(printer::CLI_LEVEL_JSON, "");
 }
 
-capiocl::engine::Engine::Engine(const bool use_default_settings)
-    : webapi_server(this, "127.0.0.1", 5520) {
+capiocl::engine::Engine::Engine(const bool use_default_settings) {
     node_name = std::string(1024, '\0');
     gethostname(node_name.data(), node_name.size());
     node_name.resize(std::strlen(node_name.c_str()));
@@ -772,4 +771,9 @@ void capiocl::engine::Engine::useDefaultConfiguration() {
 
     monitor.registerMonitorBackend(new monitor::MulticastMonitor(def_config));
     monitor.registerMonitorBackend(new monitor::FileSystemMonitor());
+}
+
+void capiocl::engine::Engine::startApiServer(const std::string &address, const int port) {
+    webapi_server = std::unique_ptr<webapi::CapioClWebApiServer>(
+        new webapi::CapioClWebApiServer(this, address, port));
 }

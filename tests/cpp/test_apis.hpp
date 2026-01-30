@@ -97,7 +97,11 @@ perform_request(const std::string &url, const std::string &request_params_json_e
 
 TEST(WEBSERVER_SUITE_NAME, testGetAndSetWorkflowName) {
 
-    const auto engine = capiocl::engine::Engine();
+    //clean environment for wf name
+    unsetenv("WORKFLOW_NAME");
+
+    auto engine = capiocl::engine::Engine();
+    engine.startApiServer();
 
     sleep(1);
 
@@ -108,10 +112,8 @@ TEST(WEBSERVER_SUITE_NAME, testGetAndSetWorkflowName) {
         }
     }
 
-
     EXPECT_FALSE(response.empty());
     EXPECT_TRUE(response["name"] == capiocl::CAPIO_CL_DEFAULT_WF_NAME);
-
 
     perform_request("http://localhost:5520/workflow", R"({"name": "test_workflow_0"})",
                     HttpMethod::POST);

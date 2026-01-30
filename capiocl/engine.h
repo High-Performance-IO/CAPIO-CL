@@ -41,7 +41,7 @@ class Engine final {
     std::string workflow_name;
 
     /// @brief CAPIO-CL APIs Web Server
-    webapi::CapioClWebApiServer webapi_server;
+    std::unique_ptr<webapi::CapioClWebApiServer> webapi_server;
 
     // LCOV_EXCL_START
     /// @brief Internal CAPIO-CL Engine storage entity. Each CapioCLEntry is an entry for a given
@@ -408,6 +408,13 @@ class Engine final {
      * Use default CAPIO-CL TOML configuration.
      */
     void useDefaultConfiguration();
+
+    /**
+     * Start the thread involved in the handling of dynamic changes to CapioCl configuration
+     * @param address address to listen to. defaulto to 127.0.0.1
+     * @param port Port to listen to. defaults to 5520
+     */
+    void startApiServer(const std::string &address = "127.0.0.1", int port = 5520);
 };
 
 } // namespace capiocl::engine
