@@ -245,7 +245,11 @@ void server(const std::string &address, const int port, capiocl::engine::Engine 
         })
     });
 
-    _server.listen(address, port);
+    if (!_server.bind_to_port(address, port)) {
+        throw std::runtime_error("Could not bind to" + address + "@" + std::to_string(port) +
+                                 ". Error is: " + std::strerror(errno));
+    }
+    _server.listen_after_bind();
 }
 
 capiocl::webapi::CapioClWebApiServer::CapioClWebApiServer(engine::Engine *engine,
