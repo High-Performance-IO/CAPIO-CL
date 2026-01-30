@@ -250,6 +250,7 @@ void server(const std::string &address, const int port, capiocl::engine::Engine 
                                  ". Error is: " + std::strerror(errno));
     }
     _server.listen_after_bind();
+    capiocl::printer::print(capiocl::printer::CLI_LEVEL_INFO, "terminated API webserver");
 }
 
 capiocl::webapi::CapioClWebApiServer::CapioClWebApiServer(engine::Engine *engine,
