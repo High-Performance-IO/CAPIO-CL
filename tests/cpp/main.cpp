@@ -26,3 +26,4 @@ template <typename T> std::string demangled_name(const T &obj) {
 #include "test_exceptions.hpp"
 #include "test_monitor.hpp"
 #include "test_serialize_deserialize.hpp"
+#include "test_apis.hpp"

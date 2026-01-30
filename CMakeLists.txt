@@ -190,6 +190,9 @@ endif ()
 # Tests (only when built standalone)
 #####################################
 if (CAPIO_CL_BUILD_TESTS)
+
+    find_package(CURL REQUIRED)
+
     message(STATUS "Building CAPIO-CL tests")
 
     FetchContent_Declare(
@@ -206,6 +209,7 @@ if (CAPIO_CL_BUILD_TESTS)
     target_link_libraries(CAPIO_CL_tests PRIVATE
             libcapio_cl
             GTest::gtest_main
+            CURL::libcurl
     )
 
     if(LIBANL)
