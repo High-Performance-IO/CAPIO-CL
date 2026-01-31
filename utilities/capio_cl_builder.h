@@ -10,6 +10,9 @@
 #include <string>
 #include <vector>
 
+#include "capiocl.hpp"
+#include "capiocl/engine.h"
+
 constexpr char HELP_MESSAGE_COMMANDS[] =
     "\n"
     "=====================================================================\n"
@@ -36,7 +39,7 @@ constexpr char HELP_MESSAGE_COMMANDS[] =
     "  set exclude <file>             Exclude <file> from workflow output\n"
     "  set directory <file>           Mark <file> as directory\n"
     "  set file <file>                Mark <file> as regular file\n"
-    "  set committed <file> <rule>    Set commit rule for file\n"
+    "  set commit <file> <rule>       Set commit rule for file\n"
     "  set fire <file> <rule>         Set fire rule for file\n"
     "  set close <file> <count>       Set number of close for commit_on_close:N\n"
     "  set nfiles <file> <count>      Set number of files inside directory\n"
@@ -92,7 +95,7 @@ inline void print_top_text(WINDOW *top, const std::string &title, const std::str
 }
 
 inline std::tuple<bool, std::string> handle_add_command(std::vector<std::string> &args,
-                                                        capiocl::Engine &engine) {
+                                                        capiocl::engine::Engine &engine) {
     const std::string &add_type = args[0];
     std::string error_message;
     bool error_occurred = false;
@@ -120,7 +123,7 @@ inline std::tuple<bool, std::string> handle_add_command(std::vector<std::string>
 }
 
 inline std::tuple<bool, std::string> handle_save_command(std::vector<std::string> &args,
-                                                         capiocl::Engine &engine) {
+                                                         capiocl::engine::Engine &engine) {
     std::string error_message;
     bool error_occurred = false;
 
@@ -128,25 +131,25 @@ inline std::tuple<bool, std::string> handle_save_command(std::vector<std::string
         error_message  = "Missing filename";
         error_occurred = true;
     } else {
-        capiocl::Serializer::dump(engine,  args[1]);
+        capiocl::serializer::Serializer::dump(engine, args[1]);
     }
     return {error_occurred, error_message};
 }
 
 inline std::tuple<bool, std::string>
 handle_print_command([[maybe_unused]] std::vector<std::string> &args,
-                     [[maybe_unused]] capiocl::Engine &engine) {
+                     [[maybe_unused]] capiocl::engine::Engine &engine) {
     return {false, ""};
 }
 
 inline std::tuple<bool, std::string>
 handle_help_command([[maybe_unused]] std::vector<std::string> &args,
-                    [[maybe_unused]] capiocl::Engine &engine) {
+                    [[maybe_unused]] capiocl::engine::Engine &engine) {
     return {true, ""};
 }
 
 inline std::tuple<bool, std::string> handle_set_command(std::vector<std::string> &args,
-                                                        capiocl::Engine &engine) {
+                                                        capiocl::engine::Engine &engine) {
 
     std::string error_message;
     bool error_occurred       = false;
@@ -197,7 +200,7 @@ inline std::tuple<bool, std::string> handle_set_command(std::vector<std::string>
 }
 
 inline std::tuple<bool, std::string> handle_unset_command(std::vector<std::string> &args,
-                                                          capiocl::Engine &engine) {
+                                                          capiocl::engine::Engine &engine) {
 
     std::string error_message;
     bool error_occurred       = false;
@@ -216,14 +219,14 @@ inline std::tuple<bool, std::string> handle_unset_command(std::vector<std::strin
 }
 
 inline std::tuple<bool, std::string> handle_delete_command(std::vector<std::string> &args,
-                                                           capiocl::Engine &engine) {
+                                                           capiocl::engine::Engine &engine) {
     const std::string &file = args[0];
     engine.remove(file);
 
     return {false, ""};
 }
 
-inline void draw_engine_table(WINDOW *top, const capiocl::Engine &engine) {
+inline void draw_engine_table(WINDOW *top, const capiocl::engine::Engine &engine) {
     werase(top);
     box(top, 0, 0);
     mvwprintw(top, 0, 2, " CAPIO-CL Engine State ");
@@ -231,7 +234,7 @@ inline void draw_engine_table(WINDOW *top, const capiocl::Engine &engine) {
     int win_height, win_width;
     getmaxyx(top, win_height, win_width);
 
-    std::vector<std::string> headers = {"File", "Producers", "Consumers", "Commit", "Fire",
+    std::vector<std::string> headers = {"File",  "Producers", "Consumers", "Commit", "Fire",
                                         "Store", "Excluded",  "Permanent", "N_files"};
 
     std::vector min_widths   = {12, 18, 18, 18, 10, 7, 9, 10, 8};
@@ -267,7 +270,7 @@ inline void draw_engine_table(WINDOW *top, const capiocl::Engine &engine) {
 
     std::vector<Row> rows;
 
-    for (const auto &file : engine.getFiles()) {
+    for (const auto &file : engine.getPaths()) {
         Row row;
         row.file   = file;
         row.stored = engine.isStoredInMemory(file) ? "MEM" : "FS";
@@ -360,7 +363,7 @@ inline void capio_cl_builder() {
     getmaxyx(stdscr, height, width);
 
     // Stack vertically
-    int cli_height = 10;
+    int cli_height = 4;
     int top_height = height - cli_height;
 
     WINDOW *top = newwin(top_height, width, 0, 0);
@@ -376,14 +379,14 @@ inline void capio_cl_builder() {
     wrefresh(top);
     wrefresh(cli);
 
-    capiocl::Engine engine;
+    capiocl::engine::Engine engine;
     bool terminate = false;
     char input[256];
 
     draw_engine_table(top, engine);
 
     std::unordered_map<std::string, std::tuple<bool, std::string> (*)(std::vector<std::string> &,
-                                                                      capiocl::Engine &)>
+                                                                      capiocl::engine::Engine &)>
         command_handlers;
 
     command_handlers["add"]    = &handle_add_command;

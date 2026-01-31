@@ -2,8 +2,10 @@
 #include <chrono>
 #include <iostream>
 #include <string>
+#include <filesystem>
 
 #include "capiocl.hpp"
+#include "capiocl/parser.h"
 
 constexpr char capio_cl_header_help[] = R"(
   ______    ______   _______  ______   ______            ______   __
@@ -75,7 +77,7 @@ int main(int argc, char **argv) {
     if (validate) {
         const std::string path = args::get(validate);
         try {
-            capiocl::Parser::parse(path);
+            capiocl::parser::Parser::parse(path);
         } catch (...) {
             std::cerr << std::endl
                       << "\t+==================================================+\n"

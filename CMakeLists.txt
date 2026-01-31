@@ -195,12 +195,17 @@ if (BUILD_UTILS)
             ${CMAKE_CURRENT_SOURCE_DIR}
             ${CMAKE_CURRENT_SOURCE_DIR}/src
             ${jsoncons_SOURCE_DIR}/include
+            ${TOMLPLUSPLUS_SOURCE_DIR}/include
             ${CAPIOCL_JSON_SCHEMAS_DIRECTORY}
             ${args_SOURCE_DIR}
             ${CURSES_INCLUDE_DIR}
     )
 
     target_link_libraries(capiocl_utils PUBLIC ${CURSES_LIBRARIES})
+    target_link_libraries(capiocl_utils PRIVATE
+            tomlplusplus::tomlplusplus
+            httplib::httplib
+    )
 endif (BUILD_UTILS)
 
 #####################################
