@@ -1,4 +1,4 @@
-![CAPIO-CL Logo](media/capiocl.png)
+![CAPIO-CL Logo](https://raw.githubusercontent.com/High-Performance-IO/CAPIO-CL/main/media/capiocl.png)
 
 # CAPIO-CL — Cross-Application Programmable I/O Coordination Language
 
@@ -126,6 +126,12 @@ projects.
 CAPIO-CL now provides native **Python bindings** built using [pybind11](https://github.com/pybind/pybind11).  
 These bindings expose the core C++ APIs (`Engine`, `Parser` and `Serializer`), directly
 to Python, allowing the CAPIO-CL logic to be used within python projects.
+
+### Install from PyPI
+CAPIO-CL is available on PyPI! Simply run
+```bash
+pip install py_capio_cl
+```
 
 ### Building the Bindings
 
