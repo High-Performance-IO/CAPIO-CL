@@ -1,11 +1,12 @@
 name: "Upload wheels to PyPI"
 on:
-  push:
+  workflow_run:
+    workflows:
+      - "Release new version"
     branches:
       - main
-  pull_request:
-    branches:
-      - main
+    types:
+      - completed
 
 jobs:
   build:
