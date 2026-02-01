@@ -22,7 +22,7 @@ def CapioCLRule(path: str,
         response = requests.post(endpoint, json=payload, headers={"content-type": "application/json"})
         json = response.json()
         if "OK" not in json["status"]:
-            print(f"ERR: {json["what"]}")
+            print(f"ERR: {json['what']}" if "what" in json else "ERR: no error message in response!")
 
     if committed:
         _perform_request(
