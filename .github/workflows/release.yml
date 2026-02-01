@@ -63,41 +63,11 @@ jobs:
           target: /mnt/services/capio/nginx/html/capiocl
           username: capio-user
 
-  github:
-    name: "Create GitHub Release"
-    if: ${{ needs.check-tag-existance.outputs.exists == 'false' && github.event.workflow_run.conclusion == 'success' }}
-    needs: [ generate-documentation ]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: "Get CAPIO-CL version"
-        run: echo "CAPIO_CL_VERSION=$(grep -E 'VERSION [0-9]+\.[0-9]+\.[0-9]+' CMakeLists.txt | awk '{print $2}')" >> $GITHUB_ENV
-
-      - name: "Download documentation PDF"
-        uses: actions/download-artifact@v4
-        with:
-          name: documentation.pdf
-          path: docs
-
-      - name: "Create GitHub Release"
-        uses: softprops/action-gh-release@v2
-        with:
-          name: "v${{ env.CAPIO_CL_VERSION }}"
-          tag_name: "v${{ env.CAPIO_CL_VERSION }}"
-          generate_release_notes: true
-          files: |
-            **/*.pdf
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   riscv-wheels:
     name: "Build RiscV Ubuntu python wheels"
     if: ${{ needs.check-tag-existance.outputs.exists == 'false' }}
-    needs: [ github ]
+    needs:
+      - check-tag-existance
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -149,6 +119,35 @@ jobs:
         with:
           name: "${{ format('py_capio_cl_ubunturv64_python_{0}.whl', matrix.python) }}"
           path: "dist/${{ format('py_capio_cl_ubunturv64_python_{0}.whl', matrix.python) }}"
+
+  github:
+    name: "Create GitHub Release"
+    if: ${{ needs.check-tag-existance.outputs.exists == 'false' && github.event.workflow_run.conclusion == 'success' }}
+    needs: [ riscv-wheels, generate-documentation ]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: "Download built wheel artifacts"
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+      - name: "Get CAPIO-CL version"
+        run: echo "CAPIO_CL_VERSION=$(grep -E 'VERSION [0-9]+\.[0-9]+\.[0-9]+' CMakeLists.txt | awk '{print $2}')" >> $GITHUB_ENV
+      - name: "Create GitHub Release"
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "v${{ env.CAPIO_CL_VERSION }}"
+          tag_name: "v${{ env.CAPIO_CL_VERSION }}"
+          generate_release_notes: true
+          files: |
+            **/*.whl
+            **/*.pdf
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build:
     name: Build wheels on ${{ matrix.os }}
@@ -233,11 +232,6 @@ jobs:
         with:
           path: dist_all
           name: wheels-macos-latest
-      - uses: actions/download-artifact@v4
-        with:
-          path: dist_all
-          pattern: py_capio_cl_ubunturv64_*
-          merge-multiple: true
       - uses: actions/download-artifact@v4
         with:
           path: dist_all
