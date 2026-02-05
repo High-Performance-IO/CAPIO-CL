@@ -8,7 +8,7 @@
 namespace capiocl {
 
 /// @brief Default workflow name for CAPIO-CL
-constexpr char CAPIO_CL_DEFAULT_WF_NAME[] = "CAPIO_CL";
+constexpr char CAPIO_CL_DEFAULT_WF_NAME[] = "CAPIO";
 
 /// @brief Namespace containing the CAPIO-CL Firing Rules
 namespace fireRules {
