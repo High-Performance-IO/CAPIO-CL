@@ -28,6 +28,8 @@ option(CAPIO_CL_BUILD_TESTS "Build CAPIO-CL test suite" OFF)
 option(BUILD_PYTHON_BINDINGS "Build python bindings for CAPIO-CL" OFF)
 option(ENABLE_COVERAGE "Enable code coverage collection" FALSE)
 option(ENABLE_COVERAGE_PIPELINE "Add dedicated target to execute and collect coverage" OFF)
+option(BUILD_UTILS "Build CAPIO-CL utility binaries" OFF)
+option(ADD_BUILDER "Add ncurses based builder" ON)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_compile_options(-O0 -g)
@@ -156,6 +158,55 @@ find_library(LIBANL anl)
 if(LIBANL)
     target_link_libraries(libcapio_cl PRIVATE ${LIBANL})
 endif ()
+
+
+#####################################
+# CAPIO-CL Utilities
+#####################################
+
+if (BUILD_UTILS)
+    find_package(Curses)
+
+    if (NOT CURSES_FOUND)
+        message(FATAL_ERROR "ncurses not found. If you do not need the interactive builder, add -DADD_BUILDER=FALSE to cmake")
+    endif ()
+
+    FetchContent_Declare(
+            args
+            GIT_REPOSITORY https://github.com/Taywee/args.git
+            GIT_TAG 6.4.7
+    )
+
+    set(ARGS_BUILD_EXAMPLE OFF CACHE INTERNAL "")
+    set(ARGS_BUILD_UNITTESTS OFF CACHE INTERNAL "")
+    FetchContent_MakeAvailable(args)
+
+    add_executable(capiocl_utils
+            utilities/capiocl-utils.cpp
+            ${CAPIO_SRC}
+            ${CAPIO_CL_HEADERS})
+
+    if (ADD_BUILDER)
+        add_compile_definitions(capiocl_utils _INTERACTIVE_BUILDER)
+    endif ()
+
+
+    target_include_directories(capiocl_utils PUBLIC
+            ${CMAKE_CURRENT_SOURCE_DIR}
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+            ${jsoncons_SOURCE_DIR}/include
+            ${TOMLPLUSPLUS_SOURCE_DIR}/include
+            ${CAPIOCL_JSON_SCHEMAS_DIRECTORY}
+            ${args_SOURCE_DIR}
+            ${CURSES_INCLUDE_DIR}
+    )
+
+    target_link_libraries(capiocl_utils PUBLIC ${CURSES_LIBRARIES})
+    target_link_libraries(capiocl_utils PRIVATE
+            tomlplusplus::tomlplusplus
+            httplib::httplib
+    )
+endif (BUILD_UTILS)
 
 #####################################
 # Install rules
