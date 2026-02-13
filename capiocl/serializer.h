@@ -28,6 +28,22 @@ class SerializerException final : public std::exception {
 /// @brief Dump the current loaded CAPIO-CL configuration from class Engine to a CAPIO-CL
 /// configuration file.
 class Serializer final {
+    /**
+     * Check whether a CAPIO-CL entry has a parent entry for which the same rules applies, and tell
+     * whether this entry can be omitted by using rule inheritance.
+     * @param compress
+     * @param path
+     * @param engine
+     * @return
+     */
+    static bool entryCanBeCompressed(bool compress, const std::filesystem::path &path,
+                                       const engine::Engine &engine);
+
+    /**
+     * Sort path entries from longest to shortest
+     * @param paths
+     */
+    static void sortPathsByDecreasingLength(std::vector<std::string> &paths);
 
     /// @brief Available serializers for CAPIO-CL
     struct available_serializers {
@@ -37,10 +53,11 @@ class Serializer final {
          *
          * @param engine instance of Engine to dump
          * @param filename path of output file
+         * @param compress Compress the serialized output
          * @throws SerializerException
          */
         static void serialize_v1(const engine::Engine &engine,
-                                 const std::filesystem::path &filename);
+                                 const std::filesystem::path &filename, bool compress = false);
 
         /**
          * @brief Dump the current configuration loaded into an instance of  Engine to a CAPIO-CL
@@ -48,10 +65,11 @@ class Serializer final {
          *
          * @param engine instance of Engine to dump
          * @param filename path of output file
+         * @param compress Compress the serialized output
          * @throws SerializerException
          */
         static void serialize_v1_1(const engine::Engine &engine,
-                                   const std::filesystem::path &filename);
+                                   const std::filesystem::path &filename, bool compress = false);
     };
 
   public:
@@ -61,10 +79,11 @@ class Serializer final {
      *
      * @param engine instance of Engine to dump
      * @param filename path of output file
+     * @param compress Compress directories entries when possible
      * @param version Version of CAPIO-CL used to generate configuration files.
      */
     static void dump(const engine::Engine &engine, const std::filesystem::path &filename,
-                     const std::string &version = CAPIO_CL_VERSION::V1);
+                     bool compress = false, const std::string &version = CAPIO_CL_VERSION::V1);
 };
 } // namespace capiocl::serializer
 #endif // CAPIO_CL_SERIALIZER_H

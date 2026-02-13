@@ -6,7 +6,13 @@
 #include "capiocl/serializer.h"
 
 void capiocl::serializer::Serializer::available_serializers::serialize_v1(
-    const engine::Engine &engine, const std::filesystem::path &filename) {
+    const engine::Engine &engine, const std::filesystem::path &filename, const bool compress) {
+
+    if (compress) {
+        printer::print(printer::CLI_LEVEL_WARNING,
+                       "Using configuration compression to directories!");
+    }
+
     jsoncons::json doc;
     doc["name"] = engine.getWorkflowName();
 
@@ -23,7 +29,22 @@ void capiocl::serializer::Serializer::available_serializers::serialize_v1(
     jsoncons::json storage  = jsoncons::json::object();
     jsoncons::json io_graph = jsoncons::json::array();
 
-    for (const auto &[path, entry] : files) {
+    std::vector<std::string> keys;
+    keys.reserve(files.size());
+    for (const auto &[k, v] : files) {
+        keys.push_back(k);
+    }
+
+    sortPathsByDecreasingLength(keys);
+
+    for (const auto &path : keys) {
+        const auto entry = files.at(path);
+
+        if (entryCanBeCompressed(compress, path, engine)) {
+            printer::print(printer::CLI_LEVEL_WARNING, "Compressing entry " + path);
+            continue;
+        }
+
         if (entry.permanent) {
             permanent.push_back(path);
         }
@@ -40,12 +61,21 @@ void capiocl::serializer::Serializer::available_serializers::serialize_v1(
         }
     }
 
-    for (const auto &[app_name, outputs] : app_outputs) {
+    for (auto &[app_name, outputs] : app_outputs) {
         jsoncons::json app       = jsoncons::json::object();
         jsoncons::json streaming = jsoncons::json::array();
+        std::vector<std::string> filtered_outputs;
+
+        sortPathsByDecreasingLength(outputs);
 
         for (const auto &path : outputs) {
             const auto &entry = files.at(path);
+
+            if (entryCanBeCompressed(compress, path, engine)) {
+                continue;
+            }
+
+            filtered_outputs.push_back(path);
 
             jsoncons::json streaming_item = jsoncons::json::object();
             std::string committed         = entry.commit_rule;
@@ -86,7 +116,7 @@ void capiocl::serializer::Serializer::available_serializers::serialize_v1(
 
         app["name"]          = app_name;
         app["input_stream"]  = app_inputs[app_name];
-        app["output_stream"] = outputs;
+        app["output_stream"] = filtered_outputs;
         app["streaming"]     = streaming;
 
         io_graph.push_back(app);
