@@ -50,6 +50,8 @@ void process_get_request(const Req &req, Res &res, Fn &&handler) {
 /// @brief Main WebServer thread function
 void server(const std::string &address, const int port, capiocl::engine::Engine *engine) {
 
+    pthread_setcancelstate(PTHREAD_CANCEL_ASYNCHRONOUS, nullptr);
+
     capiocl::printer::print(capiocl::printer::CLI_LEVEL_INFO,
                             "Starting API server @ " + address + ":" + std::to_string(port));
 

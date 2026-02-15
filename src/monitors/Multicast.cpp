@@ -1,5 +1,6 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <poll.h>
 #include <sys/socket.h>
 
 #include "capiocl.hpp"
@@ -74,18 +75,36 @@ static int incoming_socket_multicast(const std::string &address_ip, const int po
     return _socket;
 }
 
-[[noreturn]] void
-capiocl::monitor::MulticastMonitor::commit_listener(std::vector<std::string> &committed_files,
-                                                    std::mutex &lock, const std::string &ip_addr,
-                                                    const int ip_port) {
+void capiocl::monitor::MulticastMonitor::commit_listener(std::vector<std::string> &committed_files,
+                                                         std::mutex &lock,
+                                                         const std::string &ip_addr,
+                                                         const int ip_port, const bool *terminate) {
+    pthread_setcancelstate(PTHREAD_CANCEL_ASYNCHRONOUS, nullptr);
     sockaddr_in addr_in = {};
     socklen_t addr_len  = {};
     const auto socket   = incoming_socket_multicast(ip_addr, ip_port, addr_in, addr_len);
     const auto addr     = reinterpret_cast<sockaddr *>(&addr_in);
     char incoming_message[MESSAGE_SIZE] = {0};
 
+    // Polling for non blocking
+    pollfd pfd = {};
+    pfd.fd     = socket;
+    pfd.events = POLLIN | POLLPRI;
+
     do {
         bzero(incoming_message, sizeof(incoming_message));
+
+        // TODO: migrate to epoll for linux and kqueue on MacOS
+        if (poll(&pfd, 1, MULTICAST_THREAD_POLL_INTERVAL) == 0) {
+            // No data from incoming socket. Continue, awaking thread ensuring pthread_cancel points
+            // can be reached
+            if (*terminate) {
+                close(socket);
+                return;
+            }
+
+            continue;
+        }
 
         // LCOV_EXCL_START
         if (recvfrom(socket, incoming_message, MESSAGE_SIZE, 0, addr, &addr_len) < 0) {
@@ -113,9 +132,11 @@ capiocl::monitor::MulticastMonitor::commit_listener(std::vector<std::string> &co
     } while (true);
 }
 
-[[noreturn]] void capiocl::monitor::MulticastMonitor::home_node_listener(
+void capiocl::monitor::MulticastMonitor::home_node_listener(
     std::unordered_map<std::string, std::string> &home_nodes, std::mutex &lock,
-    const std::string &ip_addr, int ip_port) {
+    const std::string &ip_addr, int ip_port, const bool *terminate) {
+    pthread_setcancelstate(PTHREAD_CANCEL_ASYNCHRONOUS, nullptr);
+
     char this_hostname[HOST_NAME_MAX] = {};
     gethostname(this_hostname, HOST_NAME_MAX);
 
@@ -128,6 +149,23 @@ capiocl::monitor::MulticastMonitor::commit_listener(std::vector<std::string> &co
 
     do {
         bzero(incoming_message, sizeof(incoming_message));
+
+        // Polling for non blocking
+        pollfd pfd = {};
+        pfd.fd     = socket;
+        pfd.events = POLLIN | POLLPRI;
+
+        // TODO: migrate to epoll for linux and kqueue on MacOS
+        if (poll(&pfd, 1, MULTICAST_THREAD_POLL_INTERVAL) == 0) {
+            // No data from incoming socket. Continue, awaking thread ensuring pthread_cancel points
+            // can be reached
+            if (*terminate) {
+                close(socket);
+                return;
+            }
+
+            continue;
+        }
 
         // LCOV_EXCL_START
         if (recvfrom(socket, incoming_message, MESSAGE_SIZE, 0, addr, &addr_len) < 0) {
@@ -193,19 +231,23 @@ capiocl::monitor::MulticastMonitor::MulticastMonitor(
 
     commit_thread =
         std::thread(&commit_listener, std::ref(_committed_files), std::ref(committed_lock),
-                    MULTICAST_COMMIT_ADDR, MULTICAST_COMMIT_PORT);
+                    MULTICAST_COMMIT_ADDR, MULTICAST_COMMIT_PORT, &this->terminate);
 
     home_node_thread =
         std::thread(&home_node_listener, std::ref(_home_nodes), std::ref(home_node_lock),
-                    MULTICAST_HOME_NODE_ADDR, MULTICAST_HOME_NODE_PORT);
+                    MULTICAST_HOME_NODE_ADDR, MULTICAST_HOME_NODE_PORT, &this->terminate);
 
     gethostname(_hostname, HOST_NAME_MAX);
 }
 
 capiocl::monitor::MulticastMonitor::~MulticastMonitor() {
+
+    terminate = true;
+
     pthread_cancel(commit_thread.native_handle());
-    pthread_cancel(home_node_thread.native_handle());
     commit_thread.join();
+
+    pthread_cancel(home_node_thread.native_handle());
     home_node_thread.join();
 }
 
