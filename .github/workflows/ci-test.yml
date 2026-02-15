@@ -159,7 +159,7 @@ jobs:
       matrix:
         path:
           - "src"
-          - "include"
+          - "capiocl"
           - "tests"
           - "bindings"
           - "capiocl.hpp"

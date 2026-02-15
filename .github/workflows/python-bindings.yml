@@ -108,7 +108,7 @@ jobs:
         uses: uraimo/run-on-arch-action@v2
         with:
           arch: riscv64
-          distro: ubuntu22.04
+          distro: ubuntu_latest
           githubToken: ${{ github.token }}
 
           install: |
@@ -121,8 +121,7 @@ jobs:
             set -eux
             echo "Building for RISC-V on Ubuntu 22.04"
             
-            python3 -m pip install --upgrade pip
-            python3 -m pip install -r build-requirements.txt
+            python3 -m pip install -r build-requirements.txt --break-system-packages
             
             mkdir -p /tmp/capio_cl_jsons
             mkdir -p /tmp/capio_cl_tomls
@@ -134,7 +133,7 @@ jobs:
               -Ccmake.build-type=Release \
               -Ccmake.define.CAPIO_CL_BUILD_TESTS=OFF
             
-            pip install dist/*.whl
-            python3 -m pip install -r test-requirements.txt
+            pip install dist/*.whl --break-system-packages
+            python3 -m pip install -r test-requirements.txt --break-system-packages
 
             pytest -v tests/python/test_* | tee pytest-riscv.log
