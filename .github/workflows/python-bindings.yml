@@ -14,7 +14,7 @@ jobs:
     name: "Test Python bindings"
     strategy:
       matrix:
-        on: [ 'ubuntu-22.04', 'ubuntu-24.04', 'macos-15-intel', 'macos-26' ]
+        on: [ 'ubuntu-24.04', 'macos-15-intel', 'macos-26' ]
         python: [ '3.10', '3.11', '3.12', '3.13', '3.14' ]
 
     runs-on: ${{ matrix.on }}
@@ -45,8 +45,6 @@ jobs:
 
       - name: "Create virtual environment"
         run: |
-          python -m venv venv
-          . ./venv/bin/activate
           pip install -r build-requirements.txt
           pip install -r test-requirements.txt
 
@@ -57,22 +55,19 @@ jobs:
           mkdir -p /tmp/capio_cl_tomls
           cp -r tests/jsons/* /tmp/capio_cl_jsons
           cp -r tests/tomls/* /tmp/capio_cl_tomls
-          . ./venv/bin/activate
           pip install .
 
       # Run unit tests
       - name: "Run Python tests (Ubuntu)"
         if: startsWith(matrix.on, 'ubuntu-')
         run: |
-          . ./venv/bin/activate
           pytest -v tests/python/test_*
 
       - name: "Run Python tests (MacOS)"
         if: startsWith(matrix.on, 'macos-')
         run: |
-          . ./venv/bin/activate
           pytest -k "not test_home_node" -v tests/python/test_*
-      
+
 
       - name: "Generate coverage report"
         if: ${{ startsWith(matrix.on, 'ubuntu-') }}
