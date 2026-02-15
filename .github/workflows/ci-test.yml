@@ -159,14 +159,15 @@ jobs:
       matrix:
         path:
           - "src"
-          - "include"
+          - "capiocl"
           - "tests"
           - "bindings"
           - "capiocl.hpp"
     steps:
       - uses: actions/checkout@v4
       - name: "Run clang-format style check"
-        uses: jidicula/clang-format-action@v4.16.0
+        uses: DoozyX/clang-format-lint-action@v0.20
         with:
-          clang-format-version: "16"
-          check-path: "${{ matrix.path }}"
+          source: ${{matrix.path}}
+          extensions: 'h,cpp,c'
+          clangFormatVersion: 20
