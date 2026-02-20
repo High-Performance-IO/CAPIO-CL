@@ -762,8 +762,27 @@ bool capiocl::engine::Engine::operator==(const capiocl::engine::Engine &other) c
 void capiocl::engine::Engine::loadConfiguration(const std::string &path) {
     configuration.load(path);
 
-    monitor.registerMonitorBackend(new monitor::MulticastMonitor(configuration));
-    monitor.registerMonitorBackend(new monitor::FileSystemMonitor());
+    std::string multicast_monitor_enabled, fs_monitor_enabled;
+
+    try {
+        configuration.getParameter("monitor.mcast.enabled", &multicast_monitor_enabled);
+    } catch (...) {
+        multicast_monitor_enabled = "false";
+    }
+
+    if (multicast_monitor_enabled == "true") {
+        monitor.registerMonitorBackend(new monitor::MulticastMonitor(configuration));
+    }
+
+    try {
+        configuration.getParameter("monitor.filesystem.enabled", &fs_monitor_enabled);
+    } catch (...) {
+        fs_monitor_enabled = "false";
+    }
+
+    if (fs_monitor_enabled == "true") {
+        monitor.registerMonitorBackend(new monitor::FileSystemMonitor());
+    }
 }
 void capiocl::engine::Engine::useDefaultConfiguration() {
 

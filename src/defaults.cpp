@@ -1,4 +1,4 @@
-#include "capiocl//configuration.h"
+#include "capiocl/configuration.h"
 
 ConfigurationEntry capiocl::configuration::defaults::DEFAULT_MONITOR_MCAST_IP{
     "monitor.mcast.commit.ip", "224.224.224.1"};
@@ -14,3 +14,9 @@ ConfigurationEntry capiocl::configuration::defaults::DEFAULT_MONITOR_HOMENODE_IP
 
 ConfigurationEntry capiocl::configuration::defaults::DEFAULT_MONITOR_HOMENODE_PORT{
     "monitor.mcast.homenode.port", "12345"};
+
+ConfigurationEntry capiocl::configuration::defaults::DEFAULT_MONITOR_MCAST_ENABLED{
+    "monitor.mcast.enabled", "true"};
+
+ConfigurationEntry capiocl::configuration::defaults::DEFAULT_MONITOR_FS_ENABLED{
+    "monitor.filesystem.enabled", "true"};

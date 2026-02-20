@@ -21,10 +21,14 @@ struct capiocl::configuration::defaults {
     static ConfigurationEntry DEFAULT_MONITOR_MCAST_PORT;
     /// @brief Multicast monitor delay before following operation
     static ConfigurationEntry DEFAULT_MONITOR_MCAST_DELAY;
+    /// @brief Enable multicast monitor by default
+    static ConfigurationEntry DEFAULT_MONITOR_MCAST_ENABLED;
     /// @brief Multicast monitor homenode IP
     static ConfigurationEntry DEFAULT_MONITOR_HOMENODE_IP;
     /// @brief Multicast monitor homenode PORT
     static ConfigurationEntry DEFAULT_MONITOR_HOMENODE_PORT;
+    /// @brief Enable File system monitor by default
+    static ConfigurationEntry DEFAULT_MONITOR_FS_ENABLED;
 };
 
 /// @brief Load configuration and store it from a CAPIO-CL TOML configuration file
