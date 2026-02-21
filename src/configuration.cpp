@@ -34,7 +34,7 @@ void load_config_to_memory(const toml::table &tbl,
     }
 }
 
-capiocl::configuration::CapioClConfiguration::CapioClConfiguration() {
+void capiocl::configuration::CapioClConfiguration::loadDefaults() {
     this->set(defaults::DEFAULT_MONITOR_MCAST_IP);
     this->set(defaults::DEFAULT_MONITOR_MCAST_PORT);
     this->set(defaults::DEFAULT_MONITOR_HOMENODE_IP);
@@ -53,8 +53,6 @@ void capiocl::configuration::CapioClConfiguration::set(const ConfigurationEntry 
 }
 
 void capiocl::configuration::CapioClConfiguration::load(const std::filesystem::path &path) {
-    config.clear();
-
     if (path.empty()) {
         throw CapioClConfigurationException("Empty pathname!");
     }

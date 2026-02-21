@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <fnmatch.h>
+#include <memory>
 #include <sstream>
 
 #include "capiocl.hpp"
@@ -772,6 +773,8 @@ void capiocl::engine::Engine::loadConfiguration(const std::string &path) {
 
     if (multicast_monitor_enabled == "true") {
         monitor.registerMonitorBackend(new monitor::MulticastMonitor(configuration));
+    } else {
+        printer::print(printer::CLI_LEVEL_WARNING, "Skipping registration of  MulticastMonitor");
     }
 
     try {
@@ -782,17 +785,18 @@ void capiocl::engine::Engine::loadConfiguration(const std::string &path) {
 
     if (fs_monitor_enabled == "true") {
         monitor.registerMonitorBackend(new monitor::FileSystemMonitor());
+    } else {
+        printer::print(printer::CLI_LEVEL_WARNING, "Skipping registration of  FileSystemMonitor");
     }
 }
 void capiocl::engine::Engine::useDefaultConfiguration() {
+    configuration.loadDefaults();
 
-    const auto def_config = configuration::CapioClConfiguration();
-
-    monitor.registerMonitorBackend(new monitor::MulticastMonitor(def_config));
+    // TODO: add a vector with registered instances of backends to avoid multiple instantiations
+    monitor.registerMonitorBackend(new monitor::MulticastMonitor(configuration));
     monitor.registerMonitorBackend(new monitor::FileSystemMonitor());
 }
 
 void capiocl::engine::Engine::startApiServer(const std::string &address, const int port) {
-    webapi_server = std::unique_ptr<webapi::CapioClWebApiServer>(
-        new webapi::CapioClWebApiServer(this, address, port));
+    webapi_server = std::make_unique<webapi::CapioClWebApiServer>(this, address, port);
 }

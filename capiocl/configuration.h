@@ -51,14 +51,18 @@ class capiocl::configuration::CapioClConfiguration {
     void set(const ConfigurationEntry &entry);
 
   public:
-    explicit CapioClConfiguration();
     ~CapioClConfiguration() = default;
 
     /**
-     * Load a configuiration from a TOML file
+     * Load a configuration from a TOML file
      * @param path
      */
     void load(const std::filesystem::path &path);
+
+    /**
+     * Load default values for the configuration
+     */
+    void loadDefaults();
 
     /**
      * Get a string value
