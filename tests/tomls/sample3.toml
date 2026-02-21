@@ -1,0 +1,3 @@
+[monitor]
+filesystem.enabled = false
+mcast.enabled = false
