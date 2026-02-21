@@ -1,0 +1,4 @@
+[monitor]
+filesystem.enabled = false
+multicast.enabled = false
+

@@ -43,7 +43,19 @@ TEST(CONFIGURATION_SUITE_NAME, testNoBackendLoaded) {
     engine.loadConfiguration("/tmp/capio_cl_tomls/sample2.toml");
 
     EXPECT_FALSE(engine.isCommitted("test"));
+}
 
+TEST(CONFIGURATION_SUITE_NAME, testNoBackendLoadedWithExplicitNoLoadOption) {
+    capiocl::configuration::CapioClConfiguration config;
+    config.load("/tmp/capio_cl_tomls/sample3.toml");
+
+    std::string value;
+    config.getParameter("monitor.multicast.enabled", &value);
+    EXPECT_TRUE("false" == value);
+    value = "";
+
+    config.getParameter("monitor.filesystem.enabled", &value);
+    EXPECT_TRUE("false" == value);
 }
 
 #endif // CAPIO_CL_TEST_CONFIGURATION_HPP
