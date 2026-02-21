@@ -50,7 +50,7 @@ TEST(CONFIGURATION_SUITE_NAME, testNoBackendLoadedWithExplicitNoLoadOption) {
     config.load("/tmp/capio_cl_tomls/sample3.toml");
 
     std::string value;
-    config.getParameter("monitor.multicast.enabled", &value);
+    config.getParameter("monitor.mcast.enabled", &value);
     EXPECT_TRUE("false" == value);
     value = "";
 

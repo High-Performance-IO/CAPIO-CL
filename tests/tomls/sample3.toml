@@ -1,4 +1,3 @@
 [monitor]
 filesystem.enabled = false
-multicast.enabled = false
-
+mcast.enabled = false
