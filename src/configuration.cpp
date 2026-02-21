@@ -22,7 +22,11 @@ void load_config_to_memory(const toml::table &tbl,
             if (value.is_string()) {
                 map[full_key] = value.as_string()->get();
             } else if (value.is_boolean()) {
-                map[full_key] = value.as_boolean()->get() ? "true" : "false";
+                if (value.as_boolean()->get()) {
+                    map[full_key] = "true";
+                } else {
+                    map[full_key] = "false";
+                }
             } else {
                 map[full_key] = std::to_string(value.as_integer()->get());
             }
@@ -49,6 +53,8 @@ void capiocl::configuration::CapioClConfiguration::set(const ConfigurationEntry 
 }
 
 void capiocl::configuration::CapioClConfiguration::load(const std::filesystem::path &path) {
+    config.clear();
+
     if (path.empty()) {
         throw CapioClConfigurationException("Empty pathname!");
     }

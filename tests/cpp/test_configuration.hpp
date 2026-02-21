@@ -38,4 +38,12 @@ TEST(CONFIGURATION_SUITE_NAME, TestFailureParsingTOML) {
                  capiocl::configuration::CapioClConfigurationException);
 }
 
+TEST(CONFIGURATION_SUITE_NAME, testNoBackendLoaded) {
+    capiocl::engine::Engine engine(false);
+    engine.loadConfiguration("/tmp/capio_cl_tomls/sample2.toml");
+
+    EXPECT_FALSE(engine.isCommitted("test"));
+
+}
+
 #endif // CAPIO_CL_TEST_CONFIGURATION_HPP

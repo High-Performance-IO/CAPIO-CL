@@ -1,9 +1,5 @@
-[monitor.filesystem]
-enabled = false
-
 [monitor.mcast]
 delay_ms = 300
-enabled = true
 
 [monitor.mcast.commit]
 ip = "224.224.224.3"
