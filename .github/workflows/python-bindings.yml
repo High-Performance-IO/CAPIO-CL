@@ -82,7 +82,7 @@ jobs:
 
       - name: "Upload coverage report"
         if: ${{ startsWith(matrix.on, 'ubuntu-') }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ format('{0}-{1}-tests', matrix.on, matrix.python) }}
           path: ./coverage.xml

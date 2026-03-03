@@ -48,7 +48,7 @@ jobs:
         run: make pdf
       - name: "Upload pdf documentation"
         if: success()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           path: "doxygen/documentation*.pdf"
           name: "documentation.pdf"
@@ -115,7 +115,7 @@ jobs:
 
       - name: "Upload built RISC-V wheel"
         if: success()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: "${{ format('py_capio_cl_ubunturv64_python_{0}.whl', matrix.python) }}"
           path: "dist/${{ format('py_capio_cl_ubunturv64_python_{0}.whl', matrix.python) }}"
@@ -182,7 +182,7 @@ jobs:
         run: |
           cibuildwheel --output-dir wheelhouse
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: wheels-${{ matrix.os }}
           path: wheelhouse/*.whl
@@ -203,7 +203,7 @@ jobs:
           python -m pip install --upgrade build
           python -m build --sdist
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: sdist
           path: dist/*.tar.gz
