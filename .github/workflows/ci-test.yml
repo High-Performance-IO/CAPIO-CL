@@ -67,6 +67,7 @@ jobs:
   upload-to-codecov:
     name: "compute Codecov"
     needs: [ "unit-tests"]
+    if: ${{ needs.check-tag-existance.outputs.exists == 'false' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -125,6 +126,7 @@ jobs:
   build-documentation:
     name: "Build Doxygen documentation"
     runs-on: ubuntu-latest
+    if: ${{ needs.check-tag-existance.outputs.exists == 'false' }}
     needs: upload-to-codecov
     steps:
       - uses: actions/checkout@v4
@@ -145,6 +147,7 @@ jobs:
   codespell-check:
     name: "Check codespell conformance"
     needs: upload-to-codecov
+    if: ${{ needs.check-tag-existance.outputs.exists == 'false' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -154,6 +157,7 @@ jobs:
   format-check:
     name: "Check ${{ matrix.path }} clang-format conformance"
     needs: upload-to-codecov
+    if: ${{ needs.check-tag-existance.outputs.exists == 'false' }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
