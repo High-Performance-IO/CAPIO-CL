@@ -66,6 +66,7 @@ jobs:
 
   upload-to-codecov:
     name: "compute Codecov"
+    if: github.actor != 'dependabot[bot]'
     needs: [ "unit-tests"]
     runs-on: ubuntu-latest
     steps:
@@ -124,6 +125,7 @@ jobs:
 
   build-documentation:
     name: "Build Doxygen documentation"
+    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     needs: upload-to-codecov
     steps:
@@ -144,6 +146,7 @@ jobs:
 
   codespell-check:
     name: "Check codespell conformance"
+    if: github.actor != 'dependabot[bot]'
     needs: upload-to-codecov
     runs-on: ubuntu-latest
     steps:
@@ -153,6 +156,7 @@ jobs:
 
   format-check:
     name: "Check ${{ matrix.path }} clang-format conformance"
+    if: github.actor != 'dependabot[bot]'
     needs: upload-to-codecov
     runs-on: ubuntu-latest
     strategy:
