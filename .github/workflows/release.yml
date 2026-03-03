@@ -16,7 +16,7 @@ jobs:
     outputs:
       exists: ${{ steps.check-tag.outputs.exists }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: "Get CAPIO-CL version"
         run: echo "CAPIO_CL_VERSION=$(grep -E 'VERSION [0-9]+\.[0-9]+\.[0-9]+' CMakeLists.txt | awk '{print $2}')" >> $GITHUB_ENV
       - name: "Check if tag exists"
@@ -32,7 +32,7 @@ jobs:
     if: ${{ needs.check-tag-existance.outputs.exists == 'false' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: "Install packages"
         run: |
           sudo apt update
@@ -79,7 +79,7 @@ jobs:
 
     steps:
       - name: "Checkout repository"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: "Build and test inside RISC-V emulated environment (Debian based)"
         uses: uraimo/run-on-arch-action@v3
@@ -129,7 +129,7 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: "Download built wheel artifacts"
         uses: actions/download-artifact@v4
@@ -161,7 +161,7 @@ jobs:
         os: [ 'ubuntu-latest', 'ubuntu-24.04-arm', 'macos-15-intel', 'macos-latest' ]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -193,7 +193,7 @@ jobs:
     if: ${{ needs.check-tag-existance.outputs.exists == 'false'}}
     needs: [ github ]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-python@v6
         with:
@@ -214,7 +214,7 @@ jobs:
     needs: [ build, sdist, riscv-wheels ]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/download-artifact@v4
         with:

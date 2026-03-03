@@ -36,7 +36,7 @@ jobs:
       image: ${{ matrix.compiler }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install build tools
         run: |
@@ -69,7 +69,7 @@ jobs:
     needs: [ "unit-tests"]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: "Install packages"
         run: |
@@ -127,7 +127,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: upload-to-codecov
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: "Install packages"
         run: |
           sudo apt update
@@ -147,7 +147,7 @@ jobs:
     needs: upload-to-codecov
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: "Run codespell"
         uses: codespell-project/actions-codespell@v2
 
@@ -164,7 +164,7 @@ jobs:
           - "bindings"
           - "capiocl.hpp"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: "Run clang-format style check"
         uses: DoozyX/clang-format-lint-action@v0.20
         with:
