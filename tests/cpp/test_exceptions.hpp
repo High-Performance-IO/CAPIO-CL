@@ -36,8 +36,9 @@ TEST(EXCEPTION_SUITE_NAME, testFailedserializeVersion) {
         const std::filesystem::path source = "/tmp/capio_cl_jsons/V" + version + "/test24.json";
         auto engine                        = capiocl::parser::Parser::parse(source, "/tmp");
 
-        EXPECT_THROW(capiocl::serializer::Serializer::dump(*engine, "test.json", "1234.5678"),
-                     capiocl::serializer::SerializerException);
+        EXPECT_THROW(
+            capiocl::serializer::Serializer::dump(*engine, "test.json", false, "1234.5678"),
+            capiocl::serializer::SerializerException);
     }
 }
 
