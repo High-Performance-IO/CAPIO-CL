@@ -717,55 +717,13 @@ bool capiocl::engine::Engine::operator==(const capiocl::engine::Engine &other) c
         return false;
     }
 
-    for (const auto &[this_path, this_itm] : this->_capio_cl_entries) {
+    for (auto &[this_path, this_itm] : this->_capio_cl_entries) {
         if (other_entries.find(this_path) == other_entries.end()) {
             return false;
         }
-        auto other_itm = other_entries.at(this_path);
 
-        if (this_itm.commit_rule != other_itm.commit_rule ||
-            this_itm.fire_rule != other_itm.fire_rule ||
-            this_itm.permanent != other_itm.permanent || this_itm.excluded != other_itm.excluded ||
-            this_itm.is_file != other_itm.is_file ||
-            this_itm.commit_on_close_count != other_itm.commit_on_close_count ||
-            this_itm.directory_children_count != other_itm.directory_children_count ||
-            this_itm.store_in_memory != other_itm.store_in_memory) {
+        if (auto other_itm = other_entries.at(this_path); this_itm != other_itm) {
             return false;
-        }
-
-        auto this_producer  = this_itm.producers;
-        auto other_producer = other_itm.producers;
-        if (this_producer.size() != other_producer.size()) {
-            return false;
-        }
-        for (const auto &entry : this_producer) {
-            if (std::find(other_producer.begin(), other_producer.end(), entry) ==
-                other_producer.end()) {
-                return false;
-            }
-        }
-
-        auto this_consumer  = this_itm.consumers;
-        auto other_consumer = other_itm.consumers;
-        if (this_consumer.size() != other_consumer.size()) {
-            return false;
-        }
-        for (const auto &entry : this_consumer) {
-            if (std::find(other_consumer.begin(), other_consumer.end(), entry) ==
-                other_consumer.end()) {
-                return false;
-            }
-        }
-
-        auto this_deps  = this_itm.file_dependencies;
-        auto other_deps = other_itm.file_dependencies;
-        if (this_deps.size() != other_deps.size()) {
-            return false;
-        }
-        for (const auto &entry : this_deps) {
-            if (std::find(other_deps.begin(), other_deps.end(), entry) == other_deps.end()) {
-                return false;
-            }
         }
     }
     return true;
@@ -896,4 +854,57 @@ capiocl::engine::CapioCLEntry capiocl::engine::CapioCLEntry::operator+(const Cap
     CapioCLEntry result = *this;
     result += rhs;
     return result;
+}
+bool capiocl::engine::CapioCLEntry::operator==(const CapioCLEntry &other) {
+
+    if (this->commit_rule != other.commit_rule || this->fire_rule != other.fire_rule ||
+        this->permanent != other.permanent || this->excluded != other.excluded ||
+        this->is_file != other.is_file ||
+        this->commit_on_close_count != other.commit_on_close_count ||
+        this->directory_children_count != other.directory_children_count ||
+        this->store_in_memory != other.store_in_memory ||
+        this->enable_directory_count_update != other.enable_directory_count_update) {
+        return false;
+    }
+
+    const auto this_producer = this->producers;
+    auto other_producer      = other.producers;
+    if (this_producer.size() != other_producer.size()) {
+        return false;
+    }
+    for (const auto &entry : this_producer) {
+        if (std::find(other_producer.begin(), other_producer.end(), entry) ==
+            other_producer.end()) {
+            return false;
+        }
+    }
+
+    const auto this_consumer = this->consumers;
+    auto other_consumer      = other.consumers;
+    if (this_consumer.size() != other_consumer.size()) {
+        return false;
+    }
+    for (const auto &entry : this_consumer) {
+        if (std::find(other_consumer.begin(), other_consumer.end(), entry) ==
+            other_consumer.end()) {
+            return false;
+        }
+    }
+
+    const auto this_deps = this->file_dependencies;
+    auto other_deps      = other.file_dependencies;
+    if (this_deps.size() != other_deps.size()) {
+        return false;
+    }
+    for (const auto &entry : this_deps) {
+        if (std::find(other_deps.begin(), other_deps.end(), entry) == other_deps.end()) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool capiocl::engine::CapioCLEntry::operator!=(const CapioCLEntry &other) {
+    return !(*this == other);
 }

@@ -15,17 +15,22 @@ namespace capiocl::engine {
 /// file handled by CAPIO-CL
 struct CapioCLEntry final {
     // LCOV_EXCL_START
-    std::vector<std::string> producers;
-    std::vector<std::string> consumers;
-    std::vector<std::filesystem::path> file_dependencies;
-    std::string commit_rule            = commitRules::ON_TERMINATION;
-    std::string fire_rule              = fireRules::UPDATE;
-    long directory_children_count      = 0;
-    long commit_on_close_count         = 0;
-    bool enable_directory_count_update = true; // whether to update or not directory item count
+    std::vector<std::string> producers;                   ///@brief Producers of file
+    std::vector<std::string> consumers;                   ///@brief consumers of file
+    std::vector<std::filesystem::path> file_dependencies; ///@brief Dependencies for Commit
+    std::string commit_rule            = commitRules::ON_TERMINATION; ///@brief Commit rule
+    std::string fire_rule              = fireRules::UPDATE;           ///@brief Fire rule
+    long directory_children_count      = 0; ///@brief Expected number of files in directory
+    long commit_on_close_count         = 0; ///@brief Expected close count
+    /// @brief whether to update or not directory item count
+    bool enable_directory_count_update = true;
+    /// @brief Store in memory or on the file system
     bool store_in_memory               = false;
+    /// @brief whether the file should persiste after workflow termination
     bool permanent                     = false;
+    /// @brief whether to ignore this entry
     bool excluded                      = false;
+    /// @brief whether this entry is a file or a directory
     bool is_file                       = true;
     // LCOV_EXCL_STOP
 
@@ -44,6 +49,12 @@ struct CapioCLEntry final {
 
     /// @brief add a new CapioClEntry to this one
     CapioCLEntry operator+(const CapioCLEntry &rhs);
+
+    /// @brief check for equality of rules
+    bool operator==(const CapioCLEntry &other);
+
+    /// @brief check for inequality
+    bool operator!=(const CapioCLEntry &other);
 };
 
 /**

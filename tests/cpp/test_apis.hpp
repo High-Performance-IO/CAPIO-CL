@@ -3,71 +3,54 @@
 
 #define WEBSERVER_SUITE_NAME TestWebServerAPIS
 
-#include "jsoncons/json.hpp"
-#include <curl/curl.h>
-#include <sstream>
-#include <stdexcept>
+#include "capiocl.hpp"
+#include "capiocl/engine.h"
+
 #include <string>
-#include <unordered_map>
 
-enum class HttpMethod { GET, POST, DELETE };
+TEST(WEBSERVER_SUITE_NAME, TestSerializationDeserializationCapioCLRule) {
+    capiocl::engine::CapioCLEntry entry;
 
-static size_t curl_write_response_handler(const char *ptr, const size_t size, size_t nmemb,
-                                          void *userdata) {
-    auto *response = static_cast<std::string *>(userdata);
-    response->append(ptr, size * nmemb);
-    return size * nmemb;
+    const std::string def_rule =
+        "{\"commit_on_close_count\":0,\"commit_rule\":\"on_termination\",\"consumers\":[],"
+        "\"directory_children_count\":0,\"enable_directory_count_update\":true,\"excluded\":false,"
+        "\"file_dependencies\":[],\"fire_rule\":\"update\",\"is_file\":true,\"permanent\":false,"
+        "\"producers\":[],\"store_in_memory\":false}";
+
+    EXPECT_EQ(def_rule, entry.toJson());
+
+    entry.commit_on_close_count         = 10;
+    entry.commit_rule                   = "on_close";
+    entry.consumers                     = {"aaaaa"};
+    entry.producers                     = {"bbbbb"};
+    entry.directory_children_count      = 12;
+    entry.enable_directory_count_update = false;
+    entry.excluded                      = true;
+    entry.file_dependencies             = {"cccc"};
+    entry.is_file                       = false;
+    entry.permanent                     = true;
+    entry.store_in_memory               = true;
+
+    const std::string def_rule2 =
+        "{\"commit_on_close_count\":10,\"commit_rule\":\"on_close\",\"consumers\":[\"aaaaa\"],"
+        "\"directory_children_count\":12,\"enable_directory_count_update\":false,\"excluded\":true,"
+        "\"file_dependencies\":[\"cccc\"],\"fire_rule\":\"update\",\"is_file\":false,\"permanent\":"
+        "true,\"producers\":[\"bbbbb\"],\"store_in_memory\":true}";
+
+    EXPECT_EQ(def_rule2, entry.toJson());
+
+    auto new_rule = capiocl::engine::CapioCLEntry::fromJson(def_rule2);
+
+    EXPECT_TRUE(new_rule == entry);
+
+    entry.enable_directory_count_update = true;
+    EXPECT_TRUE(entry != new_rule);
 }
 
-inline jsoncons::json perform_request(const std::string &url,
-                                      const std::string &request_params_json_encode,
-                                      HttpMethod method = HttpMethod::GET) {
-    CURL *curl = curl_easy_init();
-    if (!curl) {
-        throw std::runtime_error("curl_easy_init failed");
-    }
+TEST(WEBSERVER_SUITE_NAME, TestWebServerAPIS) {
+    capiocl::engine::Engine engine;
+    engine.startApiServer();
 
-    std::string response;
-
-    curl_slist *headers = nullptr;
-    headers             = curl_slist_append(headers, "Content-Type: application/json");
-    headers             = curl_slist_append(headers, "Accept: application/json");
-
-    curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, request_params_json_encode.c_str());
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, request_params_json_encode.size());
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_write_response_handler);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
-
-    switch (method) {
-    case HttpMethod::GET:
-        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "GET");
-        break;
-
-    case HttpMethod::POST:
-        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
-        break;
-
-    case HttpMethod::DELETE:
-        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "DELETE");
-        break;
-    }
-
-    const CURLcode res = curl_easy_perform(curl);
-
-    long http_code = 0;
-    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
-
-    curl_slist_free_all(headers);
-    curl_easy_cleanup(curl);
-
-    if (res != CURLE_OK) {
-        throw std::runtime_error(curl_easy_strerror(res));
-    }
-
-    std::cout << "DBG RES: " << response << std::endl;
-    return jsoncons::json::parse(std::string(response));
 }
 
 #endif // CAPIO_CL_TEST_APIS_HPP
