@@ -3,10 +3,51 @@
 
 #define WEBSERVER_SUITE_NAME TestWebServerAPIS
 
+#include <arpa/inet.h>
+#include <iostream>
+#include <jsoncons/json.hpp>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
 #include "capiocl.hpp"
 #include "capiocl/engine.h"
 
 #include <string>
+
+bool sendMulticast(const std::string &message, const std::string &multicast_ip, int port) {
+    int fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (fd < 0) {
+        perror("socket");
+        return false;
+    }
+
+    u_char ttl = 1;
+    if (setsockopt(fd, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl)) < 0) {
+        perror("setsockopt (TTL)");
+        close(fd);
+        return false;
+    }
+
+    sockaddr_in addr;
+    addr.sin_family      = AF_INET;
+    addr.sin_addr.s_addr = inet_addr(multicast_ip.c_str());
+    addr.sin_port        = htons(port);
+
+    ssize_t nbytes =
+        sendto(fd, message.c_str(), message.size(), 0, (struct sockaddr *) &addr, sizeof(addr));
+
+    if (nbytes < 0) {
+        perror("sendto");
+        close(fd);
+        return false;
+    }
+
+    std::cout << "Sent " << nbytes << " bytes to " << multicast_ip << ":" << port << std::endl;
+
+    close(fd);
+    return true;
+}
 
 TEST(WEBSERVER_SUITE_NAME, TestSerializationDeserializationCapioCLRule) {
     capiocl::engine::CapioCLEntry entry;
@@ -50,7 +91,30 @@ TEST(WEBSERVER_SUITE_NAME, TestSerializationDeserializationCapioCLRule) {
 TEST(WEBSERVER_SUITE_NAME, TestWebServerAPIS) {
     capiocl::engine::Engine engine;
     engine.startApiServer();
+    EXPECT_FALSE(engine.contains("file.txt"));
 
+    capiocl::engine::CapioCLEntry entry;
+    entry.commit_rule           = "on_file";
+    entry.commit_on_close_count = 10;
+    entry.fire_rule             = "no_update";
+
+    std::string request = R"({ "path" : "file.txt","workflow_name" : ")";
+    request += capiocl::CAPIO_CL_DEFAULT_WF_NAME;
+    request += R"(", "CapioClEntry":)" + entry.toJson() + "}";
+
+    EXPECT_TRUE(
+        sendMulticast(request, capiocl::configuration::defaults::DEFAULT_API_MULTICAST_IP.v,
+                      stoi(capiocl::configuration::defaults::DEFAULT_API_MULTICAST_PORT.v)));
+
+    // timeout to allow server to process the request
+    while (!engine.contains("file.txt")) {
+        sleep(1);
+    }
+
+    EXPECT_TRUE(engine.contains("file.txt"));
+    EXPECT_EQ(engine.getCommitRule("file.txt"), entry.commit_rule);
+    EXPECT_EQ(engine.getCommitCloseCount("file.txt"), entry.commit_on_close_count);
+    EXPECT_EQ(engine.getFireRule("file.txt"), entry.fire_rule);
 }
 
 #endif // CAPIO_CL_TEST_APIS_HPP

@@ -9,7 +9,21 @@
 #include "capiocl/monitor.h"
 #include "capiocl/printer.h"
 
+template <typename SharedMutex> class shared_lock_guard {
+  public:
+    explicit shared_lock_guard(SharedMutex &m) : mutex_(m) { mutex_.lock_shared(); }
+
+    ~shared_lock_guard() { mutex_.unlock_shared(); }
+
+    shared_lock_guard(const shared_lock_guard &)            = delete;
+    shared_lock_guard &operator=(const shared_lock_guard &) = delete;
+
+  private:
+    SharedMutex &mutex_;
+};
+
 void capiocl::engine::Engine::print() const {
+
     // First message
     printer::print(printer::CLI_LEVEL_JSON, "");
     printer::print(printer::CLI_LEVEL_JSON, "Composition of expected CAPIO FS: ");
@@ -203,22 +217,27 @@ void capiocl::engine::Engine::compute_directory_entry_count(
 }
 
 bool capiocl::engine::Engine::contains(const std::filesystem::path &file) const {
+    shared_lock_guard slg(_shared_mutex);
     return std::any_of(_capio_cl_entries.begin(), _capio_cl_entries.end(), [&](auto const &entry) {
         return fnmatch(entry.first.c_str(), file.c_str(), FNM_NOESCAPE) == 0;
     });
 }
 
-size_t capiocl::engine::Engine::size() const { return this->_capio_cl_entries.size(); }
+size_t capiocl::engine::Engine::size() const {
+    shared_lock_guard slg(_shared_mutex);
+    return this->_capio_cl_entries.size();
+}
 
 void capiocl::engine::Engine::add(std::filesystem::path &path, std::vector<std::string> &producers,
                                   std::vector<std::string> &consumers,
                                   const std::string &commit_rule, const std::string &fire_rule,
                                   bool permanent, bool exclude,
                                   std::vector<std::filesystem::path> &dependencies) {
+
     if (path.empty()) {
         return;
     }
-
+    std::lock_guard lg(_shared_mutex);
     this->_newFile(path);
 
     CapioCLEntry &entry     = _capio_cl_entries.at(path);
@@ -232,6 +251,9 @@ void capiocl::engine::Engine::add(std::filesystem::path &path, std::vector<std::
 }
 void capiocl::engine::Engine::add(const std::filesystem::path &path,
                                   const CapioCLEntry &entry) const {
+
+    std::lock_guard lg(_shared_mutex);
+
     if (_capio_cl_entries.find(path) == _capio_cl_entries.end()) {
         _capio_cl_entries[path] = entry;
     } else {
@@ -240,16 +262,20 @@ void capiocl::engine::Engine::add(const std::filesystem::path &path,
 }
 
 void capiocl::engine::Engine::newFile(const std::filesystem::path &path) const {
+    std::lock_guard lg(_shared_mutex);
     this->_newFile(path);
 }
 
 long capiocl::engine::Engine::getDirectoryFileCount(const std::filesystem::path &path) const {
+
     if (path.empty()) {
         return 0;
     }
-
-    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
-        return itm->second.directory_children_count;
+    {
+        shared_lock_guard slg(_shared_mutex);
+        if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+            return itm->second.directory_children_count;
+        }
     }
     this->_newFile(path);
     return getDirectoryFileCount(path);
@@ -257,21 +283,27 @@ long capiocl::engine::Engine::getDirectoryFileCount(const std::filesystem::path 
 
 void capiocl::engine::Engine::addProducer(const std::filesystem::path &path,
                                           std::string &producer) {
+
     if (path.empty()) {
         return;
     }
 
-    producer.erase(remove_if(producer.begin(), producer.end(), isspace), producer.end());
+    {
+        std::lock_guard lg(_shared_mutex);
 
-    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
-        auto &vec = itm->second.producers;
-        if (std::find(vec.begin(), vec.end(), producer) == vec.end()) {
-            vec.emplace_back(producer);
-            return;
-        } else {
-            return;
+        producer.erase(remove_if(producer.begin(), producer.end(), isspace), producer.end());
+
+        if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+            auto &vec = itm->second.producers;
+            if (std::find(vec.begin(), vec.end(), producer) == vec.end()) {
+                vec.emplace_back(producer);
+                return;
+            } else {
+                return;
+            }
         }
     }
+
     this->newFile(path);
     this->addProducer(path, producer);
 }
@@ -282,14 +314,18 @@ void capiocl::engine::Engine::addConsumer(const std::filesystem::path &path,
         return;
     }
 
-    consumer.erase(remove_if(consumer.begin(), consumer.end(), isspace), consumer.end());
-    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
-        auto &vec = itm->second.consumers;
-        if (std::find(vec.begin(), vec.end(), consumer) == vec.end()) {
-            vec.emplace_back(consumer);
+    {
+        std::lock_guard lg(_shared_mutex);
+        consumer.erase(remove_if(consumer.begin(), consumer.end(), isspace), consumer.end());
+        if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+            auto &vec = itm->second.consumers;
+            if (std::find(vec.begin(), vec.end(), consumer) == vec.end()) {
+                vec.emplace_back(consumer);
+            }
+            return;
         }
-        return;
     }
+
     this->newFile(path);
     this->addConsumer(path, consumer);
 }
@@ -300,12 +336,15 @@ void capiocl::engine::Engine::addFileDependency(const std::filesystem::path &pat
         return;
     }
 
-    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
-        auto &vec = itm->second.file_dependencies;
-        if (std::find(vec.begin(), vec.end(), file_dependency) == vec.end()) {
-            vec.emplace_back(file_dependency);
+    {
+        std::lock_guard lg(_shared_mutex);
+        if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+            auto &vec = itm->second.file_dependencies;
+            if (std::find(vec.begin(), vec.end(), file_dependency) == vec.end()) {
+                vec.emplace_back(file_dependency);
+            }
+            return;
         }
-        return;
     }
     this->newFile(path);
     this->setCommitRule(path, commitRules::ON_FILE);
@@ -319,12 +358,17 @@ void capiocl::engine::Engine::setCommitRule(const std::filesystem::path &path,
     }
 
     const auto commit = commitRules::sanitize(commit_rule);
-
-    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
-        itm->second.commit_rule = commit;
-        return;
+    {
+        std::lock_guard lg(_shared_mutex);
+        if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+            itm->second.commit_rule = commit;
+            return;
+        }
     }
-    this->_newFile(path);
+    {
+        std::lock_guard lg(_shared_mutex);
+        this->_newFile(path);
+    }
     this->setCommitRule(path, commit);
 }
 
@@ -333,11 +377,18 @@ std::string capiocl::engine::Engine::getCommitRule(const std::filesystem::path &
         return commitRules::ON_TERMINATION;
     }
 
-    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
-        return itm->second.commit_rule;
+    {
+        shared_lock_guard slg(_shared_mutex);
+
+        if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+            return itm->second.commit_rule;
+        }
     }
 
-    this->_newFile(path);
+    {
+        std::lock_guard lg(_shared_mutex);
+        this->_newFile(path);
+    }
     return getCommitRule(path);
 }
 
@@ -346,11 +397,18 @@ std::string capiocl::engine::Engine::getFireRule(const std::filesystem::path &pa
         return fireRules::NO_UPDATE;
     }
 
-    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
-        return itm->second.fire_rule;
+    {
+        shared_lock_guard slg(_shared_mutex);
+
+        if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+            return itm->second.fire_rule;
+        }
     }
 
-    this->_newFile(path);
+    {
+        std::lock_guard lg(_shared_mutex);
+        this->_newFile(path);
+    }
     return getFireRule(path);
 }
 
@@ -362,11 +420,15 @@ void capiocl::engine::Engine::setFireRule(const std::filesystem::path &path,
 
     const auto fire = fireRules::sanitize(fire_rule);
 
-    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
-        itm->second.fire_rule = fire;
-        return;
+    {
+        std::lock_guard lg(_shared_mutex);
+        if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+            itm->second.fire_rule = fire;
+            return;
+        }
+        this->_newFile(path);
     }
-    this->_newFile(path);
+
     setFireRule(path, fire);
 }
 
@@ -375,11 +437,17 @@ bool capiocl::engine::Engine::isFirable(const std::filesystem::path &path) const
         return true;
     }
 
-    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
-        return itm->second.fire_rule == fireRules::NO_UPDATE;
+    {
+        shared_lock_guard slg(_shared_mutex);
+        if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+            return itm->second.fire_rule == fireRules::NO_UPDATE;
+        }
     }
 
-    this->_newFile((path));
+    {
+        std::lock_guard lg(_shared_mutex);
+        this->_newFile(path);
+    }
     return isFirable(path);
 }
 
@@ -388,11 +456,14 @@ void capiocl::engine::Engine::setPermanent(const std::filesystem::path &path, bo
         return;
     }
 
-    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
-        itm->second.permanent = value;
-        return;
+    {
+        std::lock_guard lg(_shared_mutex);
+        if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+            itm->second.permanent = value;
+            return;
+        }
+        this->_newFile(path);
     }
-    this->_newFile(path);
     setPermanent(path, value);
 }
 
@@ -401,11 +472,17 @@ bool capiocl::engine::Engine::isPermanent(const std::filesystem::path &path) con
         return true;
     }
 
-    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
-        return itm->second.permanent;
+    {
+        shared_lock_guard slg(_shared_mutex);
+        if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+            return itm->second.permanent;
+        }
     }
 
-    this->_newFile(path);
+    {
+        std::lock_guard lg(_shared_mutex);
+        this->_newFile(path);
+    }
     return isPermanent(path);
 }
 
@@ -418,6 +495,8 @@ void capiocl::engine::Engine::setCommitted(const std::filesystem::path &path) co
 }
 
 std::vector<std::string> capiocl::engine::Engine::getPaths() const {
+    shared_lock_guard slg(_shared_mutex);
+
     std::vector<std::string> paths;
     for (const auto &[k, v] : _capio_cl_entries) {
         paths.push_back(k);
@@ -429,12 +508,14 @@ void capiocl::engine::Engine::setExclude(const std::filesystem::path &path, cons
     if (path.empty()) {
         return;
     }
-
-    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
-        itm->second.excluded = value;
-        return;
+    {
+        std::lock_guard lg(_shared_mutex);
+        if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+            itm->second.excluded = value;
+            return;
+        }
+        this->_newFile(path);
     }
-    this->_newFile(path);
     setExclude(path, value);
 }
 
@@ -443,11 +524,14 @@ void capiocl::engine::Engine::setDirectory(const std::filesystem::path &path) {
         return;
     }
 
-    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
-        itm->second.is_file = false;
-        return;
+    {
+        std::lock_guard lg(_shared_mutex);
+        if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+            itm->second.is_file = false;
+            return;
+        }
+        this->_newFile(path);
     }
-    this->_newFile(path);
     setDirectory(path);
 }
 
@@ -456,11 +540,14 @@ void capiocl::engine::Engine::setFile(const std::filesystem::path &path) {
         return;
     }
 
-    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
-        itm->second.is_file = true;
-        return;
+    {
+        std::lock_guard lg(_shared_mutex);
+        if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+            itm->second.is_file = true;
+            return;
+        }
+        this->_newFile(path);
     }
-    this->_newFile(path);
     setFile(path);
 }
 
@@ -469,10 +556,17 @@ bool capiocl::engine::Engine::isFile(const std::filesystem::path &path) const {
         return true;
     }
 
-    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
-        return itm->second.is_file;
+    {
+        shared_lock_guard slg(_shared_mutex);
+        if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+            return itm->second.is_file;
+        }
     }
-    this->_newFile(path);
+
+    {
+        std::lock_guard lg(_shared_mutex);
+        this->_newFile(path);
+    }
     return isPermanent(path);
 }
 
@@ -480,7 +574,6 @@ bool capiocl::engine::Engine::isDirectory(const std::filesystem::path &path) con
     if (path.empty()) {
         return true;
     }
-
     return !isFile(path);
 }
 
@@ -490,11 +583,14 @@ void capiocl::engine::Engine::setCommitedCloseNumber(const std::filesystem::path
         return;
     }
 
-    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
-        itm->second.commit_on_close_count = num;
-        return;
+    {
+        std::lock_guard lg(_shared_mutex);
+        if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+            itm->second.commit_on_close_count = num;
+            return;
+        }
+        this->_newFile(path);
     }
-    this->_newFile(path);
     setCommitedCloseNumber(path, num);
 }
 
@@ -504,17 +600,26 @@ void capiocl::engine::Engine::setDirectoryFileCount(const std::filesystem::path 
         return;
     }
 
-    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
-        this->setDirectory(path);
-        itm->second.directory_children_count      = num;
-        itm->second.enable_directory_count_update = false;
-        return;
+    const auto paths = getPaths();
+    for (const auto &file_paths : paths) {
+        this->setDirectory(file_paths);
     }
-    this->_newFile(path);
+
+    {
+        std::lock_guard lg(_shared_mutex);
+        if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+            itm->second.directory_children_count      = num;
+            itm->second.enable_directory_count_update = false;
+            return;
+        }
+        this->_newFile(path);
+    }
     this->setDirectoryFileCount(path, num);
 }
 
 void capiocl::engine::Engine::remove(const std::filesystem::path &path) const {
+    std::lock_guard lg(_shared_mutex);
+
     if (const auto itm = _capio_cl_entries.find(path); itm == _capio_cl_entries.end()) {
         return;
     }
@@ -523,6 +628,8 @@ void capiocl::engine::Engine::remove(const std::filesystem::path &path) const {
 
 std::vector<std::string>
 capiocl::engine::Engine::getConsumers(const std::filesystem::path &path) const {
+    std::lock_guard lg(_shared_mutex);
+
     if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
         return itm->second.consumers;
     }
@@ -535,16 +642,23 @@ bool capiocl::engine::Engine::isConsumer(const std::filesystem::path &path,
         return true;
     }
 
-    for (const auto &[pattern, entry] : _capio_cl_entries) {
-        if (fnmatch(pattern.c_str(), path.c_str(), FNM_NOESCAPE) == 0) {
-            const auto &consumers = entry.consumers;
-            if (std::find(consumers.begin(), consumers.end(), app_name) != consumers.end()) {
-                return true;
+    {
+        shared_lock_guard slg(_shared_mutex);
+
+        for (const auto &[pattern, entry] : _capio_cl_entries) {
+            if (fnmatch(pattern.c_str(), path.c_str(), FNM_NOESCAPE) == 0) {
+                const auto &consumers = entry.consumers;
+                if (std::find(consumers.begin(), consumers.end(), app_name) != consumers.end()) {
+                    return true;
+                }
             }
         }
     }
+    {
+        std::lock_guard lg(_shared_mutex);
+        this->_newFile(path);
+    }
 
-    this->_newFile(path);
     return false;
 }
 
@@ -554,10 +668,18 @@ capiocl::engine::Engine::getProducers(const std::filesystem::path &path) const {
         return {};
     }
 
-    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
-        return itm->second.producers;
+    {
+        shared_lock_guard slg(_shared_mutex);
+
+        if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+            return itm->second.producers;
+        }
     }
-    this->_newFile(path);
+
+    {
+        std::lock_guard lg(_shared_mutex);
+        this->_newFile(path);
+    }
     return getProducers(path);
 }
 
@@ -566,17 +688,23 @@ bool capiocl::engine::Engine::isProducer(const std::filesystem::path &path,
     if (path.empty()) {
         return true;
     }
+    {
+        shared_lock_guard slg(_shared_mutex);
 
-    for (const auto &[pattern, entry] : _capio_cl_entries) {
-        if (fnmatch(pattern.c_str(), path.c_str(), FNM_NOESCAPE) == 0) {
-            const auto &producers = entry.producers;
-            if (std::find(producers.begin(), producers.end(), app_name) != producers.end()) {
-                return true;
+        for (const auto &[pattern, entry] : _capio_cl_entries) {
+            if (fnmatch(pattern.c_str(), path.c_str(), FNM_NOESCAPE) == 0) {
+                const auto &producers = entry.producers;
+                if (std::find(producers.begin(), producers.end(), app_name) != producers.end()) {
+                    return true;
+                }
             }
         }
     }
 
-    this->_newFile(path);
+    {
+        std::lock_guard lg(_shared_mutex);
+        this->_newFile(path);
+    }
     return false;
 }
 
@@ -594,11 +722,15 @@ void capiocl::engine::Engine::setFileDeps(const std::filesystem::path &path,
         newFile(itm);
     }
 
-    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
-        itm->second.file_dependencies = dependencies;
-        return;
+    {
+        std::lock_guard lg(_shared_mutex);
+
+        if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+            itm->second.file_dependencies = dependencies;
+            return;
+        }
+        this->_newFile(path);
     }
-    this->_newFile(path);
     setFileDeps(path, dependencies);
 }
 
@@ -608,16 +740,24 @@ long capiocl::engine::Engine::getCommitCloseCount(
         return 0;
     }
 
-    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
-        return itm->second.commit_on_close_count;
-    }
+    {
+        shared_lock_guard slg(_shared_mutex);
 
-    this->_newFile(path);
+        if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+            return itm->second.commit_on_close_count;
+        }
+    }
+    {
+        std::lock_guard lg(_shared_mutex);
+        this->_newFile(path);
+    }
     return getCommitCloseCount(path);
 }
 
 std::vector<std::filesystem::path>
 capiocl::engine::Engine::getCommitOnFileDependencies(const std::filesystem::path &path) const {
+    shared_lock_guard slg(_shared_mutex);
+
     if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
         return itm->second.file_dependencies;
     }
@@ -629,37 +769,52 @@ void capiocl::engine::Engine::setStoreFileInMemory(const std::filesystem::path &
         return;
     }
 
-    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
-        itm->second.store_in_memory = true;
-        return;
+    {
+        std::lock_guard lg(_shared_mutex);
+
+        if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+            itm->second.store_in_memory = true;
+            return;
+        }
+        this->_newFile(path);
     }
-    this->_newFile(path);
     setStoreFileInMemory(path);
 }
 
 void capiocl::engine::Engine::setAllStoreInMemory() {
-    this->store_all_in_memory = true;
-    for (const auto &[fst, snd] : _capio_cl_entries) {
-        this->setStoreFileInMemory(fst);
+    {
+        std::lock_guard lg(_shared_mutex);
+        this->store_all_in_memory = true;
+    }
+
+    const auto paths = getPaths();
+    for (const auto &path : paths) {
+        this->setStoreFileInMemory(path);
     }
 }
 
 void capiocl::engine::Engine::setWorkflowName(const std::string &name) {
+    std::lock_guard lg(_shared_mutex);
     this->workflow_name = name;
 }
 
-const std::string &capiocl::engine::Engine::getWorkflowName() const { return this->workflow_name; }
+const std::string &capiocl::engine::Engine::getWorkflowName() const {
+    shared_lock_guard slg(_shared_mutex);
+    return this->workflow_name;
+}
 
 void capiocl::engine::Engine::setStoreFileInFileSystem(const std::filesystem::path &path) {
     if (path.empty()) {
         return;
     }
-
-    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
-        itm->second.store_in_memory = false;
-        return;
+    {
+        std::lock_guard lg(_shared_mutex);
+        if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+            itm->second.store_in_memory = false;
+            return;
+        }
+        this->_newFile(path);
     }
-    this->_newFile(path);
     setStoreFileInFileSystem(path);
 }
 
@@ -668,16 +823,24 @@ bool capiocl::engine::Engine::isStoredInMemory(const std::filesystem::path &path
         return true;
     }
 
-    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
-        return itm->second.store_in_memory;
+    {
+        shared_lock_guard slg(_shared_mutex);
+        if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+            return itm->second.store_in_memory;
+        }
     }
 
-    this->_newFile(path);
+    {
+        std::lock_guard lg(_shared_mutex);
+        this->_newFile(path);
+    }
     return isStoredInMemory(path);
 }
 
 std::vector<std::string> capiocl::engine::Engine::getFileToStoreInMemory() const {
     std::vector<std::string> files;
+
+    shared_lock_guard slg(_shared_mutex);
 
     for (const auto &[path, file] : _capio_cl_entries) {
         if (file.store_in_memory) {
@@ -701,16 +864,21 @@ bool capiocl::engine::Engine::isExcluded(const std::filesystem::path &path) cons
     if (path.empty()) {
         return true;
     }
-
-    if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
-        return itm->second.excluded;
+    {
+        shared_lock_guard slg(_shared_mutex);
+        if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+            return itm->second.excluded;
+        }
     }
 
-    this->_newFile(path);
+    {
+        std::lock_guard lg(_shared_mutex);
+        this->_newFile(path);
+    }
     return isExcluded(path);
 }
 
-bool capiocl::engine::Engine::operator==(const capiocl::engine::Engine &other) const {
+bool capiocl::engine::Engine::operator==(const Engine &other) const {
     const auto &other_entries = other._capio_cl_entries;
 
     if (this->_capio_cl_entries.size() != other_entries.size()) {
@@ -848,7 +1016,7 @@ capiocl::engine::CapioCLEntry &capiocl::engine::CapioCLEntry::operator+=(const C
     this->is_file &= rhs.is_file;
 
     this->commit_rule = rhs.commit_rule;
-    this->fire_rule = rhs.fire_rule;
+    this->fire_rule   = rhs.fire_rule;
 
     return *this;
 }

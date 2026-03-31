@@ -2,6 +2,7 @@
 #define CAPIO_CL_ENGINE_H
 #include <jsoncons/basic_json.hpp>
 #include <vector>
+#include <shared_mutex>
 
 #include "capiocl.hpp"
 #include "capiocl/api.h"
@@ -15,11 +16,16 @@ namespace capiocl::engine {
 /// file handled by CAPIO-CL
 struct CapioCLEntry final {
     // LCOV_EXCL_START
-    std::vector<std::string> producers;                   ///@brief Producers of file
-    std::vector<std::string> consumers;                   ///@brief consumers of file
-    std::vector<std::filesystem::path> file_dependencies; ///@brief Dependencies for Commit
-    std::string commit_rule            = commitRules::ON_TERMINATION; ///@brief Commit rule
-    std::string fire_rule              = fireRules::UPDATE;           ///@brief Fire rule
+    ///@brief Producers of file
+    std::vector<std::string> producers;
+    ///@brief consumers of file
+    std::vector<std::string> consumers;
+    ///@brief Dependencies for Commit
+    std::vector<std::filesystem::path> file_dependencies;
+    ///@brief Commit rule
+    std::string commit_rule            = commitRules::ON_TERMINATION;
+    ///@brief Fire rule
+    std::string fire_rule              = fireRules::UPDATE;
     long directory_children_count      = 0; ///@brief Expected number of files in directory
     long commit_on_close_count         = 0; ///@brief Expected close count
     /// @brief whether to update or not directory item count
@@ -74,6 +80,11 @@ struct CapioCLEntry final {
  */
 class Engine final {
     friend class serializer::Serializer;
+
+    /// @brief Synchronization variable for locking
+    mutable std::shared_mutex _shared_mutex;
+
+    /// @brief Whether current engine instance should store all files in memory
     bool store_all_in_memory = false;
 
     ///@brief Configuration imported from CAPIO-CL config TOML file

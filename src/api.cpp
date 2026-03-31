@@ -63,7 +63,7 @@ void server(const std::string &address, const int port, capiocl::engine::Engine 
         ssize_t nbytes = recvfrom(fd, buffer, sizeof(buffer) - 1, 0,
                                   reinterpret_cast<struct sockaddr *>(&srcAddr), &addrlen);
         if (nbytes < 0) {
-            break;
+            continue;
         }
 
         buffer[nbytes] = '\0';
