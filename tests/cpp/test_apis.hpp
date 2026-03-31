@@ -3,236 +3,146 @@
 
 #define WEBSERVER_SUITE_NAME TestWebServerAPIS
 
-#include "jsoncons/json.hpp"
-#include <curl/curl.h>
-#include <sstream>
-#include <stdexcept>
+#include <arpa/inet.h>
+#include <iostream>
+#include <jsoncons/json.hpp>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
+#include "capiocl.hpp"
+#include "capiocl/engine.h"
+
 #include <string>
-#include <unordered_map>
 
-enum class HttpMethod { GET, POST, DELETE };
-
-static size_t curl_write_response_handler(const char *ptr, const size_t size, size_t nmemb,
-                                          void *userdata) {
-    auto *response = static_cast<std::string *>(userdata);
-    response->append(ptr, size * nmemb);
-    return size * nmemb;
-}
-
-inline jsoncons::json perform_request(const std::string &url,
-                                      const std::string &request_params_json_encode,
-                                      HttpMethod method = HttpMethod::GET) {
-    CURL *curl = curl_easy_init();
-    if (!curl) {
-        throw std::runtime_error("curl_easy_init failed");
+inline bool sendMulticast(const std::string &message, const std::string &multicast_ip, int port) {
+    const int fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (fd < 0) {
+        perror("socket");
+        return false;
     }
 
-    std::string response;
-
-    curl_slist *headers = nullptr;
-    headers             = curl_slist_append(headers, "Content-Type: application/json");
-    headers             = curl_slist_append(headers, "Accept: application/json");
-
-    curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, request_params_json_encode.c_str());
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, request_params_json_encode.size());
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_write_response_handler);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
-
-    switch (method) {
-    case HttpMethod::GET:
-        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "GET");
-        break;
-
-    case HttpMethod::POST:
-        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
-        break;
-
-    case HttpMethod::DELETE:
-        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "DELETE");
-        break;
+    const u_char ttl = 3;
+    if (setsockopt(fd, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl)) < 0) {
+        perror("setsockopt (TTL)");
+        close(fd);
+        return false;
     }
 
-    const CURLcode res = curl_easy_perform(curl);
+    sockaddr_in addr{};
+    addr.sin_family      = AF_INET;
+    addr.sin_addr.s_addr = inet_addr(multicast_ip.c_str());
+    addr.sin_port        = htons(port);
 
-    long http_code = 0;
-    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+    ssize_t nbytes = sendto(fd, message.c_str(), message.size(), 0,
+                            reinterpret_cast<struct sockaddr *>(&addr), sizeof(addr));
 
-    curl_slist_free_all(headers);
-    curl_easy_cleanup(curl);
-
-    if (res != CURLE_OK) {
-        throw std::runtime_error(curl_easy_strerror(res));
+    if (nbytes < 0) {
+        perror("sendto");
+        close(fd);
+        return false;
     }
 
-    std::cout << "DBG RES: " << response << std::endl;
-    return jsoncons::json::parse(std::string(response));
+    close(fd);
+    return true;
 }
 
-TEST(WEBSERVER_SUITE_NAME, testGetAndSetWorkflowName) {
+TEST(WEBSERVER_SUITE_NAME, TestSerializationDeserializationCapioCLRule) {
+    capiocl::engine::CapioCLEntry entry;
 
-    // clean environment for wf name
-    unsetenv("WORKFLOW_NAME");
+    const std::string def_rule =
+        "{\"commit_on_close_count\":0,\"commit_rule\":\"on_termination\",\"consumers\":[],"
+        "\"directory_children_count\":0,\"enable_directory_count_update\":true,\"excluded\":false,"
+        "\"file_dependencies\":[],\"fire_rule\":\"update\",\"is_file\":true,\"permanent\":false,"
+        "\"producers\":[],\"store_in_memory\":false}";
 
-    auto engine = capiocl::engine::Engine();
-    engine.startApiServer();
+    EXPECT_EQ(def_rule, entry.toJson());
 
-    sleep(1);
+    entry.commit_on_close_count         = 10;
+    entry.commit_rule                   = "on_close";
+    entry.consumers                     = {"aaaaa"};
+    entry.producers                     = {"bbbbb"};
+    entry.directory_children_count      = 12;
+    entry.enable_directory_count_update = false;
+    entry.excluded                      = true;
+    entry.file_dependencies             = {"cccc"};
+    entry.is_file                       = false;
+    entry.permanent                     = true;
+    entry.store_in_memory               = true;
 
-    auto response = perform_request("http://localhost:5520/workflow", "{}", HttpMethod::GET);
+    const std::string def_rule2 =
+        "{\"commit_on_close_count\":10,\"commit_rule\":\"on_close\",\"consumers\":[\"aaaaa\"],"
+        "\"directory_children_count\":12,\"enable_directory_count_update\":false,\"excluded\":true,"
+        "\"file_dependencies\":[\"cccc\"],\"fire_rule\":\"update\",\"is_file\":false,\"permanent\":"
+        "true,\"producers\":[\"bbbbb\"],\"store_in_memory\":true}";
 
-    EXPECT_FALSE(response.empty());
-    EXPECT_TRUE(response["name"] == capiocl::CAPIO_CL_DEFAULT_WF_NAME);
+    EXPECT_EQ(def_rule2, entry.toJson());
 
-    perform_request("http://localhost:5520/workflow", R"({"name": "test_workflow_0"})",
-                    HttpMethod::POST);
-    response = perform_request("http://localhost:5520/workflow", "{}", HttpMethod::GET);
-    EXPECT_FALSE(response.empty());
-    EXPECT_TRUE(response["name"] == "test_workflow_0");
+    auto new_rule = capiocl::engine::CapioCLEntry::fromJson(def_rule2);
+
+    EXPECT_TRUE(new_rule == entry);
+
+    entry.enable_directory_count_update = true;
+    EXPECT_TRUE(entry != new_rule);
 }
 
-TEST(WEBSERVER_SUITE_NAME, consumer) {
+TEST(WEBSERVER_SUITE_NAME, TestWebServerAPIS) {
     capiocl::engine::Engine engine;
     engine.startApiServer();
-    sleep(1);
+    EXPECT_FALSE(engine.contains("file.txt"));
 
-    auto result =
-        perform_request("http://localhost:5520/consumer",
-                        R"({"path" : "/tmp/test.txt", "consumer" : "sample2"})", HttpMethod::POST);
-    EXPECT_TRUE(result["status"] == "OK");
-    result = perform_request("http://localhost:5520/consumer", R"({"path" : "/tmp/test.txt"})",
-                             HttpMethod::GET);
-    EXPECT_TRUE(result["consumers"][0] == "sample2");
-}
+    EXPECT_TRUE(
+        sendMulticast(R"({"path" : "file.txt", "workflow_name" : "notMyWorkflow"})",
+                      capiocl::configuration::defaults::DEFAULT_API_MULTICAST_IP.v,
+                      stoi(capiocl::configuration::defaults::DEFAULT_API_MULTICAST_PORT.v)));
 
-TEST(WEBSERVER_SUITE_NAME, producer) {
-    capiocl::engine::Engine engine;
-    engine.startApiServer();
-    sleep(1);
+    EXPECT_TRUE(
+        sendMulticast("notAValidJson", capiocl::configuration::defaults::DEFAULT_API_MULTICAST_IP.v,
+                      stoi(capiocl::configuration::defaults::DEFAULT_API_MULTICAST_PORT.v)));
 
-    auto result =
-        perform_request("http://localhost:5520/producer",
-                        R"({"path" : "/tmp/test.txt", "producer" : "sample1"})", HttpMethod::POST);
-    EXPECT_TRUE(result["status"] == "OK");
-    result = perform_request("http://localhost:5520/producer", R"({"path" : "/tmp/test.txt"})",
-                             HttpMethod::GET);
-    EXPECT_TRUE(result["producers"][0] == "sample1");
-}
+    EXPECT_TRUE(
+        sendMulticast(R"({"workflow_name" : "notMyWorkflow", "CapioClEntry":{}})",
+                      capiocl::configuration::defaults::DEFAULT_API_MULTICAST_IP.v,
+                      stoi(capiocl::configuration::defaults::DEFAULT_API_MULTICAST_PORT.v)));
 
-TEST(WEBSERVER_SUITE_NAME, commit) {
-    capiocl::engine::Engine engine;
-    engine.startApiServer();
-    sleep(1);
+    EXPECT_TRUE(
+        sendMulticast(R"({"path" : "file.txt", "CapioClEntry":{}})",
+                      capiocl::configuration::defaults::DEFAULT_API_MULTICAST_IP.v,
+                      stoi(capiocl::configuration::defaults::DEFAULT_API_MULTICAST_PORT.v)));
 
-    auto result =
-        perform_request("http://localhost:5520/commit",
-                        R"({"path" : "/tmp/test.txt","commit" : "on_file"})", HttpMethod::POST);
-    EXPECT_TRUE(result["status"] == "OK");
-    result = perform_request("http://localhost:5520/commit", R"({"path" : "/tmp/test.txt"})",
-                             HttpMethod::GET);
-    EXPECT_TRUE(result["commit"] == "on_file");
-}
+    EXPECT_TRUE(
+        sendMulticast(R"({"path" : "file.txt", "workflow_name" : "notMyWorkflow"})",
+                      capiocl::configuration::defaults::DEFAULT_API_MULTICAST_IP.v,
+                      stoi(capiocl::configuration::defaults::DEFAULT_API_MULTICAST_PORT.v)));
 
-TEST(WEBSERVER_SUITE_NAME, fire) {
-    capiocl::engine::Engine engine;
-    engine.startApiServer();
-    sleep(1);
+    capiocl::engine::CapioCLEntry entry;
+    entry.commit_rule           = "on_file";
+    entry.commit_on_close_count = 10;
+    entry.fire_rule             = "no_update";
 
-    auto result =
-        perform_request("http://localhost:5520/fire",
-                        R"({"path" : "/tmp/test.txt","fire" : "no_update"})", HttpMethod::POST);
-    EXPECT_TRUE(result["status"] == "OK");
-    result = perform_request("http://localhost:5520/fire", R"({"path" : "/tmp/test.txt"})",
-                             HttpMethod::GET);
-    EXPECT_TRUE(result["fire"] == "no_update");
-}
+    EXPECT_TRUE(sendMulticast(
+        R"({ "path" : "file.txt","workflow_name" : "notMyWorkflow", "CapioClEntry":)" +
+            entry.toJson() + "}",
+        capiocl::configuration::defaults::DEFAULT_API_MULTICAST_IP.v,
+        stoi(capiocl::configuration::defaults::DEFAULT_API_MULTICAST_PORT.v)));
 
-TEST(WEBSERVER_SUITE_NAME, fileDependency) {
-    capiocl::engine::Engine engine;
-    engine.startApiServer();
-    sleep(1);
+    std::string request = R"({ "path" : "file.txt","workflow_name" : ")";
+    request += capiocl::CAPIO_CL_DEFAULT_WF_NAME;
+    request += R"(", "CapioClEntry":)" + entry.toJson() + "}";
 
-    auto result = perform_request("http://localhost:5520/dependency",
-                                  R"({"path" : "/tmp/test.txt", "dependency" : "myFile.dat"})",
-                                  HttpMethod::POST);
-    EXPECT_TRUE(result["status"] == "OK");
-    result = perform_request("http://localhost:5520/dependency", R"({"path" : "/tmp/test.txt"})",
-                             HttpMethod::GET);
-    EXPECT_TRUE(result["dependencies"][0] == "myFile.dat");
-}
+    EXPECT_TRUE(
+        sendMulticast(request, capiocl::configuration::defaults::DEFAULT_API_MULTICAST_IP.v,
+                      stoi(capiocl::configuration::defaults::DEFAULT_API_MULTICAST_PORT.v)));
 
-TEST(WEBSERVER_SUITE_NAME, on_n_files) {
-    capiocl::engine::Engine engine;
-    engine.startApiServer();
-    sleep(1);
+    // timeout to allow server to process the request
+    while (!engine.contains("file.txt")) {
+        sleep(1);
+    }
 
-    auto result = perform_request("http://localhost:5520/commit/file-count",
-                                  R"({"path" : "/tmp/test.txt","count" : 7892})", HttpMethod::POST);
-    EXPECT_TRUE(result["status"] == "OK");
-    result = perform_request("http://localhost:5520/commit/file-count",
-                             R"({"path" : "/tmp/test.txt"})", HttpMethod::GET);
-    EXPECT_EQ(result["count"], 7892);
-}
-
-TEST(WEBSERVER_SUITE_NAME, close_count) {
-    capiocl::engine::Engine engine;
-    engine.startApiServer();
-    sleep(1);
-
-    auto result =
-        perform_request("http://localhost:5520/commit/close-count",
-                        R"({"path" : "/tmp/test.txt","count" : 12345})", HttpMethod::POST);
-    EXPECT_TRUE(result["status"] == "OK");
-    result = perform_request("http://localhost:5520/commit/close-count",
-                             R"({"path" : "/tmp/test.txt"})", HttpMethod::GET);
-    EXPECT_EQ(result["count"], 12345);
-}
-
-TEST(WEBSERVER_SUITE_NAME, test_error) {
-    capiocl::engine::Engine engine;
-    engine.startApiServer();
-    sleep(1);
-
-    auto result = perform_request("http://localhost:5520/commit", R"({})", HttpMethod::POST);
-    EXPECT_TRUE(result["status"] == "error");
-    EXPECT_GT(result["what"].as_string().size(), 0);
-}
-
-TEST(WEBSERVER_SUITE_NAME, boolean_flag) {
-
-    capiocl::engine::Engine engine;
-    engine.startApiServer();
-    sleep(1);
-
-    auto result =
-        perform_request("http://localhost:5520/permanent",
-                        R"({"path" : "/tmp/test.txt","permanent" : true})", HttpMethod::POST);
-    EXPECT_TRUE(result["status"] == "OK");
-    result = perform_request("http://localhost:5520/permanent", R"({"path" : "/tmp/test.txt"})",
-                             HttpMethod::GET);
-    EXPECT_TRUE(result["permanent"].as_bool());
-
-    result = perform_request("http://localhost:5520/exclude",
-                             R"({"path" : "/tmp/test.txt","exclude" : true})", HttpMethod::POST);
-    EXPECT_TRUE(result["status"] == "OK");
-    result = perform_request("http://localhost:5520/exclude", R"({"path" : "/tmp/test.txt"})",
-                             HttpMethod::GET);
-    EXPECT_TRUE(result["exclude"].as_bool());
-
-    result = perform_request("http://localhost:5520/directory",
-                             R"({"path" : "/tmp/test.txt","directory" : true})", HttpMethod::POST);
-    EXPECT_TRUE(result["status"] == "OK");
-    result = perform_request("http://localhost:5520/directory", R"({"path" : "/tmp/test.txt"})",
-                             HttpMethod::GET);
-    EXPECT_TRUE(result["directory"].as_bool());
-
-    result = perform_request("http://localhost:5520/directory",
-                             R"({"path" : "/tmp/test.txt","directory" : false})", HttpMethod::POST);
-    EXPECT_TRUE(result["status"] == "OK");
-    result = perform_request("http://localhost:5520/directory", R"({"path" : "/tmp/test.txt"})",
-                             HttpMethod::GET);
-    EXPECT_FALSE(result["directory"].as_bool());
+    EXPECT_TRUE(engine.contains("file.txt"));
+    EXPECT_EQ(engine.getCommitRule("file.txt"), entry.commit_rule);
+    EXPECT_EQ(engine.getCommitCloseCount("file.txt"), entry.commit_on_close_count);
+    EXPECT_EQ(engine.getFireRule("file.txt"), entry.fire_rule);
 }
 
 #endif // CAPIO_CL_TEST_APIS_HPP

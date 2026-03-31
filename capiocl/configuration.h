@@ -29,6 +29,10 @@ struct capiocl::configuration::defaults {
     static ConfigurationEntry DEFAULT_MONITOR_HOMENODE_PORT;
     /// @brief Enable File system monitor by default
     static ConfigurationEntry DEFAULT_MONITOR_FS_ENABLED;
+    /// @brief IP multicast address for receiving and sending changes in the CapioCL configuration
+    static ConfigurationEntry DEFAULT_API_MULTICAST_IP;
+    /// @brief IP multicast port for receiving and sending changes in the CapioCL configuration
+    static ConfigurationEntry DEFAULT_API_MULTICAST_PORT;
 };
 
 /// @brief Load configuration and store it from a CAPIO-CL TOML configuration file

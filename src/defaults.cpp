@@ -20,3 +20,9 @@ ConfigurationEntry capiocl::configuration::defaults::DEFAULT_MONITOR_MCAST_ENABL
 
 ConfigurationEntry capiocl::configuration::defaults::DEFAULT_MONITOR_FS_ENABLED{
     "monitor.filesystem.enabled", "true"};
+
+ConfigurationEntry capiocl::configuration::defaults::DEFAULT_API_MULTICAST_IP{"dynamic_api.ip",
+                                                                              "224.224.224.3"};
+
+ConfigurationEntry capiocl::configuration::defaults::DEFAULT_API_MULTICAST_PORT{"dynamic_api.port",
+                                                                                "11223"};

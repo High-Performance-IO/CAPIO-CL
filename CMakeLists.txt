@@ -57,19 +57,11 @@ FetchContent_Declare(
         GIT_TAG v1.4.3
 )
 
-FetchContent_Declare(
-        httplib
-        GIT_REPOSITORY https://github.com/yhirose/cpp-httplib.git
-        GIT_TAG v0.29.0
-)
-
-
 set(JSONCONS_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(JSONCONS_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(JSONCONS_BUILD_FUZZERS OFF CACHE BOOL "" FORCE)
-set(HTTPLIB_USE_ZSTD_IF_AVAILABLE OFF CACHE BOOL "" FORCE)
 
-FetchContent_MakeAvailable(jsoncons tomlplusplus httplib)
+FetchContent_MakeAvailable(jsoncons tomlplusplus)
 
 if (BUILD_PYTHON_BINDINGS)
     FetchContent_Declare(
@@ -143,13 +135,11 @@ target_include_directories(libcapio_cl PUBLIC
         ${jsoncons_SOURCE_DIR}/include
         ${CAPIOCL_JSON_SCHEMAS_DIRECTORY}
         ${TOMLPLUSPLUS_SOURCE_DIR}/include
-        ${httplib_SOURCE_DIR}
 )
 
 target_link_libraries(libcapio_cl PUBLIC)
 target_link_libraries(libcapio_cl PRIVATE
         tomlplusplus::tomlplusplus
-        httplib::httplib
 )
 
 find_library(LIBANL anl)

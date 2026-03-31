@@ -93,8 +93,8 @@ class CapioClConfigurationException;
 struct defaults;
 } // namespace configuration
 
-namespace webapi {
-class CapioClWebApiServer;
+namespace api {
+class CapioClApiServer;
 }
 
 } // namespace capiocl
