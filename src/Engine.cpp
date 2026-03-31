@@ -230,8 +230,18 @@ void capiocl::engine::Engine::add(std::filesystem::path &path, std::vector<std::
     entry.excluded          = exclude;
     entry.file_dependencies = dependencies;
 }
+void capiocl::engine::Engine::add(const std::filesystem::path &path,
+                                  const CapioCLEntry &entry) const {
+    if (_capio_cl_entries.find(path) == _capio_cl_entries.end()) {
+        _capio_cl_entries[path] = entry;
+    } else {
+        _capio_cl_entries[path] += entry;
+    }
+}
 
-void capiocl::engine::Engine::newFile(const std::filesystem::path &path) { this->_newFile(path); }
+void capiocl::engine::Engine::newFile(const std::filesystem::path &path) const {
+    this->_newFile(path);
+}
 
 long capiocl::engine::Engine::getDirectoryFileCount(const std::filesystem::path &path) const {
     if (path.empty()) {
@@ -593,7 +603,7 @@ void capiocl::engine::Engine::setFileDeps(const std::filesystem::path &path,
 }
 
 long capiocl::engine::Engine::getCommitCloseCount(
-    const std::filesystem::path::iterator::reference &path) const {
+    std::filesystem::path::iterator::reference &path) const {
     if (path.empty()) {
         return 0;
     }
@@ -797,6 +807,93 @@ void capiocl::engine::Engine::useDefaultConfiguration() {
     monitor.registerMonitorBackend(new monitor::FileSystemMonitor());
 }
 
-void capiocl::engine::Engine::startApiServer(const std::string &address, const int port) {
-    webapi_server = std::make_unique<webapi::CapioClWebApiServer>(this, address, port);
+void capiocl::engine::Engine::startApiServer() {
+    webapi_server = std::make_unique<api::CapioClApiServer>(this, configuration);
+}
+
+capiocl::engine::CapioCLEntry capiocl::engine::CapioCLEntry::fromJson(const std::string &in) {
+    jsoncons::json j = jsoncons::json::parse(in);
+    CapioCLEntry entry;
+
+    // Mapping JSON keys to struct members
+    if (j.contains("producers")) {
+        entry.producers = j["producers"].as<std::vector<std::string>>();
+    }
+    if (j.contains("consumers")) {
+        entry.consumers = j["consumers"].as<std::vector<std::string>>();
+    }
+
+    if (j.contains("file_dependencies")) {
+        for (const auto &path_str : j["file_dependencies"].array_range()) {
+            entry.file_dependencies.emplace_back(path_str.as<std::string>());
+        }
+    }
+
+    entry.commit_rule = j.get_value_or<std::string>("commit_rule", entry.commit_rule);
+    entry.fire_rule   = j.get_value_or<std::string>("fire_rule", entry.fire_rule);
+    entry.directory_children_count =
+        j.get_value_or<long>("directory_children_count", entry.directory_children_count);
+    entry.commit_on_close_count =
+        j.get_value_or<long>("commit_on_close_count", entry.commit_on_close_count);
+    entry.enable_directory_count_update =
+        j.get_value_or<bool>("enable_directory_count_update", entry.enable_directory_count_update);
+    entry.store_in_memory = j.get_value_or<bool>("store_in_memory", entry.store_in_memory);
+    entry.permanent       = j.get_value_or<bool>("permanent", entry.permanent);
+    entry.excluded        = j.get_value_or<bool>("excluded", entry.excluded);
+    entry.is_file         = j.get_value_or<bool>("is_file", entry.is_file);
+
+    return entry;
+}
+
+std::string capiocl::engine::CapioCLEntry::toJson() const {
+    jsoncons::json j;
+    j["producers"] = producers;
+    j["consumers"] = consumers;
+
+    jsoncons::json deps = jsoncons::json::array();
+    for (const auto &p : file_dependencies) {
+        deps.push_back(p.string());
+    }
+    j["file_dependencies"] = deps;
+
+    j["commit_rule"]                   = commit_rule;
+    j["fire_rule"]                     = fire_rule;
+    j["directory_children_count"]      = directory_children_count;
+    j["commit_on_close_count"]         = commit_on_close_count;
+    j["enable_directory_count_update"] = enable_directory_count_update;
+    j["store_in_memory"]               = store_in_memory;
+    j["permanent"]                     = permanent;
+    j["excluded"]                      = excluded;
+    j["is_file"]                       = is_file;
+
+    return j.to_string();
+}
+
+capiocl::engine::CapioCLEntry &capiocl::engine::CapioCLEntry::operator+=(const CapioCLEntry &rhs) {
+    auto merge_vec = [](std::vector<std::string> &dest, const std::vector<std::string> &src) {
+        dest.insert(dest.end(), src.begin(), src.end());
+    };
+
+    merge_vec(this->producers, rhs.producers);
+    merge_vec(this->consumers, rhs.consumers);
+
+    this->file_dependencies.insert(this->file_dependencies.end(), rhs.file_dependencies.begin(),
+                                   rhs.file_dependencies.end());
+
+    this->directory_children_count += rhs.directory_children_count;
+    this->commit_on_close_count += rhs.commit_on_close_count;
+
+    this->enable_directory_count_update &= rhs.enable_directory_count_update;
+    this->store_in_memory |= rhs.store_in_memory;
+    this->permanent |= rhs.permanent;
+    this->excluded |= rhs.excluded;
+    this->is_file &= rhs.is_file;
+
+    return *this;
+}
+
+capiocl::engine::CapioCLEntry capiocl::engine::CapioCLEntry::operator+(const CapioCLEntry &rhs) {
+    CapioCLEntry result = *this;
+    result += rhs;
+    return result;
 }

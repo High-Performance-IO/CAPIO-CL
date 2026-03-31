@@ -1,14 +1,51 @@
 #ifndef CAPIO_CL_ENGINE_H
 #define CAPIO_CL_ENGINE_H
+#include <jsoncons/basic_json.hpp>
 #include <vector>
 
 #include "capiocl.hpp"
+#include "capiocl/api.h"
 #include "capiocl/monitor.h"
 #include "capiocl/serializer.h"
-#include "capiocl/webapi.h"
 
 /// @brief Namespace containing the CAPIO-CL Engine
 namespace capiocl::engine {
+
+/// @brief Internal CAPIO-CL Engine storage entity. Each CapioCLEntry is an entry for a given
+/// file handled by CAPIO-CL
+struct CapioCLEntry final {
+    // LCOV_EXCL_START
+    std::vector<std::string> producers;
+    std::vector<std::string> consumers;
+    std::vector<std::filesystem::path> file_dependencies;
+    std::string commit_rule            = commitRules::ON_TERMINATION;
+    std::string fire_rule              = fireRules::UPDATE;
+    long directory_children_count      = 0;
+    long commit_on_close_count         = 0;
+    bool enable_directory_count_update = true; // whether to update or not directory item count
+    bool store_in_memory               = false;
+    bool permanent                     = false;
+    bool excluded                      = false;
+    bool is_file                       = true;
+    // LCOV_EXCL_STOP
+
+    /**
+     * Generate a new CapioClEntry from a JSON input
+     * @param in string with JSON to be parsed
+     * @return CapioClEntry with the input values
+     */
+    static CapioCLEntry fromJson(const std::string &in);
+
+    /// @brief Serialize this entry to a JSON object returned as string to be sent over network
+    [[nodiscard]] std::string toJson() const;
+
+    /// @brief add a new CapioClEntry to this one
+    CapioCLEntry &operator+=(const CapioCLEntry &rhs);
+
+    /// @brief add a new CapioClEntry to this one
+    CapioCLEntry operator+(const CapioCLEntry &rhs);
+};
+
 /**
  * @brief Engine for managing CAPIO-CL configuration entries.
  * The CapioCLEngine class stores and manages configuration rules for files
@@ -41,27 +78,7 @@ class Engine final {
     std::string workflow_name;
 
     /// @brief CAPIO-CL APIs Web Server
-    std::unique_ptr<webapi::CapioClWebApiServer> webapi_server;
-
-    // LCOV_EXCL_START
-    /// @brief Internal CAPIO-CL Engine storage entity. Each CapioCLEntry is an entry for a given
-    /// file handled by CAPIO-CL
-    struct CapioCLEntry final {
-        std::vector<std::string> producers;
-        std::vector<std::string> consumers;
-        std::vector<std::filesystem::path> file_dependencies;
-        std::string commit_rule            = commitRules::ON_TERMINATION;
-        std::string fire_rule              = fireRules::UPDATE;
-        long directory_children_count      = 0;
-        long commit_on_close_count         = 0;
-        bool enable_directory_count_update = true; // whether to update or not directory item count
-        bool store_in_memory               = false;
-        bool permanent                     = false;
-        bool excluded                      = false;
-        bool is_file                       = true;
-    };
-
-    // LCOV_EXCL_STOP
+    std::unique_ptr<api::CapioClApiServer> webapi_server;
 
     /// @brief Hash map used to store the configuration from CAPIO-CL
     mutable std::unordered_map<std::string, CapioCLEntry> _capio_cl_entries;
@@ -140,6 +157,13 @@ class Engine final {
              std::vector<std::filesystem::path> &dependencies);
 
     /**
+     * Add a new CapioClEntry to the internal Database
+     * @param path The path of the CapioCLEnty
+     * @param entry the new entry to add
+     */
+    void add(const std::filesystem::path &path, const CapioCLEntry &entry) const;
+
+    /**
      * @brief Add a new producer to a file entry.
      *
      * @param path File path.
@@ -171,7 +195,7 @@ class Engine final {
      *
      * @param path Path of the new file.
      */
-    void newFile(const std::filesystem::path &path);
+    void newFile(const std::filesystem::path &path) const;
 
     /**
      * @brief Remove a file from the configuration.
@@ -410,11 +434,10 @@ class Engine final {
     void useDefaultConfiguration();
 
     /**
-     * Start the thread involved in the handling of dynamic changes to CapioCl configuration
-     * @param address address to listen to. defaulto to 127.0.0.1
-     * @param port Port to listen to. defaults to 5520
+     * Start the thread involved in the handling of dynamic changes to CapioCL configuration.
+     * Runtime parameters to the server are specified within the CapioCLConfiguration
      */
-    void startApiServer(const std::string &address = "127.0.0.1", int port = 5520);
+    void startApiServer();
 };
 
 } // namespace capiocl::engine
