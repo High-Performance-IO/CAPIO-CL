@@ -847,6 +847,9 @@ capiocl::engine::CapioCLEntry &capiocl::engine::CapioCLEntry::operator+=(const C
     this->excluded |= rhs.excluded;
     this->is_file &= rhs.is_file;
 
+    this->commit_rule = rhs.commit_rule;
+    this->fire_rule = rhs.fire_rule;
+
     return *this;
 }
 
@@ -855,6 +858,7 @@ capiocl::engine::CapioCLEntry capiocl::engine::CapioCLEntry::operator+(const Cap
     result += rhs;
     return result;
 }
+
 bool capiocl::engine::CapioCLEntry::operator==(const CapioCLEntry &other) {
 
     if (this->commit_rule != other.commit_rule || this->fire_rule != other.fire_rule ||

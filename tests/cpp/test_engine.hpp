@@ -638,4 +638,28 @@ TEST(ENGINE_SUITE_NAME, TestInheritanceFromParentPaths) {
     EXPECT_TRUE(engine.getFireRule("/test/a/b/c/d") == capiocl::fireRules::NO_UPDATE);
 }
 
+TEST(ENGINE_SUITE_NAME, TestEngineAddCapioClRule) {
+    capiocl::engine::Engine engine;
+
+    engine.newFile("/test1");
+
+    capiocl::engine::CapioCLEntry entry, entry1;
+    entry.commit_rule  = "on_file";
+    entry1.commit_rule = "on_commit";
+
+    engine.add("/test1", entry);
+
+    EXPECT_EQ(entry.commit_rule, engine.getCommitRule("/test1"));
+
+    engine.add("/test2", entry);
+
+    EXPECT_EQ(entry.commit_rule, engine.getCommitRule("/test2"));
+
+    const auto new_entry = entry + entry1;
+    EXPECT_TRUE(entry1 == new_entry);
+    EXPECT_FALSE(entry == new_entry);
+
+    // TODO: test all entries of capioCL rule
+}
+
 #endif // CAPIO_CL_ENGINE_HPP
