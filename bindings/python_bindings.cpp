@@ -1,13 +1,14 @@
+#include <iostream>
 #include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/stl/filesystem.h>
+#include <string>
 
 #include "capiocl.hpp"
 #include "capiocl/engine.h"
 #include "capiocl/monitor.h"
 #include "capiocl/parser.h"
-#include "capiocl/printer.h"
 #include "capiocl/serializer.h"
 
 namespace py = pybind11;
@@ -19,6 +20,11 @@ PYBIND11_MODULE(_py_capio_cl, m) {
     py::register_exception<capiocl::parser::ParserException>(m, "ParserException");
     py::register_exception<capiocl::serializer::SerializerException>(m, "SerializerException");
     py::register_exception<capiocl::monitor::MonitorException>(m, "MonitorException");
+
+    m.attr("CAPIO_CL_DEFAULT_WF_NAME") = py::str(capiocl::CAPIO_CL_DEFAULT_WF_NAME);
+    m.attr("DEFAULT_MCAST_GROUP") =
+        py::make_tuple(capiocl::configuration::defaults::DEFAULT_API_MULTICAST_IP.v,
+                       std::stoi(capiocl::configuration::defaults::DEFAULT_API_MULTICAST_PORT.v));
 
     py::module_ fire_rules       = m.def_submodule("fire_rules", "CAPIO-CL fire rules");
     fire_rules.attr("UPDATE")    = py::str(capiocl::fireRules::UPDATE);
@@ -40,9 +46,14 @@ PYBIND11_MODULE(_py_capio_cl, m) {
         .def("print", &capiocl::engine::Engine::print)
         .def("contains", &capiocl::engine::Engine::contains, py::arg("path"))
         .def("size", &capiocl::engine::Engine::size)
-        .def("add", &capiocl::engine::Engine::add, py::arg("path"), py::arg("producers"),
-             py::arg("consumers"), py::arg("commit_rule"), py::arg("fire_rule"),
-             py::arg("permanent"), py::arg("exclude"), py::arg("dependencies"))
+        .def("add",
+             py::overload_cast<std::filesystem::path &, std::vector<std::string> &,
+                               std::vector<std::string> &, const std::string &, const std::string &,
+                               bool, bool, std::vector<std::filesystem::path> &>(
+                 &capiocl::engine::Engine::add),
+             py::arg("path"), py::arg("producers"), py::arg("consumers"), py::arg("commit_rule"),
+             py::arg("fire_rule"), py::arg("permanent"), py::arg("exclude"),
+             py::arg("dependencies"))
         .def("addProducer", &capiocl::engine::Engine::addProducer, py::arg("path"),
              py::arg("producer"))
         .def("addConsumer", &capiocl::engine::Engine::addConsumer, py::arg("path"),
@@ -98,8 +109,7 @@ PYBIND11_MODULE(_py_capio_cl, m) {
         .def("isCommitted", &capiocl::engine::Engine::isCommitted, py::arg("path"))
         .def("setHomeNode", &capiocl::engine::Engine::setHomeNode, py::arg("path"))
         .def("getPaths", &capiocl::engine::Engine::getPaths)
-        .def("startApiServer", &capiocl::engine::Engine::startApiServer,
-             py::arg("address") = "127.0.0.1", py::arg("port") = 5520)
+        .def("startApiServer", &capiocl::engine::Engine::startApiServer)
         .def("__str__", &capiocl::engine::Engine::print)
         .def("__repr__",
              [](const capiocl::engine::Engine &e) {
@@ -120,4 +130,24 @@ PYBIND11_MODULE(_py_capio_cl, m) {
 
     m.def("serialize", &capiocl::serializer::Serializer::dump, py::arg("engine"),
           py::arg("filename"), py::arg("version") = capiocl::CAPIO_CL_VERSION::V1);
+
+    py::class_<capiocl::engine::CapioCLEntry>(m, "CapioCLEntry")
+        .def(py::init<>())
+        .def_readwrite("producers", &capiocl::engine::CapioCLEntry::producers)
+        .def_readwrite("consumers", &capiocl::engine::CapioCLEntry::consumers)
+        .def_readwrite("file_dependencies", &capiocl::engine::CapioCLEntry::file_dependencies)
+        .def_readwrite("commit_rule", &capiocl::engine::CapioCLEntry::commit_rule)
+        .def_readwrite("fire_rule", &capiocl::engine::CapioCLEntry::fire_rule)
+        .def_readwrite("directory_children_count",
+                       &capiocl::engine::CapioCLEntry::directory_children_count)
+        .def_readwrite("commit_on_close_count",
+                       &capiocl::engine::CapioCLEntry::commit_on_close_count)
+        .def_readwrite("enable_directory_count_update",
+                       &capiocl::engine::CapioCLEntry::enable_directory_count_update)
+        .def_readwrite("store_in_memory", &capiocl::engine::CapioCLEntry::store_in_memory)
+        .def_readwrite("permanent", &capiocl::engine::CapioCLEntry::permanent)
+        .def_readwrite("excluded", &capiocl::engine::CapioCLEntry::excluded)
+        .def_readwrite("is_file", &capiocl::engine::CapioCLEntry::is_file)
+        .def_static("from_json", &capiocl::engine::CapioCLEntry::fromJson, py::arg("in"))
+        .def("to_json", &capiocl::engine::CapioCLEntry::toJson);
 }

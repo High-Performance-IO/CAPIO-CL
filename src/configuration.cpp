@@ -42,6 +42,8 @@ void capiocl::configuration::CapioClConfiguration::loadDefaults() {
     this->set(defaults::DEFAULT_MONITOR_MCAST_DELAY);
     this->set(defaults::DEFAULT_MONITOR_FS_ENABLED);
     this->set(defaults::DEFAULT_MONITOR_MCAST_ENABLED);
+    this->set(defaults::DEFAULT_API_MULTICAST_PORT);
+    this->set(defaults::DEFAULT_API_MULTICAST_IP);
 }
 
 void capiocl::configuration::CapioClConfiguration::set(const std::string &key, std::string value) {
