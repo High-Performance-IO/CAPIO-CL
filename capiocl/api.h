@@ -1,5 +1,6 @@
 #ifndef CAPIO_CL_WEBAPI_H
 #define CAPIO_CL_WEBAPI_H
+#include <atomic>
 #include <thread>
 
 #include "capiocl.hpp"
@@ -13,6 +14,9 @@ class capiocl::api::CapioClApiServer {
 
     /// @brief port on which the current server runs
     const configuration::CapioClConfiguration &capiocl_configuration;
+
+    /// @brief variable to tell the thread to terminate
+    std::atomic<bool> _terminate = false;
 
   public:
     /// @brief default constructor.

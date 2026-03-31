@@ -187,43 +187,6 @@ engine.print()
 Serializer.dump(engine, "my_workflow", "my_workflow.json")
 ```
 
-## CapioCL Web API Documentation
-
-This section describes the REST-style Web API exposed by the CapioCL Web Server.
-The server provides HTTP endpoints for configuring and querying the CapioCL engine at runtime. 
-Within the `bruno_webapi_tests` you can find several tests and examples on how to perform
-requests to the API webserver using [bruno](https://www.usebruno.com).
-
-All endpoints communicate using JSON over HTTP. To enable the webserver, users needs to explicitly start it with:
-
-```cpp
-capiocl::engine::Engine engine();
-
-// start engine with default parameters
-engine.startApiServer();
-
-// or by specifying the address and port:
-engine.startApiServer("127.0.0.1", 5520);
-```
-
-
-or equivalently in python with:
-
-```python
-engine = py_capio_cl.Engine()
-
-#start engine with default parameters
-engine.startApiServer()
-
-# or by specifying the address and port:
-engine.startApiServer("127.0.0.1", 5520)
-```
-
-By default, the webserver listens only on local connection at the following address: ```127.0.0.1:5520```. No
-authentication
-services are currently available, and as such, users should put particular care when allowing connections from external
-endpoints.
-
 ## Notes
 
 - All GET endpoints expect a JSON body containing the targeted file path.

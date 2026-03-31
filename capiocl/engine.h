@@ -1,8 +1,8 @@
 #ifndef CAPIO_CL_ENGINE_H
 #define CAPIO_CL_ENGINE_H
 #include <jsoncons/basic_json.hpp>
-#include <vector>
 #include <shared_mutex>
+#include <vector>
 
 #include "capiocl.hpp"
 #include "capiocl/api.h"
@@ -26,8 +26,10 @@ struct CapioCLEntry final {
     std::string commit_rule            = commitRules::ON_TERMINATION;
     ///@brief Fire rule
     std::string fire_rule              = fireRules::UPDATE;
-    long directory_children_count      = 0; ///@brief Expected number of files in directory
-    long commit_on_close_count         = 0; ///@brief Expected close count
+    ///@brief Expected number of files in directory
+    long directory_children_count      = 0;
+    ///@brief Expected close count
+    long commit_on_close_count         = 0;
     /// @brief whether to update or not directory item count
     bool enable_directory_count_update = true;
     /// @brief Store in memory or on the file system
@@ -342,7 +344,7 @@ class Engine final {
     std::vector<std::string> getConsumers(const std::filesystem::path &path) const;
 
     /// @brief Get the commit-on-close counter for a file.
-    long getCommitCloseCount(const std::filesystem::path::iterator::reference &path) const;
+    long getCommitCloseCount(const std::filesystem::path &path) const;
 
     /// @brief Get file dependencies.
     std::vector<std::filesystem::path>

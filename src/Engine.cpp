@@ -9,16 +9,19 @@
 #include "capiocl/monitor.h"
 #include "capiocl/printer.h"
 
+/// @brief Class to implement a shared mutex lock guard
 template <typename SharedMutex> class shared_lock_guard {
   public:
+    /// @brief Constructor: acquire semaphore shared
     explicit shared_lock_guard(SharedMutex &m) : mutex_(m) { mutex_.lock_shared(); }
-
+    /// @brief Destructor: release resources
     ~shared_lock_guard() { mutex_.unlock_shared(); }
 
     shared_lock_guard(const shared_lock_guard &)            = delete;
     shared_lock_guard &operator=(const shared_lock_guard &) = delete;
 
   private:
+    /// @brief Reference to mutex
     SharedMutex &mutex_;
 };
 
@@ -734,8 +737,7 @@ void capiocl::engine::Engine::setFileDeps(const std::filesystem::path &path,
     setFileDeps(path, dependencies);
 }
 
-long capiocl::engine::Engine::getCommitCloseCount(
-    std::filesystem::path::iterator::reference &path) const {
+long capiocl::engine::Engine::getCommitCloseCount(const std::filesystem::path &path) const {
     if (path.empty()) {
         return 0;
     }

@@ -15,35 +15,33 @@
 
 #include <string>
 
-bool sendMulticast(const std::string &message, const std::string &multicast_ip, int port) {
-    int fd = socket(AF_INET, SOCK_DGRAM, 0);
+inline bool sendMulticast(const std::string &message, const std::string &multicast_ip, int port) {
+    const int fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (fd < 0) {
         perror("socket");
         return false;
     }
 
-    u_char ttl = 1;
+    const u_char ttl = 3;
     if (setsockopt(fd, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl)) < 0) {
         perror("setsockopt (TTL)");
         close(fd);
         return false;
     }
 
-    sockaddr_in addr;
+    sockaddr_in addr{};
     addr.sin_family      = AF_INET;
     addr.sin_addr.s_addr = inet_addr(multicast_ip.c_str());
     addr.sin_port        = htons(port);
 
-    ssize_t nbytes =
-        sendto(fd, message.c_str(), message.size(), 0, (struct sockaddr *) &addr, sizeof(addr));
+    ssize_t nbytes = sendto(fd, message.c_str(), message.size(), 0,
+                            reinterpret_cast<struct sockaddr *>(&addr), sizeof(addr));
 
     if (nbytes < 0) {
         perror("sendto");
         close(fd);
         return false;
     }
-
-    std::cout << "Sent " << nbytes << " bytes to " << multicast_ip << ":" << port << std::endl;
 
     close(fd);
     return true;
@@ -93,10 +91,40 @@ TEST(WEBSERVER_SUITE_NAME, TestWebServerAPIS) {
     engine.startApiServer();
     EXPECT_FALSE(engine.contains("file.txt"));
 
+    EXPECT_TRUE(
+        sendMulticast(R"({"path" : "file.txt", "workflow_name" : "notMyWorkflow"})",
+                      capiocl::configuration::defaults::DEFAULT_API_MULTICAST_IP.v,
+                      stoi(capiocl::configuration::defaults::DEFAULT_API_MULTICAST_PORT.v)));
+
+    EXPECT_TRUE(
+        sendMulticast("notAValidJson", capiocl::configuration::defaults::DEFAULT_API_MULTICAST_IP.v,
+                      stoi(capiocl::configuration::defaults::DEFAULT_API_MULTICAST_PORT.v)));
+
+    EXPECT_TRUE(
+        sendMulticast(R"({"workflow_name" : "notMyWorkflow", "CapioClEntry":{}})",
+                      capiocl::configuration::defaults::DEFAULT_API_MULTICAST_IP.v,
+                      stoi(capiocl::configuration::defaults::DEFAULT_API_MULTICAST_PORT.v)));
+
+    EXPECT_TRUE(
+        sendMulticast(R"({"path" : "file.txt", "CapioClEntry":{}})",
+                      capiocl::configuration::defaults::DEFAULT_API_MULTICAST_IP.v,
+                      stoi(capiocl::configuration::defaults::DEFAULT_API_MULTICAST_PORT.v)));
+
+    EXPECT_TRUE(
+        sendMulticast(R"({"path" : "file.txt", "workflow_name" : "notMyWorkflow"})",
+                      capiocl::configuration::defaults::DEFAULT_API_MULTICAST_IP.v,
+                      stoi(capiocl::configuration::defaults::DEFAULT_API_MULTICAST_PORT.v)));
+
     capiocl::engine::CapioCLEntry entry;
     entry.commit_rule           = "on_file";
     entry.commit_on_close_count = 10;
     entry.fire_rule             = "no_update";
+
+    EXPECT_TRUE(sendMulticast(
+        R"({ "path" : "file.txt","workflow_name" : "notMyWorkflow", "CapioClEntry":)" +
+            entry.toJson() + "}",
+        capiocl::configuration::defaults::DEFAULT_API_MULTICAST_IP.v,
+        stoi(capiocl::configuration::defaults::DEFAULT_API_MULTICAST_PORT.v)));
 
     std::string request = R"({ "path" : "file.txt","workflow_name" : ")";
     request += capiocl::CAPIO_CL_DEFAULT_WF_NAME;
