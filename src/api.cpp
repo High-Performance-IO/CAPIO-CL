@@ -1,19 +1,19 @@
 #include <arpa/inet.h>
 #include <condition_variable>
-#include <iostream>
+#include <csignal>
 #include <jsoncons/json.hpp>
 #include <mutex>
 #include <netinet/in.h>
-#include <signal.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 #include "capiocl/api.h"
 #include "capiocl/engine.h"
 #include "capiocl/printer.h"
 
-std::mutex _setupMtx;
-std::condition_variable _setupCv;
+std::mutex setupMtx;
+std::condition_variable setupCv;
 bool thread_ready = false;
 
 /// @brief Main WebServer thread function
@@ -52,7 +52,7 @@ void server(const std::string &address, const int port, capiocl::engine::Engine 
     setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 
     thread_ready = true;
-    _setupCv.notify_all();
+    setupCv.notify_all();
 
     while (!*terminate) {
         // GCOVR_EXCL_START
@@ -120,8 +120,8 @@ capiocl::api::CapioClApiServer::CapioClApiServer(engine::Engine *engine,
 
     _webApiThread = std::thread(server, address, port, engine, &_terminate);
 
-    std::unique_lock lock(_setupMtx);
-    _setupCv.wait(lock, [] { return thread_ready; });
+    std::unique_lock lock(setupMtx);
+    setupCv.wait(lock, [] { return thread_ready; });
 
     printer::print(printer::CLI_LEVEL_INFO, "API server @ " + address + ":" + std::to_string(port));
 }

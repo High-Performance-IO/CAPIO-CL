@@ -1,139 +1,57 @@
-name: "Python Bindings Unit Tests"
+name: "Python Bindings Build & Test"
+
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   pull_request:
-    branches:
-      - main
+    branches: [ main ]
+
 concurrency:
   group: build-python-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
+
 jobs:
-  python-tests:
-    name: "Test Python bindings"
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        on: [ 'ubuntu-24.04', 'macos-15-intel', 'macos-26' ]
-        python: [ '3.10', '3.11', '3.12', '3.13', '3.14' ]
-
-    runs-on: ${{ matrix.on }}
-    env:
-      INSTALL_PREFIX: "/usr/local"
-
-    steps:
-      - name: "Checkout repository"
-        uses: actions/checkout@v6
-
-      - name: "Set up Python ${{ matrix.python }}"
-        uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.python }}
-
-      # Install platform build dependencies
-      - name: "Install system packages (Ubuntu)"
-        if: startsWith(matrix.on, 'ubuntu-')
-        run: sudo apt-get update && sudo apt-get install -y ninja-build g++ cmake libcurl4-gnutls-dev
-
-      - name: "Setup Homebrew (macOS)"
-        if: startsWith(matrix.on, 'macos-')
-        uses: Homebrew/actions/setup-homebrew@main
-
-      - name: "Install system packages (macOS)"
-        if: startsWith(matrix.on, 'macos-')
-        run: brew install ninja gcc cmake curl
-
-      - name: "Create virtual environment"
-        run: |
-          pip install -r build-requirements.txt
-          pip install -r test-requirements.txt
-
-      # Install Python build dependencies
-      - name: "Build and Install Python package"
-        run: |
-          mkdir -p /tmp/capio_cl_jsons
-          mkdir -p /tmp/capio_cl_tomls
-          cp -r tests/jsons/* /tmp/capio_cl_jsons
-          cp -r tests/tomls/* /tmp/capio_cl_tomls
-          pip install .
-
-      # Run unit tests
-      - name: "Run Python tests (Ubuntu)"
-        if: startsWith(matrix.on, 'ubuntu-')
-        run: |
-          pytest -v tests/python/test_*
-
-      - name: "Run Python tests (MacOS)"
-        if: startsWith(matrix.on, 'macos-')
-        run: |
-          pytest -k "not test_home_node" -v tests/python/test_*
-
-
-      - name: "Generate coverage report"
-        if: ${{ startsWith(matrix.on, 'ubuntu-') }}
-        run: |
-          pip install --upgrade gcovr
-           gcovr                                          \
-            --exclude-throw-branches                      \
-            --gcov-ignore-parse-errors=negative_hits.warn \
-            --exclude tests/                              \
-            --xml coverage.xml                            \
-            .
-
-      - name: "Upload coverage report"
-        if: ${{ startsWith(matrix.on, 'ubuntu-') }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{ format('{0}-{1}-tests', matrix.on, matrix.python) }}
-          path: ./coverage.xml
-          retention-days: 1
-          if-no-files-found: error
-
-  riscv-tests:
-    name: "Build & Test on RISC-V (QEMU)"
-    strategy:
-      matrix:
-        python: [ '3.10', '3.11', '3.12', '3.13', '3.14' ]
-    runs-on: ubuntu-latest
+        os:
+          - 'ubuntu-24.04'
+          - 'ubuntu-24.04-arm'
+          - 'macos-26-intel'
+          - 'macos-26'
 
     env:
-      INSTALL_PREFIX: "/usr/local"
-      PYTHON_VERSION: "${{ matrix.python }}"
+      CIBW_BEFORE_ALL_LINUX: >
+        pip install cmake ninja
+      CIBW_BEFORE_ALL_MACOS: >
+        brew install ninja gcc cmake curl
+
+      CIBW_BEFORE_BUILD: >
+        pip install -r build-requirements.txt &&
+        mkdir -p /tmp/capio_cl_jsons /tmp/capio_cl_tomls &&
+        cp -r tests/jsons/* /tmp/capio_cl_jsons/ &&
+        cp -r tests/tomls/* /tmp/capio_cl_tomls/
+
+      CIBW_BEFORE_TEST: pip install -r test-requirements.txt
+
+      CIBW_TEST_COMMAND_LINUX: "pytest -v {project}/tests/python/test_*"
+      CIBW_TEST_COMMAND_MACOS: "pytest -k 'not test_home_node' -v {project}/tests/python/test_*"
+
+      CIBW_BUILD: "cp310-* cp311-* cp312-* cp313-* cp314-*"
 
     steps:
-      - name: "Checkout repository"
+      - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: "Build and test inside RISC-V emulated environment (Debian based)"
-        uses: uraimo/run-on-arch-action@v3
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v3.4.0
+        env:
+          MACOSX_DEPLOYMENT_TARGET: "10.15"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
         with:
-          arch: riscv64
-          distro: ubuntu_latest
-          githubToken: ${{ github.token }}
-
-          install: |
-            apt-get update
-            DEBIAN_FRONTEND=noninteractive apt-get install -y \
-              python3 python3-pip python3-venv python3-wheel python3-setuptools \
-              g++ cmake ninja-build git
-
-          run: |
-            set -eux
-            echo "Building for RISC-V on Ubuntu 22.04"
-            
-            python3 -m pip install -r build-requirements.txt --break-system-packages
-            
-            mkdir -p /tmp/capio_cl_jsons
-            mkdir -p /tmp/capio_cl_tomls
-            cp -r tests/jsons/* /tmp/capio_cl_jsons
-            cp -r tests/tomls/* /tmp/capio_cl_tomls
-            
-            python3 -m build \
-              -Ccmake.define.ENABLE_COVERAGE=OFF \
-              -Ccmake.build-type=Release \
-              -Ccmake.define.CAPIO_CL_BUILD_TESTS=OFF
-            
-            pip install dist/*.whl --break-system-packages
-            python3 -m pip install -r test-requirements.txt --break-system-packages
-
-            pytest -v tests/python/test_* | tee pytest-riscv.log
+          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
+          path: ./wheelhouse/*.whl
