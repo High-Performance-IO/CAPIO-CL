@@ -158,12 +158,12 @@ target_include_directories(libcapio_cl PUBLIC
         ${jsoncons_SOURCE_DIR}/include
         ${CAPIOCL_JSON_SCHEMAS_DIRECTORY}
         ${TOMLPLUSPLUS_SOURCE_DIR}/include
+        ${CALF_SOURCE_DIR}
 )
 
 target_link_libraries(libcapio_cl PUBLIC)
 target_link_libraries(libcapio_cl PRIVATE
-        tomlplusplus::tomlplusplus calf::stl
-)
+        tomlplusplus::tomlplusplus )
 
 find_library(LIBANL anl)
 if (LIBANL)
