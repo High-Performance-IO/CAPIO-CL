@@ -68,16 +68,6 @@ set(JSONCONS_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(JSONCONS_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(JSONCONS_BUILD_FUZZERS OFF CACHE BOOL "" FORCE)
 
-# CALF build flags
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(CALF_LOG ON CACHE BOOL "" FORCE)
-else ()
-    set(CALF_LOG OFF CACHE BOOL "" FORCE)
-endif ()
-set(CALF_BUILD_STL ON CACHE BOOL "" FORCE)
-set(CALF_BUILD_SYSCALL OFF CACHE BOOL "" FORCE)
-set(CALF_COMPONENT_NAME "capiocl" CACHE STRING "capiocl" FORCE)
-
 FetchContent_MakeAvailable(jsoncons tomlplusplus calf)
 
 if (BUILD_PYTHON_BINDINGS)
@@ -145,6 +135,18 @@ set(CAPIO_CL_HEADERS capiocl.hpp)
 
 # Library target
 add_library(libcapio_cl STATIC ${CAPIO_SRC} ${CAPIO_CL_HEADERS})
+
+set(CALF_BUILD_STL ON CACHE BOOL "" FORCE)
+set(CALF_BUILD_SYSCALL OFF CACHE BOOL "" FORCE)
+
+# CALF build flags
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CALF_LOG ON CACHE BOOL "" FORCE)
+else ()
+    set(CALF_LOG OFF CACHE BOOL "" FORCE)
+endif ()
+
+calf_set_component(libcapio_cl "capio-cl")
 
 target_include_directories(libcapio_cl PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
