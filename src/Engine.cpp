@@ -28,7 +28,7 @@ template <typename SharedMutex> class shared_lock_guard {
 void capiocl::engine::Engine::print() const {
     UPDATE_CALF_CLI_CONFIG("capiocl::Engine", workflow_name);
     // First message
-    CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "");
+    CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, " ");
     CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "Composition of expected CAPIO FS: ");
 
     // Table header lines
@@ -37,7 +37,7 @@ void capiocl::engine::Engine::print() const {
 
     CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO,
                      "|     Parsed configuration file for workflow: \033[1;36m %s%s \033[0m |",
-                     workflow_name.c_str(), std::string(94 - workflow_name.length(), ' ').c_str());
+                     workflow_name.c_str(), std::string(86 - workflow_name.length(), ' ').c_str());
 
     CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "|%s|", std::string(134, ' ').c_str());
 
@@ -143,7 +143,7 @@ void capiocl::engine::Engine::print() const {
         CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "*%s*", std::string(134, '~').c_str());
     }
 
-    CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "");
+    CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, " ");
 }
 
 capiocl::engine::Engine::Engine(const bool use_default_settings) {
