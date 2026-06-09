@@ -91,6 +91,6 @@ void capiocl::configuration::CapioClConfiguration::getParameter(const std::strin
 capiocl::configuration::CapioClConfigurationException::CapioClConfigurationException(
     const std::string &msg)
     : message(msg) {
-    UPDATE_CALF_CLI_CONFIG("capiocl::CapioClConfigurationException", "");
+    UPDATE_CALF_WORKFLOW_NAME( "");
     CALF_PRINT_COLOR(CALF_CLI_LEVEL_ERROR, "%s", msg.c_str());
 }

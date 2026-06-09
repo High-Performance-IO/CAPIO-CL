@@ -7,7 +7,7 @@
 
 void capiocl::serializer::Serializer::available_serializers::serialize_v1(
     const engine::Engine &engine, const std::filesystem::path &filename) {
-    UPDATE_CALF_CLI_CONFIG("capiocl::Engine", engine.getWorkflowName());
+    UPDATE_CALF_WORKFLOW_NAME(engine.getWorkflowName());
     jsoncons::json doc;
     doc["name"] = engine.getWorkflowName();
 
