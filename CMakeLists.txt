@@ -136,17 +136,21 @@ set(CAPIO_CL_HEADERS capiocl.hpp)
 # Library target
 add_library(libcapio_cl STATIC ${CAPIO_SRC} ${CAPIO_CL_HEADERS})
 
-set(CALF_BUILD_STL ON CACHE BOOL "" FORCE)
-set(CALF_BUILD_SYSCALL OFF CACHE BOOL "" FORCE)
 
+#####################################
 # CALF build flags
+#####################################
+calf_set_component(libcapio_cl "capio-cl")
+calf_set_default_log_dir(libcapio_cl "./capiocl_logs")
+calf_build_stl(TRUE)
+calf_build_syscall(FALSE)
+
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(CALF_LOG ON CACHE BOOL "" FORCE)
+    calf_log(ON)
 else ()
-    set(CALF_LOG OFF CACHE BOOL "" FORCE)
+    calf_log(OFF)
 endif ()
 
-calf_set_component(libcapio_cl "capio-cl")
 
 target_include_directories(libcapio_cl PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
