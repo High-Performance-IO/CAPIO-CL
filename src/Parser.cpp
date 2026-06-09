@@ -1,13 +1,14 @@
 #include <filesystem>
 #include <fstream>
 
+#include "calf/StdOutLogger.h"
 #include "capiocl.hpp"
 #include "capiocl/engine.h"
 #include "capiocl/parser.h"
-#include "capiocl/printer.h"
 
 capiocl::parser::ParserException::ParserException(const std::string &msg) : message(msg) {
-    printer::print(printer::CLI_LEVEL_ERROR, msg);
+    UPDATE_CALF_CLI_CONFIG("capiocl::Parser", "");
+    CALF_PRINT_COLOR(CALF_CLI_LEVEL_ERROR, "%s", msg.c_str());
 }
 
 jsoncons::jsonschema::json_schema<jsoncons::json>
@@ -17,6 +18,7 @@ capiocl::parser::Parser::loadSchema(const char *data) {
 
 std::filesystem::path capiocl::parser::Parser::resolve(std::filesystem::path path,
                                                        const std::filesystem::path &prefix) {
+    UPDATE_CALF_CLI_CONFIG("capiocl::Parser", "");
     if (prefix.empty()) {
         return path;
     }
@@ -25,9 +27,9 @@ std::filesystem::path capiocl::parser::Parser::resolve(std::filesystem::path pat
         return path;
     }
 
-    auto resolved  = prefix / path;
-    const auto msg = "Path : " + path.string() + " IS RELATIVE! Resolved to: " + resolved.string();
-    printer::print(printer::CLI_LEVEL_WARNING, msg);
+    auto resolved = prefix / path;
+    CALF_PRINT_COLOR(CALF_CLI_LEVEL_WARNING, "Path %s IS RELATIVE! Resolved to: %s", path.c_str(),
+                     resolved.c_str());
 
     return resolved;
 }
@@ -38,7 +40,8 @@ void capiocl::parser::Parser::validate_json(const jsoncons::json &doc, const cha
         // throws jsoncons::jsonschema::validation_error on failure
         schema.validate(doc);
     } catch (const jsoncons::jsonschema::validation_error &e) {
-        printer::print(printer::CLI_LEVEL_ERROR, e.what());
+        UPDATE_CALF_CLI_CONFIG("capiocl::Parser", "");
+        CALF_PRINT_COLOR(CALF_CLI_LEVEL_ERROR, "%s", e.what());
         throw ParserException("JSON validation failed!");
     }
 }
@@ -66,8 +69,10 @@ capiocl::engine::Engine *capiocl::parser::Parser::parse(const std::filesystem::p
     }
 
     file.close();
-    printer::print(printer::CLI_LEVEL_INFO,
-                   "Parsing CAPIO-CL config file for version: " + capio_cl_release);
+
+    UPDATE_CALF_CLI_CONFIG("capiocl::Parser", "");
+    CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "Parsing CAPIO-CL config file for version:  %s",
+                     capio_cl_release.c_str());
 
     if (capio_cl_release == CAPIO_CL_VERSION::V1) {
         return available_parsers::parse_v1(source, resolve_prefix, store_only_in_memory);

@@ -3,11 +3,11 @@
 #include <memory>
 #include <sstream>
 
+#include "calf/StdOutLogger.h"
 #include "capiocl.hpp"
 #include "capiocl/configuration.h"
 #include "capiocl/engine.h"
 #include "capiocl/monitor.h"
-#include "capiocl/printer.h"
 
 /// @brief Class to implement a shared mutex lock guard
 template <typename SharedMutex> class shared_lock_guard {
@@ -26,47 +26,48 @@ template <typename SharedMutex> class shared_lock_guard {
 };
 
 void capiocl::engine::Engine::print() const {
-
+    UPDATE_CALF_CLI_CONFIG("capiocl::Engine", workflow_name);
     // First message
-    printer::print(printer::CLI_LEVEL_JSON, "");
-    printer::print(printer::CLI_LEVEL_JSON, "Composition of expected CAPIO FS: ");
+    CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "");
+    CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "Composition of expected CAPIO FS: ");
 
     // Table header lines
-    printer::print(printer::CLI_LEVEL_JSON, "*" + std::string(134, '=') + "*");
+    CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "*%s*", std::string(134, '=').c_str());
+    CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "|%s|", std::string(134, ' ').c_str());
 
-    printer::print(printer::CLI_LEVEL_JSON, "|" + std::string(134, ' ') + "|");
+    CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO,
+                     "|     Parsed configuration file for workflow: \033[1;36m %s%s \033[0m |",
+                     workflow_name.c_str(), std::string(94 - workflow_name.length(), ' ').c_str());
 
-    {
-        std::ostringstream oss;
-        oss << "|     Parsed configuration file for workflow: \033[1;36m" << workflow_name
-            << std::setw(94 - workflow_name.length()) << "\033[0m |";
-        printer::print(printer::CLI_LEVEL_JSON, oss.str());
-    }
+    CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "|%s|", std::string(134, ' ').c_str());
 
-    printer::print(printer::CLI_LEVEL_JSON, "|" + std::string(134, ' ') + "|");
+    CALF_PRINT_COLOR(
+        CALF_CLI_LEVEL_INFO,
+        "|     File color legend:     \033[48;5;034m  \033[0m File stored in memory%s|",
+        std::string(82, ' ').c_str());
 
-    std::string msg = "|     File color legend:     \033[48;5;034m  \033[0m File stored in memory";
-    msg += std::string(82, ' ') + "|";
-    printer::print(printer::CLI_LEVEL_JSON, msg);
+    CALF_PRINT_COLOR(
+        CALF_CLI_LEVEL_INFO,
+        "|                            \033[48;5;172m  \033[0m File stored on file system%s|",
+        std::string(77, ' ').c_str());
 
-    printer::print(
-        printer::CLI_LEVEL_JSON, // LCOV_EXCL_LINE
-        "|                            \033[48;5;172m  \033[0m File stored on file system" +
-            std::string(77, ' ') + "|");
+    CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "|%s|", std::string(134, ' ').c_str());
 
-    printer::print(printer::CLI_LEVEL_JSON, "|" + std::string(134, '=') + "|");
+    CALF_PRINT_COLOR(
+        CALF_CLI_LEVEL_INFO, "|%s|%s|%s|%s|%s|%s|%s|%s|%s|", std::string(6, '=').c_str(),
+        std::string(19, '=').c_str(), std::string(19, '=').c_str(), std::string(20, '=').c_str(),
+        std::string(20, '=').c_str(), std::string(12, '=').c_str(), std::string(11, '=').c_str(),
+        std::string(9, '=').c_str(), std::string(10, '=').c_str());
 
-    std::string line = "|======|===================|===================|====================";
-    line += "|====================|============|===========|=========|==========|";
-    printer::print(printer::CLI_LEVEL_JSON, line);
+    CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO,
+                     "| Kind | Filename          | Producer step     | Consumer step      |  "
+                     "Commit Rule       |  Fire Rule | Permanent | Exclude | n_files  |");
 
-    line = "| Kind | Filename          | Producer step     | Consumer step      |  ";
-    line += "Commit Rule       |  Fire Rule | Permanent | Exclude | n_files  |";
-    printer::print(printer::CLI_LEVEL_JSON, line);
-
-    line = "|======|===================|===================|====================|========";
-    line += "============|============|===========|=========|==========|";
-    printer::print(printer::CLI_LEVEL_JSON, line);
+    CALF_PRINT_COLOR(
+        CALF_CLI_LEVEL_INFO, "|%s|%s|%s|%s|%s|%s|%s|%s|%s|", std::string(6, '=').c_str(),
+        std::string(19, '=').c_str(), std::string(19, '=').c_str(), std::string(20, '=').c_str(),
+        std::string(20, '=').c_str(), std::string(12, '=').c_str(), std::string(11, '=').c_str(),
+        std::string(9, '=').c_str(), std::string(10, '=').c_str());
 
     // Iterate over _locations
     for (auto &itm : _capio_cl_entries) {
@@ -136,13 +137,13 @@ void capiocl::engine::Engine::print() const {
                 line << std::setfill(' ') << std::setw(10) << "|" << std::setw(11) << "|";
             }
 
-            printer::print(printer::CLI_LEVEL_JSON, line.str());
+            CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "%s", line.str().c_str());
         }
 
-        printer::print(printer::CLI_LEVEL_JSON, "*" + std::string(134, '~') + "*");
+        CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "*%s*", std::string(134, '~').c_str());
     }
 
-    printer::print(printer::CLI_LEVEL_JSON, "");
+    CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "");
 }
 
 capiocl::engine::Engine::Engine(const bool use_default_settings) {
@@ -899,6 +900,7 @@ bool capiocl::engine::Engine::operator==(const Engine &other) const {
     return true;
 }
 void capiocl::engine::Engine::loadConfiguration(const std::string &path) {
+    UPDATE_CALF_CLI_CONFIG("capiocl::Engine", workflow_name);
     configuration.load(path);
 
     std::string multicast_monitor_enabled, fs_monitor_enabled;
@@ -912,7 +914,7 @@ void capiocl::engine::Engine::loadConfiguration(const std::string &path) {
     if (multicast_monitor_enabled == "true") {
         monitor.registerMonitorBackend(new monitor::MulticastMonitor(configuration));
     } else {
-        printer::print(printer::CLI_LEVEL_WARNING, "Skipping registration of  MulticastMonitor");
+        CALF_PRINT_COLOR(CALF_CLI_LEVEL_WARNING, "Skipping registration of  MulticastMonitor");
     }
 
     try {
@@ -924,7 +926,7 @@ void capiocl::engine::Engine::loadConfiguration(const std::string &path) {
     if (fs_monitor_enabled == "true") {
         monitor.registerMonitorBackend(new monitor::FileSystemMonitor());
     } else {
-        printer::print(printer::CLI_LEVEL_WARNING, "Skipping registration of  FileSystemMonitor");
+        CALF_PRINT_COLOR(CALF_CLI_LEVEL_WARNING, "Skipping registration of  FileSystemMonitor");
     }
 }
 void capiocl::engine::Engine::useDefaultConfiguration() {

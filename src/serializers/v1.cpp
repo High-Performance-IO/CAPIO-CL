@@ -1,12 +1,13 @@
 #include <fstream>
 
+#include "calf/StdOutLogger.h"
 #include "capiocl.hpp"
 #include "capiocl/engine.h"
-#include "capiocl/printer.h"
 #include "capiocl/serializer.h"
 
 void capiocl::serializer::Serializer::available_serializers::serialize_v1(
     const engine::Engine &engine, const std::filesystem::path &filename) {
+    UPDATE_CALF_CLI_CONFIG("capiocl::Engine", engine.getWorkflowName());
     jsoncons::json doc;
     doc["name"] = engine.getWorkflowName();
 
@@ -57,9 +58,9 @@ void capiocl::serializer::Serializer::available_serializers::serialize_v1(
                     const auto close_count      = std::to_string(entry.commit_on_close_count);
                     streaming_item["committed"] = entry.commit_rule + ":" + close_count;
                 } else {
-                    const auto msg = "Commit rule is not ON_CLOSE but close count > 0";
-                    printer::print(printer::CLI_LEVEL_WARNING, msg);
-                    printer::print(printer::CLI_LEVEL_WARNING, "Setting commit rule = ON_CLOSE");
+                    CALF_PRINT_COLOR(CALF_CLI_LEVEL_WARNING,
+                                     "Commit rule is not ON_CLOSE but close count > 0");
+                    CALF_PRINT_COLOR(CALF_CLI_LEVEL_WARNING, "Setting commit rule = ON_CLOSE");
                     streaming_item["committed"] = std::string(commitRules::ON_CLOSE) + ":" +
                                                   std::to_string(entry.commit_on_close_count);
                 }
@@ -123,5 +124,6 @@ void capiocl::serializer::Serializer::available_serializers::serialize_v1(
     }
     out << jsoncons::pretty_print(doc) << std::endl;
 
-    printer::print(printer::CLI_LEVEL_INFO, "Configuration serialized to " + filename.string());
+    CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "Configuration serialized to %s",
+                     filename.string().c_str());
 }

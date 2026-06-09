@@ -2,10 +2,10 @@
 #include <netinet/in.h>
 #include <poll.h>
 #include <sys/socket.h>
+#include <unistd.h>
 
 #include "capiocl.hpp"
 #include "capiocl/monitor.h"
-#include "capiocl/printer.h"
 
 static std::tuple<int, sockaddr_in> outgoing_socket_multicast(const std::string &address,
                                                               const int port) {
