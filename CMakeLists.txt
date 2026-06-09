@@ -137,21 +137,6 @@ set(CAPIO_CL_HEADERS capiocl.hpp)
 add_library(libcapio_cl STATIC ${CAPIO_SRC} ${CAPIO_CL_HEADERS})
 
 
-#####################################
-# CALF build flags
-#####################################
-calf_set_component(libcapio_cl "capio-cl")
-calf_set_default_log_dir(libcapio_cl "./capiocl_logs")
-calf_build_stl(TRUE)
-calf_build_syscall(FALSE)
-
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    calf_log(ON)
-else ()
-    calf_log(OFF)
-endif ()
-
-
 target_include_directories(libcapio_cl PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -163,12 +148,20 @@ target_include_directories(libcapio_cl PUBLIC
 
 target_link_libraries(libcapio_cl PUBLIC)
 target_link_libraries(libcapio_cl PRIVATE
-        tomlplusplus::tomlplusplus )
+        tomlplusplus::tomlplusplus)
 
 find_library(LIBANL anl)
 if (LIBANL)
     target_link_libraries(libcapio_cl PRIVATE ${LIBANL})
 endif ()
+
+#####################################
+# set CALF logger component name
+#####################################
+calf_enable_log(libcapio_cl $<IF:$<CONFIG:Debug>,ON,OFF>)
+calf_set_component(libcapio_cl "capiocl")
+calf_set_default_log_dir(libcapio_cl "./capiocl_logs")
+target_include_directories(libcapio_cl PRIVATE ${CALF_SOURCE_DIR})
 
 #####################################
 # Install rules
