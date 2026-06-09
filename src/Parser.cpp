@@ -36,7 +36,7 @@ void capiocl::parser::Parser::validate_json(const jsoncons::json &doc, const cha
     jsoncons::jsonschema::json_schema<jsoncons::json> schema = loadSchema(str_schema);
     try {
         // throws jsoncons::jsonschema::validation_error on failure
-        [[maybe_unused]] auto status = schema.validate(doc);
+        schema.validate(doc);
     } catch (const jsoncons::jsonschema::validation_error &e) {
         printer::print(printer::CLI_LEVEL_ERROR, e.what());
         throw ParserException("JSON validation failed!");

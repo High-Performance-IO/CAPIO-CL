@@ -54,7 +54,7 @@ FetchContent_Declare(
 FetchContent_Declare(
         jsoncons
         GIT_REPOSITORY https://github.com/danielaparker/jsoncons.git
-        GIT_TAG v1.4.3
+        GIT_TAG v1.8.1
 )
 
 set(JSONCONS_BUILD_TESTS OFF CACHE BOOL "" FORCE)
