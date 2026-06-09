@@ -1,9 +1,11 @@
 #include "capiocl/monitor.h"
 #include "capiocl.hpp"
-#include "capiocl/printer.h"
+
+#include "calf/StdOutLogger.h"
 
 capiocl::monitor::MonitorException::MonitorException(const std::string &msg) : message(msg) {
-    printer::print(printer::CLI_LEVEL_ERROR, msg);
+    UPDATE_CALF_CLI_CONFIG("capiocl::MonitorException", "");
+    CALF_PRINT_COLOR(CALF_CLI_LEVEL_ERROR, "%s", msg.c_str());
 }
 
 bool capiocl::monitor::Monitor::isCommitted(const std::filesystem::path &path) const {

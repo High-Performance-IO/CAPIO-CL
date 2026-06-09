@@ -1,10 +1,10 @@
 #include <fstream>
 
+#include "calf/StdOutLogger.h"
 #include "capio_cl_json_schemas.hpp"
 #include "capiocl.hpp"
 #include "capiocl/engine.h"
 #include "capiocl/parser.h"
-#include "capiocl/printer.h"
 
 capiocl::engine::Engine *
 capiocl::parser::Parser::available_parsers::parse_v1_1(const std::filesystem::path &source,
@@ -22,12 +22,15 @@ capiocl::parser::Parser::available_parsers::parse_v1_1(const std::filesystem::pa
     // ---- workflow name ----
     workflow_name = doc["name"].as<std::string>();
     engine->setWorkflowName(workflow_name);
-    printer::print(printer::CLI_LEVEL_JSON, "Parsing configuration for workflow: " + workflow_name);
+    UPDATE_CALF_CLI_CONFIG("capiocl::Parser::parse_v1_1", workflow_name);
+    CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "Parsing configuration for workflow: %s",
+                     workflow_name.c_str());
 
     // ---- CAPIO-CL TOML CONFIGURATION ----
     if (doc.contains("configuration")) {
         auto toml_config_path = doc["configuration"].as<std::string>();
-        printer::print(printer::CLI_LEVEL_JSON, "Using configuration file : " + toml_config_path);
+        CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "Using TOML configuration file: %s",
+                         toml_config_path.c_str());
         engine->loadConfiguration(toml_config_path);
     } else {
         engine->useDefaultConfiguration();
@@ -36,10 +39,10 @@ capiocl::parser::Parser::available_parsers::parse_v1_1(const std::filesystem::pa
     // ---- IO_Graph ----
     for (const auto &app : doc["IO_Graph"].array_range()) {
         std::string app_name = app["name"].as<std::string>();
-        printer::print(printer::CLI_LEVEL_JSON, "Parsing config for app " + app_name);
+        CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "Parsing config for app: %s", app_name.c_str());
 
         // ---- input_stream ----
-        printer::print(printer::CLI_LEVEL_JSON, "Parsing input_stream for app " + app_name);
+        CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "Parsing input_stream for app: %s", app_name.c_str());
         for (const auto &itm : app["input_stream"].array_range()) {
             auto file_path = resolve(itm.as<std::string>(), resolve_prefix);
             engine->newFile(file_path);
@@ -47,7 +50,8 @@ capiocl::parser::Parser::available_parsers::parse_v1_1(const std::filesystem::pa
         }
 
         // ---- output_stream ----
-        printer::print(printer::CLI_LEVEL_JSON, "Parsing output_stream for app " + app_name);
+        CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "Parsing output_stream for app: %s",
+                         app_name.c_str());
         for (const auto &itm : app["output_stream"].array_range()) {
             auto file_path = resolve(itm.as<std::string>(), resolve_prefix);
             engine->newFile(file_path);
@@ -56,7 +60,8 @@ capiocl::parser::Parser::available_parsers::parse_v1_1(const std::filesystem::pa
 
         // ---- streaming ----
         if (app.contains("streaming")) {
-            printer::print(printer::CLI_LEVEL_JSON, "Parsing streaming for app " + app_name);
+            CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "Parsing streaming section for app: %s",
+                             app_name.c_str());
             for (const auto &stream_item : app["streaming"].array_range()) {
                 bool is_file = true;
                 std::vector<std::filesystem::path> streaming_names;
@@ -169,7 +174,7 @@ capiocl::parser::Parser::available_parsers::parse_v1_1(const std::filesystem::pa
                 engine->setStoreFileInMemory(file_str);
             }
         } else {
-            printer::print(printer::CLI_LEVEL_INFO, "No MEM storage section found");
+            CALF_PRINT_COLOR(CALF_CLI_LEVEL_WARNING, "No MEM storage section found");
         }
 
         if (storage.contains("fs")) {
@@ -178,15 +183,15 @@ capiocl::parser::Parser::available_parsers::parse_v1_1(const std::filesystem::pa
                 engine->setStoreFileInFileSystem(file_str);
             }
         } else {
-            printer::print(printer::CLI_LEVEL_INFO, "No FS storage section found");
+            CALF_PRINT_COLOR(CALF_CLI_LEVEL_WARNING, "No FS storage section found");
         }
     } else {
-        printer::print(printer::CLI_LEVEL_INFO, "No storage section found");
+        CALF_PRINT_COLOR(CALF_CLI_LEVEL_WARNING, "No STORAGE storage section found");
     }
 
     // ---- Store only in memory ----
     if (store_only_in_memory) {
-        printer::print(printer::CLI_LEVEL_INFO, "Storing all files in memory");
+        CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "Storing all files in memory");
         engine->setAllStoreInMemory();
     }
 

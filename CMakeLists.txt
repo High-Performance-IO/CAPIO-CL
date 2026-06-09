@@ -57,11 +57,27 @@ FetchContent_Declare(
         GIT_TAG v1.8.1
 )
 
+FetchContent_Declare(
+        calf
+        GIT_REPOSITORY https://github.com/High-Performance-IO/calf.git
+        GIT_TAG main
+)
+
+# JSONCONS build flags
 set(JSONCONS_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(JSONCONS_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(JSONCONS_BUILD_FUZZERS OFF CACHE BOOL "" FORCE)
 
-FetchContent_MakeAvailable(jsoncons tomlplusplus)
+# CALF build flags
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CALF_LOG ON CACHE BOOL "" FORCE)
+else ()
+    set(CALF_LOG OFF CACHE BOOL "" FORCE)
+endif ()
+set(CALF_BUILD_STL ON CACHE BOOL "" FORCE)
+set(CALF_BUILD_SYSCALL OFF CACHE BOOL "" FORCE)
+
+FetchContent_MakeAvailable(jsoncons tomlplusplus calf)
 
 if (BUILD_PYTHON_BINDINGS)
     FetchContent_Declare(
@@ -139,11 +155,11 @@ target_include_directories(libcapio_cl PUBLIC
 
 target_link_libraries(libcapio_cl PUBLIC)
 target_link_libraries(libcapio_cl PRIVATE
-        tomlplusplus::tomlplusplus
+        tomlplusplus::tomlplusplus calf::stl
 )
 
 find_library(LIBANL anl)
-if(LIBANL)
+if (LIBANL)
     target_link_libraries(libcapio_cl PRIVATE ${LIBANL})
 endif ()
 
@@ -202,7 +218,7 @@ if (CAPIO_CL_BUILD_TESTS)
             CURL::libcurl
     )
 
-    if(LIBANL)
+    if (LIBANL)
         target_link_libraries(CAPIO_CL_tests PRIVATE ${LIBANL})
     endif ()
 
@@ -296,11 +312,11 @@ if (ENABLE_COVERAGE_PIPELINE)
 
             COMMAND ${LCOV_BIN}
             --remove ${COVERAGE_INFO}
-                    "*jsoncons*"
-                    "/usr/include/*"
-                    "*googletest*"
-                    "*tests/*"
-                    ${COVERAGE_REMOVE_PATTERNS}
+            "*jsoncons*"
+            "/usr/include/*"
+            "*googletest*"
+            "*tests/*"
+            ${COVERAGE_REMOVE_PATTERNS}
             --ignore-errors unused
             --ignore-errors inconsistent
             --output-file ${COVERAGE_INFO}
