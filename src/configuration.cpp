@@ -1,8 +1,8 @@
 #include <string>
 #include <utility>
 
-#include "capiocl/configuration.h"
 #include "calf/StdOutLogger.h"
+#include "capiocl/configuration.h"
 #include "toml++/toml.hpp"
 
 void load_config_to_memory(const toml::table &tbl,
@@ -91,6 +91,6 @@ void capiocl::configuration::CapioClConfiguration::getParameter(const std::strin
 capiocl::configuration::CapioClConfigurationException::CapioClConfigurationException(
     const std::string &msg)
     : message(msg) {
-    UPDATE_CALF_WORKFLOW_NAME( "");
+    UPDATE_CALF_WORKFLOW_NAME("");
     CALF_PRINT_COLOR(CALF_CLI_LEVEL_ERROR, "%s", msg.c_str());
 }
