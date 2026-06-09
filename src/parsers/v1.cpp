@@ -25,7 +25,7 @@ capiocl::parser::Parser::available_parsers::parse_v1(const std::filesystem::path
     // ---- workflow name ----
     workflow_name = doc["name"].as<std::string>();
     engine->setWorkflowName(workflow_name);
-    UPDATE_CALF_CLI_CONFIG("capiocl::Parser::parse_v1", workflow_name);
+    UPDATE_CALF_WORKFLOW_NAME(workflow_name);
     CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "Parsing configuration for workflow: %s",
                      workflow_name.c_str());
 

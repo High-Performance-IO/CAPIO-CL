@@ -26,7 +26,7 @@ template <typename SharedMutex> class shared_lock_guard {
 };
 
 void capiocl::engine::Engine::print() const {
-    UPDATE_CALF_CLI_CONFIG("capiocl::Engine", workflow_name);
+    UPDATE_CALF_WORKFLOW_NAME(workflow_name);
     // First message
     CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, " ");
     CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "Composition of expected CAPIO FS: ");
@@ -900,7 +900,7 @@ bool capiocl::engine::Engine::operator==(const Engine &other) const {
     return true;
 }
 void capiocl::engine::Engine::loadConfiguration(const std::string &path) {
-    UPDATE_CALF_CLI_CONFIG("capiocl::Engine", workflow_name);
+    UPDATE_CALF_WORKFLOW_NAME(workflow_name);
     configuration.load(path);
 
     std::string multicast_monitor_enabled, fs_monitor_enabled;

@@ -7,7 +7,7 @@
 #include "capiocl/parser.h"
 
 capiocl::parser::ParserException::ParserException(const std::string &msg) : message(msg) {
-    UPDATE_CALF_CLI_CONFIG("capiocl::Parser", "");
+    UPDATE_CALF_WORKFLOW_NAME("");
     CALF_PRINT_COLOR(CALF_CLI_LEVEL_ERROR, "%s", msg.c_str());
 }
 
@@ -18,7 +18,7 @@ capiocl::parser::Parser::loadSchema(const char *data) {
 
 std::filesystem::path capiocl::parser::Parser::resolve(std::filesystem::path path,
                                                        const std::filesystem::path &prefix) {
-    UPDATE_CALF_CLI_CONFIG("capiocl::Parser", "");
+    UPDATE_CALF_WORKFLOW_NAME("");
     if (prefix.empty()) {
         return path;
     }
@@ -40,7 +40,7 @@ void capiocl::parser::Parser::validate_json(const jsoncons::json &doc, const cha
         // throws jsoncons::jsonschema::validation_error on failure
         schema.validate(doc);
     } catch (const jsoncons::jsonschema::validation_error &e) {
-        UPDATE_CALF_CLI_CONFIG("capiocl::Parser", "");
+        UPDATE_CALF_WORKFLOW_NAME("");
         CALF_PRINT_COLOR(CALF_CLI_LEVEL_ERROR, "%s", e.what());
         throw ParserException("JSON validation failed!");
     }
@@ -70,7 +70,7 @@ capiocl::engine::Engine *capiocl::parser::Parser::parse(const std::filesystem::p
 
     file.close();
 
-    UPDATE_CALF_CLI_CONFIG("capiocl::Parser", "");
+    UPDATE_CALF_WORKFLOW_NAME("");
     CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "Parsing CAPIO-CL config file for version:  %s",
                      capio_cl_release.c_str());
 

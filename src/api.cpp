@@ -21,7 +21,7 @@ bool thread_ready = false;
 void server(const std::string &address, const int port, capiocl::engine::Engine *engine,
             std::atomic<bool> *terminate) {
 
-    UPDATE_CALF_CLI_CONFIG("CapioClApiServer::server", engine->getWorkflowName());
+    UPDATE_CALF_WORKFLOW_NAME(engine->getWorkflowName());
 
     constexpr int RECV_BUF_SIZE = 65535;
 
@@ -107,7 +107,7 @@ capiocl::api::CapioClApiServer::CapioClApiServer(engine::Engine *engine,
                                                  configuration::CapioClConfiguration &config)
     : capiocl_configuration(config) {
 
-    UPDATE_CALF_CLI_CONFIG("CapioClApiServer::CapioClApiServer", engine->getWorkflowName());
+    UPDATE_CALF_WORKFLOW_NAME(engine->getWorkflowName());
 
     std::string address;
     int port;

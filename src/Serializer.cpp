@@ -10,7 +10,7 @@
 void capiocl::serializer::Serializer::dump(const engine::Engine &engine,
                                            const std::filesystem::path &filename,
                                            const std::string &version) {
-    UPDATE_CALF_CLI_CONFIG("capiocl::Serializer", engine.getWorkflowName());
+    UPDATE_CALF_WORKFLOW_NAME(engine.getWorkflowName());
     if (version == CAPIO_CL_VERSION::V1) {
         CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "Serializing engine with V1 specification");
         available_serializers::serialize_v1(engine, filename);
@@ -25,6 +25,6 @@ void capiocl::serializer::Serializer::dump(const engine::Engine &engine,
 
 capiocl::serializer::SerializerException::SerializerException(const std::string &msg)
     : message(msg) {
-    UPDATE_CALF_CLI_CONFIG("capiocl::Serializer", "");
+    UPDATE_CALF_WORKFLOW_NAME("");
     CALF_PRINT_COLOR(CALF_CLI_LEVEL_ERROR, "%s", msg.c_str());
 }

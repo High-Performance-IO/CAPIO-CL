@@ -4,7 +4,7 @@
 #include "calf/StdOutLogger.h"
 
 capiocl::monitor::MonitorException::MonitorException(const std::string &msg) : message(msg) {
-    UPDATE_CALF_CLI_CONFIG("capiocl::MonitorException", "");
+    UPDATE_CALF_WORKFLOW_NAME("");
     CALF_PRINT_COLOR(CALF_CLI_LEVEL_ERROR, "%s", msg.c_str());
 }
 

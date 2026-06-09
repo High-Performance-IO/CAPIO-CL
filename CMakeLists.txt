@@ -76,6 +76,7 @@ else ()
 endif ()
 set(CALF_BUILD_STL ON CACHE BOOL "" FORCE)
 set(CALF_BUILD_SYSCALL OFF CACHE BOOL "" FORCE)
+set(CALF_COMPONENT_NAME "capiocl" CACHE STRING "capiocl" FORCE)
 
 FetchContent_MakeAvailable(jsoncons tomlplusplus calf)
 
