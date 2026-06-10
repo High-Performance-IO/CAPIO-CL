@@ -78,7 +78,8 @@ static int incoming_socket_multicast(const std::string &address_ip, const int po
 void capiocl::monitor::MulticastMonitor::commit_listener(std::vector<std::string> &committed_files,
                                                          std::mutex &lock,
                                                          const std::string &ip_addr,
-                                                         const int ip_port, const bool *terminate) {
+                                                         const int ip_port,
+                                                         const std::atomic<bool> *terminate) {
     pthread_setcancelstate(PTHREAD_CANCEL_ASYNCHRONOUS, nullptr);
     sockaddr_in addr_in = {};
     socklen_t addr_len  = {};
@@ -134,7 +135,7 @@ void capiocl::monitor::MulticastMonitor::commit_listener(std::vector<std::string
 
 void capiocl::monitor::MulticastMonitor::home_node_listener(
     std::unordered_map<std::string, std::string> &home_nodes, std::mutex &lock,
-    const std::string &ip_addr, int ip_port, const bool *terminate) {
+    const std::string &ip_addr, int ip_port, const std::atomic<bool> *terminate) {
     pthread_setcancelstate(PTHREAD_CANCEL_ASYNCHRONOUS, nullptr);
 
     char this_hostname[HOST_NAME_MAX] = {};
@@ -168,7 +169,7 @@ void capiocl::monitor::MulticastMonitor::home_node_listener(
         }
 
         // LCOV_EXCL_START
-        if (recvfrom(socket, incoming_message, MESSAGE_SIZE, 0, addr, &addr_len) < 0) {
+        if (recvfrom(socket, incoming_message, MESSAGE_SIZE, MSG_DONTWAIT, addr, &addr_len) < 0) {
             continue;
         }
         // LCOV_EXCL_STOP
@@ -244,11 +245,12 @@ capiocl::monitor::MulticastMonitor::~MulticastMonitor() {
 
     terminate = true;
 
-    pthread_cancel(commit_thread.native_handle());
-    commit_thread.join();
-
-    pthread_cancel(home_node_thread.native_handle());
-    home_node_thread.join();
+    if (commit_thread.joinable()) {
+        commit_thread.join();
+    }
+    if (home_node_thread.joinable()) {
+        home_node_thread.join();
+    }
 }
 
 bool capiocl::monitor::MulticastMonitor::isCommitted(const std::filesystem::path &path) const {

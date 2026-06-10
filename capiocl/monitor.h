@@ -1,6 +1,7 @@
 #ifndef CAPIO_CL_MONITOR_H
 #define CAPIO_CL_MONITOR_H
 
+#include <atomic>
 #include <filesystem>
 #include <mutex>
 #include <set>
@@ -147,7 +148,7 @@ class MulticastMonitor final : public MonitorInterface {
     std::string MULTICAST_HOME_NODE_ADDR;
 
     /// @brief variable to terminate execution
-    bool terminate = false;
+    std::atomic<bool> terminate = false;
 
     /// @brief Multicast poll timeout interval
     static constexpr int MULTICAST_THREAD_POLL_INTERVAL = 250;
@@ -189,10 +190,11 @@ class MulticastMonitor final : public MonitorInterface {
      * @param lock Mutex protecting shared access to committed_files.
      * @param ip_addr Multicast commit listen address.
      * @param ip_port Multicast commit listen port.
-     * @param terminate Boolean flag to terminate thread
+     * @param terminate Atomic Boolean flag to terminate thread
      */
     static void commit_listener(std::vector<std::string> &committed_files, std::mutex &lock,
-                                const std::string &ip_addr, int ip_port, const bool *terminate);
+                                const std::string &ip_addr, int ip_port,
+                                const std::atomic<bool> *terminate);
 
     /**
      * @brief Background thread function to listen for commit messages.
@@ -205,10 +207,11 @@ class MulticastMonitor final : public MonitorInterface {
      * @param lock Mutex protecting shared access to committed_files.
      * @param ip_addr Multicast home node listen address.
      * @param ip_port Multicast home node listen port.
+     * @param terminate Atomic Boolean flag to terminate thread
      */
     static void home_node_listener(std::unordered_map<std::string, std::string> &home_nodes,
                                    std::mutex &lock, const std::string &ip_addr, int ip_port,
-                                   const bool *terminate);
+                                   const std::atomic<bool> *terminate);
 
   public:
     /**
