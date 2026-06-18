@@ -9,9 +9,9 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#include "calf/StdOutLogger.h"
 #include "capiocl/api.h"
 #include "capiocl/engine.h"
-#include "capiocl/printer.h"
 
 std::mutex _setupMtx;
 std::condition_variable _setupCv;
@@ -20,6 +20,8 @@ bool thread_ready = false;
 /// @brief Main WebServer thread function
 void server(const std::string &address, const int port, capiocl::engine::Engine *engine,
             std::atomic<bool> *terminate) {
+
+    UPDATE_CALF_WORKFLOW_NAME(engine->getWorkflowName());
 
     constexpr int RECV_BUF_SIZE = 65535;
 
@@ -93,8 +95,8 @@ void server(const std::string &address, const int port, capiocl::engine::Engine 
             }
 
         } catch (const jsoncons::json_exception &e) {
-            capiocl::printer::print(capiocl::printer::CLI_LEVEL_ERROR,
-                                    "APIServer: Received invalid json: " + std::string(e.what()));
+            CALF_PRINT_COLOR(CALF_CLI_LEVEL_ERROR, "APIServer: Received invalid json: %s",
+                             e.what());
         }
     }
 
@@ -104,6 +106,8 @@ void server(const std::string &address, const int port, capiocl::engine::Engine 
 capiocl::api::CapioClApiServer::CapioClApiServer(engine::Engine *engine,
                                                  configuration::CapioClConfiguration &config)
     : capiocl_configuration(config) {
+
+    UPDATE_CALF_WORKFLOW_NAME(engine->getWorkflowName());
 
     std::string address;
     int port;
@@ -124,7 +128,7 @@ capiocl::api::CapioClApiServer::CapioClApiServer(engine::Engine *engine,
     std::unique_lock lock(_setupMtx);
     _setupCv.wait(lock, [] { return thread_ready; });
 
-    printer::print(printer::CLI_LEVEL_INFO, "API server @ " + address + ":" + std::to_string(port));
+    CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "API server @ %s:%d", address.c_str(), port);
 }
 
 capiocl::api::CapioClApiServer::~CapioClApiServer() {

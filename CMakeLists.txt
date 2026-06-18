@@ -57,11 +57,18 @@ FetchContent_Declare(
         GIT_TAG v1.8.1
 )
 
+FetchContent_Declare(
+        calf
+        GIT_REPOSITORY https://github.com/High-Performance-IO/calf.git
+        GIT_TAG main
+)
+
+# JSONCONS build flags
 set(JSONCONS_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(JSONCONS_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(JSONCONS_BUILD_FUZZERS OFF CACHE BOOL "" FORCE)
 
-FetchContent_MakeAvailable(jsoncons tomlplusplus)
+FetchContent_MakeAvailable(jsoncons tomlplusplus calf)
 
 if (BUILD_PYTHON_BINDINGS)
     FetchContent_Declare(
@@ -129,23 +136,32 @@ set(CAPIO_CL_HEADERS capiocl.hpp)
 # Library target
 add_library(libcapio_cl STATIC ${CAPIO_SRC} ${CAPIO_CL_HEADERS})
 
+
 target_include_directories(libcapio_cl PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${jsoncons_SOURCE_DIR}/include
         ${CAPIOCL_JSON_SCHEMAS_DIRECTORY}
         ${TOMLPLUSPLUS_SOURCE_DIR}/include
+        ${CALF_SOURCE_DIR}
 )
 
 target_link_libraries(libcapio_cl PUBLIC)
 target_link_libraries(libcapio_cl PRIVATE
-        tomlplusplus::tomlplusplus
-)
+        tomlplusplus::tomlplusplus)
 
 find_library(LIBANL anl)
-if(LIBANL)
+if (LIBANL)
     target_link_libraries(libcapio_cl PRIVATE ${LIBANL})
 endif ()
+
+#####################################
+# set CALF logger component name
+#####################################
+calf_enable_log(libcapio_cl $<IF:$<CONFIG:Debug>,ON,OFF>)
+calf_set_component(libcapio_cl "capiocl")
+calf_set_default_log_dir(libcapio_cl "./capiocl_logs")
+target_include_directories(libcapio_cl PRIVATE ${CALF_SOURCE_DIR})
 
 #####################################
 # Install rules
@@ -202,7 +218,7 @@ if (CAPIO_CL_BUILD_TESTS)
             CURL::libcurl
     )
 
-    if(LIBANL)
+    if (LIBANL)
         target_link_libraries(CAPIO_CL_tests PRIVATE ${LIBANL})
     endif ()
 
@@ -296,11 +312,11 @@ if (ENABLE_COVERAGE_PIPELINE)
 
             COMMAND ${LCOV_BIN}
             --remove ${COVERAGE_INFO}
-                    "*jsoncons*"
-                    "/usr/include/*"
-                    "*googletest*"
-                    "*tests/*"
-                    ${COVERAGE_REMOVE_PATTERNS}
+            "*jsoncons*"
+            "/usr/include/*"
+            "*googletest*"
+            "*tests/*"
+            ${COVERAGE_REMOVE_PATTERNS}
             --ignore-errors unused
             --ignore-errors inconsistent
             --output-file ${COVERAGE_INFO}
