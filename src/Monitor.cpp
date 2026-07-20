@@ -1,7 +1,6 @@
 #include "capiocl/monitor.h"
 #include "capiocl.hpp"
 
-
 capiocl::monitor::MonitorException::MonitorException(const std::string &msg) : message(msg) {
     std::cerr << msg << std::endl;
 }
@@ -28,7 +27,7 @@ void capiocl::monitor::Monitor::setHomeNode(const std::filesystem::path &path) c
 std::set<std::string>
 capiocl::monitor::Monitor::getHomeNode(const std::filesystem::path &path) const {
     std::set<std::string> home_nodes;
-    for (const auto &interface: interfaces) {
+    for (const auto &interface : interfaces) {
         const auto node = interface->getHomeNode(path);
         if (node == NO_HOME_NODE) {
             continue;
@@ -39,7 +38,7 @@ capiocl::monitor::Monitor::getHomeNode(const std::filesystem::path &path) const 
 }
 
 capiocl::monitor::Monitor::~Monitor() {
-    for (const auto &interface: interfaces) {
+    for (const auto &interface : interfaces) {
         delete interface;
     }
 }

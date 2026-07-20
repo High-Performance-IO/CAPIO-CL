@@ -16,8 +16,11 @@
 /// @brief Namespace containing the CAPIO-CL Monitor components
 namespace capiocl::monitor {
 
+/// @brief Buffer size used to store a null-terminated host name.
 inline constexpr std::size_t HOSTNAME_BUFFER_SIZE = 1024;
-inline constexpr std::size_t PATH_BUFFER_SIZE     = 4096;
+
+/// @brief Maximum path storage used in multicast monitor messages.
+inline constexpr std::size_t PATH_BUFFER_SIZE = 4096;
 
 /// @brief Constant value for when a home node is not found
 static const std::string NO_HOME_NODE = "<NONE>";

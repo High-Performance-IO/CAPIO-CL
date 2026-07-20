@@ -57,8 +57,8 @@ void capiocl::monitor::FileSystemMonitor::setHomeNode(const std::filesystem::pat
     generate_home_node_token(path, _hostname);
 }
 
-std::string capiocl::monitor::FileSystemMonitor::getHomeNode(
-    const std::filesystem::path &path) const {
+std::string
+capiocl::monitor::FileSystemMonitor::getHomeNode(const std::filesystem::path &path) const {
 
     auto home_node_token = compute_capiocl_token_name(path, HOME_NODE);
 

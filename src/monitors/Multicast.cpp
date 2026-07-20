@@ -10,9 +10,9 @@
 static std::tuple<int, sockaddr_in> outgoing_socket_multicast(const std::string &address,
                                                               const int port) {
     sockaddr_in addr{};
-    addr.sin_family = AF_INET;
+    addr.sin_family      = AF_INET;
     addr.sin_addr.s_addr = inet_addr(address.c_str());
-    addr.sin_port = htons(port);
+    addr.sin_port        = htons(port);
 
     const int transmission_socket = socket(AF_INET, SOCK_DGRAM, 0);
     // LCOV_EXCL_START
@@ -27,16 +27,16 @@ static std::tuple<int, sockaddr_in> outgoing_socket_multicast(const std::string 
 
 static int incoming_socket_multicast(const std::string &address_ip, const int port,
                                      sockaddr_in &addr, socklen_t &addrlen) {
-    constexpr int loopback = 1; // enable reception of loopback messages
+    constexpr int loopback   = 1; // enable reception of loopback messages
     constexpr int multi_bind = 1; // enable multiple sockets on same address
 
-    addr = {};
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(port);
+    addr                 = {};
+    addr.sin_family      = AF_INET;
+    addr.sin_port        = htons(port);
     addr.sin_addr.s_addr = inet_addr(address_ip.c_str());
-    addrlen = sizeof(addr);
+    addrlen              = sizeof(addr);
 
-    ip_mreq mreq = {};
+    ip_mreq mreq              = {};
     mreq.imr_multiaddr.s_addr = inet_addr(address_ip.c_str());
     mreq.imr_interface.s_addr = htonl(INADDR_ANY);
 
@@ -89,19 +89,19 @@ void capiocl::monitor::MulticastMonitor::commit_listener(std::vector<std::string
                                                          const int ip_port,
                                                          const std::atomic<bool> *terminate) {
     sockaddr_in addr_in = {};
-    socklen_t addr_len = {};
+    socklen_t addr_len  = {};
     int socket;
     try {
         socket = incoming_socket_multicast(ip_addr, ip_port, addr_in, addr_len);
     } catch (const MonitorException &) {
         return;
     }
-    const auto addr = reinterpret_cast<sockaddr *>(&addr_in);
+    const auto addr                     = reinterpret_cast<sockaddr *>(&addr_in);
     char incoming_message[MESSAGE_SIZE] = {0};
 
     // Polling for non blocking
     pollfd pfd = {};
-    pfd.fd = socket;
+    pfd.fd     = socket;
     pfd.events = POLLIN | POLLPRI;
 
     do {
@@ -120,7 +120,8 @@ void capiocl::monitor::MulticastMonitor::commit_listener(std::vector<std::string
         }
 
         // LCOV_EXCL_START
-        const auto incoming_size = recvfrom(socket, incoming_message, MESSAGE_SIZE, MSG_DONTWAIT, addr, &addr_len);
+        const auto incoming_size =
+            recvfrom(socket, incoming_message, MESSAGE_SIZE, MSG_DONTWAIT, addr, &addr_len);
         if (incoming_size < 0) {
             continue;
         }
@@ -158,7 +159,7 @@ void capiocl::monitor::MulticastMonitor::home_node_listener(
     this_hostname[sizeof(this_hostname) - 1] = '\0';
 
     sockaddr_in addr_in = {};
-    socklen_t addr_len = {};
+    socklen_t addr_len  = {};
     int socket;
     try {
         socket = incoming_socket_multicast(ip_addr, ip_port, addr_in, addr_len);
@@ -166,7 +167,7 @@ void capiocl::monitor::MulticastMonitor::home_node_listener(
         return;
     }
 
-    const auto addr = reinterpret_cast<sockaddr *>(&addr_in);
+    const auto addr                     = reinterpret_cast<sockaddr *>(&addr_in);
     char incoming_message[MESSAGE_SIZE] = {0};
 
     do {
@@ -174,7 +175,7 @@ void capiocl::monitor::MulticastMonitor::home_node_listener(
 
         // Polling for non blocking
         pollfd pfd = {};
-        pfd.fd = socket;
+        pfd.fd     = socket;
         pfd.events = POLLIN | POLLPRI;
 
         // TODO: migrate to epoll for linux and kqueue on MacOS
@@ -190,7 +191,8 @@ void capiocl::monitor::MulticastMonitor::home_node_listener(
         }
 
         // LCOV_EXCL_START
-        const auto incoming_size = recvfrom(socket, incoming_message, MESSAGE_SIZE, MSG_DONTWAIT, addr, &addr_len);
+        const auto incoming_size =
+            recvfrom(socket, incoming_message, MESSAGE_SIZE, MSG_DONTWAIT, addr, &addr_len);
         if (incoming_size < 0) {
             continue;
         }
@@ -205,7 +207,7 @@ void capiocl::monitor::MulticastMonitor::home_node_listener(
                 tokens.push_back(incoming_message_str.substr(start, end - start));
             }
             start = end + 1;
-            end = incoming_message_str.find(' ', start);
+            end   = incoming_message_str.find(' ', start);
         }
 
         if (start < incoming_message_str.length()) {
@@ -222,7 +224,7 @@ void capiocl::monitor::MulticastMonitor::home_node_listener(
                 // need "! <path> <host>" -> malformed message, skip
                 continue;
             }
-            const auto &path = tokens[1];
+            const auto &path      = tokens[1];
             const auto &home_node = tokens[2];
             std::lock_guard lg(lock);
             home_nodes[path] = home_node;
@@ -263,12 +265,12 @@ capiocl::monitor::MulticastMonitor::MulticastMonitor(
     config.getParameter("monitor.mcast.delay_ms", &MULTICAST_DELAY_MILLIS);
 
     commit_thread =
-            std::thread(&commit_listener, std::ref(_committed_files), std::ref(committed_lock),
-                        MULTICAST_COMMIT_ADDR, MULTICAST_COMMIT_PORT, &this->terminate);
+        std::thread(&commit_listener, std::ref(_committed_files), std::ref(committed_lock),
+                    MULTICAST_COMMIT_ADDR, MULTICAST_COMMIT_PORT, &this->terminate);
 
     home_node_thread =
-            std::thread(&home_node_listener, std::ref(_home_nodes), std::ref(home_node_lock),
-                        MULTICAST_HOME_NODE_ADDR, MULTICAST_HOME_NODE_PORT, &this->terminate);
+        std::thread(&home_node_listener, std::ref(_home_nodes), std::ref(home_node_lock),
+                    MULTICAST_HOME_NODE_ADDR, MULTICAST_HOME_NODE_PORT, &this->terminate);
 
     gethostname(_hostname, sizeof(_hostname));
     _hostname[sizeof(_hostname) - 1] = '\0';
@@ -280,7 +282,8 @@ capiocl::monitor::MulticastMonitor::~MulticastMonitor() {
     home_node_thread.join();
 }
 
-bool capiocl::monitor::MulticastMonitor::isCommitted(const std::filesystem::path &path) const { {
+bool capiocl::monitor::MulticastMonitor::isCommitted(const std::filesystem::path &path) const {
+    {
         const std::lock_guard lg(committed_lock);
         if (std::find(_committed_files.begin(), _committed_files.end(), path) !=
             _committed_files.end()) {
@@ -289,7 +292,8 @@ bool capiocl::monitor::MulticastMonitor::isCommitted(const std::filesystem::path
     }
 
     _send_message(MULTICAST_COMMIT_ADDR, MULTICAST_COMMIT_PORT, path, GET);
-    std::this_thread::sleep_for(std::chrono::milliseconds(MULTICAST_DELAY_MILLIS)); {
+    std::this_thread::sleep_for(std::chrono::milliseconds(MULTICAST_DELAY_MILLIS));
+    {
         const std::lock_guard lg(committed_lock);
         return std::find(_committed_files.begin(), _committed_files.end(), path) !=
                _committed_files.end();
@@ -313,8 +317,9 @@ void capiocl::monitor::MulticastMonitor::setHomeNode(const std::filesystem::path
     _home_nodes[path] = _hostname;
 }
 
-std::string capiocl::monitor::MulticastMonitor::getHomeNode(
-    const std::filesystem::path &path) const { {
+std::string
+capiocl::monitor::MulticastMonitor::getHomeNode(const std::filesystem::path &path) const {
+    {
         const std::lock_guard lg(home_node_lock);
         if (const auto itm = _home_nodes.find(path); itm != _home_nodes.end()) {
             return itm->second;
