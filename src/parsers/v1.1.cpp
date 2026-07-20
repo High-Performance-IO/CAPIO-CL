@@ -1,6 +1,7 @@
 #include <fstream>
 
 #include "calf/StdOutLogger.h"
+#include "calf/StlLogger.h"
 #include "capio_cl_json_schemas.hpp"
 #include "capiocl.hpp"
 #include "capiocl/engine.h"
@@ -10,6 +11,7 @@ capiocl::engine::Engine *
 capiocl::parser::Parser::available_parsers::parse_v1_1(const std::filesystem::path &source,
                                                        const std::filesystem::path &resolve_prefix,
                                                        bool store_only_in_memory) {
+    START_LOG(calf_current_tid(), "call()");
     std::string workflow_name = CAPIO_CL_DEFAULT_WF_NAME;
     auto engine               = new engine::Engine(false);
 
@@ -195,5 +197,7 @@ capiocl::parser::Parser::available_parsers::parse_v1_1(const std::filesystem::pa
         engine->setAllStoreInMemory();
     }
 
+    LOG("parsed v1.1 source=%s workflow=%s entries=%zu memory_only=%d", source.string().c_str(),
+        workflow_name.c_str(), engine->size(), static_cast<int>(store_only_in_memory));
     return engine;
 }

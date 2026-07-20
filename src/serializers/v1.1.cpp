@@ -1,12 +1,14 @@
 #include <fstream>
 
 #include "calf/StdOutLogger.h"
+#include "calf/StlLogger.h"
 #include "capiocl.hpp"
 #include "capiocl/engine.h"
 #include "capiocl/serializer.h"
 
 void capiocl::serializer::Serializer::available_serializers::serialize_v1_1(
     const engine::Engine &engine, const std::filesystem::path &filename) {
+    START_LOG(calf_current_tid(), "call()");
     UPDATE_CALF_WORKFLOW_NAME(engine.getWorkflowName());
     jsoncons::json doc;
     doc["version"] = 1.1;
@@ -121,10 +123,18 @@ void capiocl::serializer::Serializer::available_serializers::serialize_v1_1(
 
     std::ofstream out(filename);
     if (!out.is_open()) {
+        LOG("failed to open serialization output=%s", filename.string().c_str());
         throw SerializerException("Failed to open output file: " + filename.string());
     }
     out << jsoncons::pretty_print(doc) << std::endl;
-
+    if (!out.good()) {
+        LOG("failed to write serialization output=%s stream_state=%d", filename.string().c_str(),
+            static_cast<int>(out.rdstate()));
+    } else {
+        LOG("serialized v1.1 workflow=%s output=%s entries=%zu applications=%zu",
+            engine.getWorkflowName().c_str(), filename.string().c_str(), files.size(),
+            io_graph.size());
+    }
     CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "Configuration serialized to %s",
                      filename.string().c_str());
 }
