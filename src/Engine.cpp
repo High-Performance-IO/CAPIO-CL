@@ -259,7 +259,7 @@ void capiocl::engine::Engine::add(std::filesystem::path &path, std::vector<std::
                                   std::vector<std::string> &consumers,
                                   const std::string &commit_rule, const std::string &fire_rule,
                                   bool permanent, bool exclude,
-                                   std::vector<std::filesystem::path> &dependencies) {
+                                  std::vector<std::filesystem::path> &dependencies) {
     START_LOG(calf_current_tid(), "call()");
     if (path.empty()) {
         return;

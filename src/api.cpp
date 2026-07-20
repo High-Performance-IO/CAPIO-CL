@@ -20,7 +20,7 @@ bool thread_ready = false;
 
 /// @brief Main WebServer thread function
 void server(const std::string &address, const int port, capiocl::engine::Engine *engine,
-             std::atomic<bool> *terminate) {
+            std::atomic<bool> *terminate) {
     START_LOG(calf_current_tid(), "call()");
     UPDATE_CALF_WORKFLOW_NAME(engine->getWorkflowName());
 

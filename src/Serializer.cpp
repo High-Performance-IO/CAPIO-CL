@@ -10,7 +10,7 @@
 
 void capiocl::serializer::Serializer::dump(const engine::Engine &engine,
                                            const std::filesystem::path &filename,
-                                            const std::string &version) {
+                                           const std::string &version) {
     START_LOG(calf_current_tid(), "call()");
     UPDATE_CALF_WORKFLOW_NAME(engine.getWorkflowName());
     if (version == CAPIO_CL_VERSION::V1) {

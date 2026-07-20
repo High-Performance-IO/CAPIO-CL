@@ -7,7 +7,7 @@
 
 std::filesystem::path
 capiocl::monitor::FileSystemMonitor::compute_capiocl_token_name(const std::filesystem::path &path,
-                                                                 CAPIO_CL_COMMIT_TOKEN_TYPES type) {
+                                                                CAPIO_CL_COMMIT_TOKEN_TYPES type) {
     START_LOG(calf_current_tid(), "call()");
     std::string token_type;
 

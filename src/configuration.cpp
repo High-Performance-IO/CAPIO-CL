@@ -8,7 +8,7 @@
 
 void load_config_to_memory(const toml::table &tbl,
                            std::unordered_map<std::string, std::string> &map,
-                            const std::string &prefix = "") {
+                           const std::string &prefix = "") {
     START_LOG(calf_current_tid(), "call()");
     for (const auto &[key, value] : tbl) {
         std::string full_key;
@@ -81,7 +81,7 @@ void capiocl::configuration::CapioClConfiguration::load(const std::filesystem::p
 }
 
 void capiocl::configuration::CapioClConfiguration::getParameter(const std::string &key,
-                                                                 int *value) const {
+                                                                int *value) const {
     START_LOG(calf_current_tid(), "call()");
     if (config.find(key) != config.end()) {
         *value = std::stoi(config.at(key));
@@ -91,7 +91,7 @@ void capiocl::configuration::CapioClConfiguration::getParameter(const std::strin
 }
 
 void capiocl::configuration::CapioClConfiguration::getParameter(const std::string &key,
-                                                                 std::string *value) const {
+                                                                std::string *value) const {
     START_LOG(calf_current_tid(), "call()");
     if (config.find(key) != config.end()) {
         *value = config.at(key);

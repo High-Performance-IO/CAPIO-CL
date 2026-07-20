@@ -54,7 +54,7 @@ void capiocl::parser::Parser::validate_json(const jsoncons::json &doc, const cha
 
 capiocl::engine::Engine *capiocl::parser::Parser::parse(const std::filesystem::path &source,
                                                         const std::filesystem::path &resolve_prefix,
-                                                         bool store_only_in_memory) {
+                                                        bool store_only_in_memory) {
     START_LOG(calf_current_tid(), "call()");
     LOG("parse requested source=%s resolve_prefix=%s memory_only=%d", source.string().c_str(),
         resolve_prefix.string().c_str(), static_cast<int>(store_only_in_memory));

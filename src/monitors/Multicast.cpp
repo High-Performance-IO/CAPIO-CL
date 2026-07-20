@@ -9,7 +9,7 @@
 #include "capiocl/monitor.h"
 
 static std::tuple<int, sockaddr_in> outgoing_socket_multicast(const std::string &address,
-                                                               const int port) {
+                                                              const int port) {
     START_LOG(calf_current_tid(), "call()");
     sockaddr_in addr{};
     addr.sin_family      = AF_INET;
@@ -31,7 +31,7 @@ static std::tuple<int, sockaddr_in> outgoing_socket_multicast(const std::string 
 }
 
 static int incoming_socket_multicast(const std::string &address_ip, const int port,
-                                      sockaddr_in &addr, socklen_t &addrlen) {
+                                     sockaddr_in &addr, socklen_t &addrlen) {
     START_LOG(calf_current_tid(), "call()");
     constexpr int loopback   = 1; // enable reception of loopback messages
     constexpr int multi_bind = 1; // enable multiple sockets on same address
@@ -69,8 +69,8 @@ static int incoming_socket_multicast(const std::string &address_ip, const int po
     // Bind to port
     if (bind(_socket, reinterpret_cast<sockaddr *>(&addr), addrlen) < 0) {
         const int error = errno;
-        LOG("multicast setup failed operation=bind address=%s port=%d errno=%d",
-            address_ip.c_str(), port, error);
+        LOG("multicast setup failed operation=bind address=%s port=%d errno=%d", address_ip.c_str(),
+            port, error);
         close(_socket);
         throw capiocl::monitor::MonitorException(std::string("bind failed: ") + strerror(error));
     }
@@ -103,7 +103,7 @@ void capiocl::monitor::MulticastMonitor::commit_listener(std::vector<std::string
                                                          std::mutex &lock,
                                                          const std::string &ip_addr,
                                                          const int ip_port,
-                                                          const std::atomic<bool> *terminate) {
+                                                         const std::atomic<bool> *terminate) {
     START_LOG(calf_current_tid(), "call()");
     sockaddr_in addr_in = {};
     socklen_t addr_len  = {};
@@ -268,7 +268,7 @@ void capiocl::monitor::MulticastMonitor::home_node_listener(
 
 void capiocl::monitor::MulticastMonitor::_send_message(const std::string &ip_addr,
                                                        const int ip_port, const std::string &path,
-                                                        const MESSAGE_COMMANDS action) {
+                                                       const MESSAGE_COMMANDS action) {
     START_LOG(calf_current_tid(), "call()");
     char message[MESSAGE_SIZE] = {0};
     snprintf(message, sizeof(message), "%c %s", action, path.c_str());
