@@ -50,25 +50,33 @@ static int incoming_socket_multicast(const std::string &address_ip, const int po
 
     // Allow multiple sockets to bind to the same port
     if (setsockopt(_socket, SOL_SOCKET, SO_REUSEPORT, &multi_bind, sizeof(multi_bind)) < 0) {
+        const int error = errno;
+        close(_socket);
         throw capiocl::monitor::MonitorException(std::string("REUSEPORT failed: ") +
-                                                 strerror(errno));
+                                                 strerror(error));
     }
 
     // Bind to port
     if (bind(_socket, reinterpret_cast<sockaddr *>(&addr), addrlen) < 0) {
-        throw capiocl::monitor::MonitorException(std::string("bind failed: ") + strerror(errno));
+        const int error = errno;
+        close(_socket);
+        throw capiocl::monitor::MonitorException(std::string("bind failed: ") + strerror(error));
     }
 
     // Join multicast group
     if (setsockopt(_socket, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0) {
+        const int error = errno;
+        close(_socket);
         throw capiocl::monitor::MonitorException(std::string("join multicast failed: ") +
-                                                 strerror(errno));
+                                                 strerror(error));
     }
 
     // Enable loopback
     if (setsockopt(_socket, IPPROTO_IP, IP_MULTICAST_LOOP, &loopback, sizeof(loopback)) < 0) {
+        const int error = errno;
+        close(_socket);
         throw capiocl::monitor::MonitorException(std::string("loopback failed: ") +
-                                                 strerror(errno));
+                                                 strerror(error));
     }
     // LCOV_EXCL_STOP
 
@@ -80,10 +88,14 @@ void capiocl::monitor::MulticastMonitor::commit_listener(std::vector<std::string
                                                          const std::string &ip_addr,
                                                          const int ip_port,
                                                          const std::atomic<bool> *terminate) {
-    pthread_setcancelstate(PTHREAD_CANCEL_ASYNCHRONOUS, nullptr);
     sockaddr_in addr_in = {};
     socklen_t addr_len = {};
-    const auto socket = incoming_socket_multicast(ip_addr, ip_port, addr_in, addr_len);
+    int socket;
+    try {
+        socket = incoming_socket_multicast(ip_addr, ip_port, addr_in, addr_len);
+    } catch (const MonitorException &) {
+        return;
+    }
     const auto addr = reinterpret_cast<sockaddr *>(&addr_in);
     char incoming_message[MESSAGE_SIZE] = {0};
 
@@ -141,14 +153,17 @@ void capiocl::monitor::MulticastMonitor::commit_listener(std::vector<std::string
 void capiocl::monitor::MulticastMonitor::home_node_listener(
     std::unordered_map<std::string, std::string> &home_nodes, std::mutex &lock,
     const std::string &ip_addr, int ip_port, const std::atomic<bool> *terminate) {
-    pthread_setcancelstate(PTHREAD_CANCEL_ASYNCHRONOUS, nullptr);
-
     char this_hostname[HOST_NAME_MAX] = {};
     gethostname(this_hostname, HOST_NAME_MAX);
 
     sockaddr_in addr_in = {};
     socklen_t addr_len = {};
-    const auto socket = incoming_socket_multicast(ip_addr, ip_port, addr_in, addr_len);
+    int socket;
+    try {
+        socket = incoming_socket_multicast(ip_addr, ip_port, addr_in, addr_len);
+    } catch (const MonitorException &) {
+        return;
+    }
 
     const auto addr = reinterpret_cast<sockaddr *>(&addr_in);
     char incoming_message[MESSAGE_SIZE] = {0};
@@ -296,8 +311,8 @@ void capiocl::monitor::MulticastMonitor::setHomeNode(const std::filesystem::path
     _home_nodes[path] = _hostname;
 }
 
-const std::string &
-capiocl::monitor::MulticastMonitor::getHomeNode(const std::filesystem::path &path) const { {
+std::string capiocl::monitor::MulticastMonitor::getHomeNode(
+    const std::filesystem::path &path) const { {
         const std::lock_guard lg(home_node_lock);
         if (const auto itm = _home_nodes.find(path); itm != _home_nodes.end()) {
             return itm->second;

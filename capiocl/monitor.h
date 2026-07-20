@@ -118,7 +118,7 @@ class MonitorInterface {
      * @param path
      * @return the home node responsible for the given path
      */
-    virtual const std::string &getHomeNode(const std::filesystem::path &path) const;
+    virtual std::string getHomeNode(const std::filesystem::path &path) const;
 };
 
 /**
@@ -229,7 +229,7 @@ class MulticastMonitor final : public MonitorInterface {
     bool isCommitted(const std::filesystem::path &path) const override;
     void setCommitted(const std::filesystem::path &path) const override;
     void setHomeNode(const std::filesystem::path &path) const override;
-    const std::string &getHomeNode(const std::filesystem::path &path) const override;
+    std::string getHomeNode(const std::filesystem::path &path) const override;
 };
 
 /**
@@ -288,7 +288,7 @@ class FileSystemMonitor final : public MonitorInterface {
     bool isCommitted(const std::filesystem::path &path) const override;
     void setCommitted(const std::filesystem::path &path) const override;
     void setHomeNode(const std::filesystem::path &path) const override;
-    const std::string &getHomeNode(const std::filesystem::path &path) const override;
+    std::string getHomeNode(const std::filesystem::path &path) const override;
 };
 
 /**

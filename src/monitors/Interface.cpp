@@ -18,8 +18,7 @@ void capiocl::monitor::MonitorInterface::setHomeNode(const std::filesystem::path
     throw MonitorException(msg);
 }
 
-const std::string &
-capiocl::monitor::MonitorInterface::getHomeNode(const std::filesystem::path &path) const {
+std::string capiocl::monitor::MonitorInterface::getHomeNode(const std::filesystem::path &path) const {
     std::string msg = "Attempted to use MonitorInterface as Monitor backend to set commit for: ";
     msg += path.string();
     throw MonitorException(msg);
