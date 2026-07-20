@@ -2,6 +2,7 @@
 #define CAPIO_CL_MONITOR_H
 
 #include <atomic>
+#include <cstddef>
 #include <filesystem>
 #include <mutex>
 #include <set>
@@ -12,16 +13,11 @@
 
 #include "configuration.h"
 
-#ifndef PATH_MAX
-#define PATH_MAX 4096
-#endif
-
-#ifndef HOST_NAME_MAX
-#define HOST_NAME_MAX 1024
-#endif
-
 /// @brief Namespace containing the CAPIO-CL Monitor components
 namespace capiocl::monitor {
+
+inline constexpr std::size_t HOSTNAME_BUFFER_SIZE = 1024;
+inline constexpr std::size_t PATH_BUFFER_SIZE     = 4096;
 
 /// @brief Constant value for when a home node is not found
 static const std::string NO_HOME_NODE = "<NONE>";
@@ -84,7 +80,7 @@ class MonitorInterface {
     /**
      * @brief hostname of the current instance
      */
-    mutable char _hostname[HOST_NAME_MAX] = {0};
+    mutable char _hostname[HOSTNAME_BUFFER_SIZE] = {0};
 
   public:
     /**
@@ -133,7 +129,7 @@ class MonitorInterface {
  */
 class MulticastMonitor final : public MonitorInterface {
 
-    static constexpr int MESSAGE_SIZE = (2 + PATH_MAX + PATH_MAX); ///< Max network message size.
+    static constexpr int MESSAGE_SIZE = 2 + (2 * PATH_BUFFER_SIZE); ///< Max network message size.
 
     /**
      * @brief Background threads used to listen for commit messages and for home nodes.

@@ -153,8 +153,9 @@ void capiocl::monitor::MulticastMonitor::commit_listener(std::vector<std::string
 void capiocl::monitor::MulticastMonitor::home_node_listener(
     std::unordered_map<std::string, std::string> &home_nodes, std::mutex &lock,
     const std::string &ip_addr, int ip_port, const std::atomic<bool> *terminate) {
-    char this_hostname[HOST_NAME_MAX] = {};
-    gethostname(this_hostname, HOST_NAME_MAX);
+    char this_hostname[HOSTNAME_BUFFER_SIZE] = {};
+    gethostname(this_hostname, sizeof(this_hostname));
+    this_hostname[sizeof(this_hostname) - 1] = '\0';
 
     sockaddr_in addr_in = {};
     socklen_t addr_len = {};
@@ -269,7 +270,8 @@ capiocl::monitor::MulticastMonitor::MulticastMonitor(
             std::thread(&home_node_listener, std::ref(_home_nodes), std::ref(home_node_lock),
                         MULTICAST_HOME_NODE_ADDR, MULTICAST_HOME_NODE_PORT, &this->terminate);
 
-    gethostname(_hostname, HOST_NAME_MAX);
+    gethostname(_hostname, sizeof(_hostname));
+    _hostname[sizeof(_hostname) - 1] = '\0';
 }
 
 capiocl::monitor::MulticastMonitor::~MulticastMonitor() {

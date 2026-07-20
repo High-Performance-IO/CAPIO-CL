@@ -70,8 +70,8 @@ TEST(MONITOR_SUITE_NAME, testHomeNodeAcrossDifferentThreads) {
     const auto e1 = new capiocl::engine::Engine();
     const auto e2 = new capiocl::engine::Engine();
 
-    char hostname[HOST_NAME_MAX] = {};
-    gethostname(hostname, HOST_NAME_MAX);
+    char hostname[capiocl::monitor::HOSTNAME_BUFFER_SIZE] = {};
+    gethostname(hostname, sizeof(hostname));
 
     e1->setHomeNode("test.txt");
     const std::set<std::string> home_nodes  = e2->getHomeNode("test.txt");
@@ -87,8 +87,8 @@ TEST(MONITOR_SUITE_NAME, testHomeNodeAcrossDifferentThreads) {
 }
 
 TEST(MONITOR_SUITE_NAME, testHomeNodeAfterSetup) {
-    char hostname[HOST_NAME_MAX] = {};
-    gethostname(hostname, HOST_NAME_MAX);
+    char hostname[capiocl::monitor::HOSTNAME_BUFFER_SIZE] = {};
+    gethostname(hostname, sizeof(hostname));
 
     const capiocl::engine::Engine e;
     e.setHomeNode("test.txt");
@@ -103,8 +103,8 @@ TEST(MONITOR_SUITE_NAME, testHomeNodeAfterSetup) {
 }
 
 TEST(MONITOR_SUITE_NAME, testHomeNodeAfterInstanceTearDown) {
-    char hostname[HOST_NAME_MAX] = {};
-    gethostname(hostname, HOST_NAME_MAX);
+    char hostname[capiocl::monitor::HOSTNAME_BUFFER_SIZE] = {};
+    gethostname(hostname, sizeof(hostname));
 
     auto e1 = new capiocl::engine::Engine();
 

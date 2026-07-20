@@ -40,7 +40,10 @@ void capiocl::monitor::FileSystemMonitor::generate_commit_token(const std::files
     }
 }
 
-capiocl::monitor::FileSystemMonitor::FileSystemMonitor() { gethostname(_hostname, HOST_NAME_MAX); }
+capiocl::monitor::FileSystemMonitor::FileSystemMonitor() {
+    gethostname(_hostname, sizeof(_hostname));
+    _hostname[sizeof(_hostname) - 1] = '\0';
+}
 
 void capiocl::monitor::FileSystemMonitor::setCommitted(const std::filesystem::path &path) const {
     generate_commit_token(path);
