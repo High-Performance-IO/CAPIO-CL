@@ -60,7 +60,7 @@ FetchContent_Declare(
 FetchContent_Declare(
         calf
         GIT_REPOSITORY https://github.com/High-Performance-IO/calf.git
-        GIT_TAG main
+        GIT_TAG v0.1.1
 )
 
 # JSONCONS build flags
