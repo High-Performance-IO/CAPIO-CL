@@ -2,6 +2,7 @@
 #define CAPIO_CL_MONITOR_H
 
 #include <atomic>
+#include <cstddef>
 #include <filesystem>
 #include <mutex>
 #include <set>
@@ -12,16 +13,14 @@
 
 #include "configuration.h"
 
-#ifndef PATH_MAX
-#define PATH_MAX 4096
-#endif
-
-#ifndef HOST_NAME_MAX
-#define HOST_NAME_MAX 1024
-#endif
-
 /// @brief Namespace containing the CAPIO-CL Monitor components
 namespace capiocl::monitor {
+
+/// @brief Buffer size used to store a null-terminated host name.
+inline constexpr std::size_t HOSTNAME_BUFFER_SIZE = 1024;
+
+/// @brief Maximum path storage used in multicast monitor messages.
+inline constexpr std::size_t PATH_BUFFER_SIZE = 4096;
 
 /// @brief Constant value for when a home node is not found
 static const std::string NO_HOME_NODE = "<NONE>";
@@ -84,7 +83,7 @@ class MonitorInterface {
     /**
      * @brief hostname of the current instance
      */
-    mutable char _hostname[HOST_NAME_MAX] = {0};
+    mutable char _hostname[HOSTNAME_BUFFER_SIZE] = {0};
 
   public:
     /**
@@ -118,7 +117,7 @@ class MonitorInterface {
      * @param path
      * @return the home node responsible for the given path
      */
-    virtual const std::string &getHomeNode(const std::filesystem::path &path) const;
+    virtual std::string getHomeNode(const std::filesystem::path &path) const;
 };
 
 /**
@@ -133,7 +132,7 @@ class MonitorInterface {
  */
 class MulticastMonitor final : public MonitorInterface {
 
-    static constexpr int MESSAGE_SIZE = (2 + PATH_MAX + PATH_MAX); ///< Max network message size.
+    static constexpr int MESSAGE_SIZE = 2 + (2 * PATH_BUFFER_SIZE); ///< Max network message size.
 
     /**
      * @brief Background threads used to listen for commit messages and for home nodes.
@@ -229,7 +228,7 @@ class MulticastMonitor final : public MonitorInterface {
     bool isCommitted(const std::filesystem::path &path) const override;
     void setCommitted(const std::filesystem::path &path) const override;
     void setHomeNode(const std::filesystem::path &path) const override;
-    const std::string &getHomeNode(const std::filesystem::path &path) const override;
+    std::string getHomeNode(const std::filesystem::path &path) const override;
 };
 
 /**
@@ -288,7 +287,7 @@ class FileSystemMonitor final : public MonitorInterface {
     bool isCommitted(const std::filesystem::path &path) const override;
     void setCommitted(const std::filesystem::path &path) const override;
     void setHomeNode(const std::filesystem::path &path) const override;
-    const std::string &getHomeNode(const std::filesystem::path &path) const override;
+    std::string getHomeNode(const std::filesystem::path &path) const override;
 };
 
 /**

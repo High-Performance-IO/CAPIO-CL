@@ -1,13 +1,15 @@
 #include <string>
 #include <utility>
 
+#include "calf/StdOutLogger.h"
+#include "calf/StlLogger.h"
 #include "capiocl/configuration.h"
-#include "capiocl/printer.h"
 #include "toml++/toml.hpp"
 
 void load_config_to_memory(const toml::table &tbl,
                            std::unordered_map<std::string, std::string> &map,
                            const std::string &prefix = "") {
+    START_LOG(calf_current_tid(), "call()");
     for (const auto &[key, value] : tbl) {
         std::string full_key;
         if (prefix.empty()) {
@@ -35,6 +37,7 @@ void load_config_to_memory(const toml::table &tbl,
 }
 
 void capiocl::configuration::CapioClConfiguration::loadDefaults() {
+    START_LOG(calf_current_tid(), "call()");
     this->set(defaults::DEFAULT_MONITOR_MCAST_IP);
     this->set(defaults::DEFAULT_MONITOR_MCAST_PORT);
     this->set(defaults::DEFAULT_MONITOR_HOMENODE_IP);
@@ -44,17 +47,22 @@ void capiocl::configuration::CapioClConfiguration::loadDefaults() {
     this->set(defaults::DEFAULT_MONITOR_MCAST_ENABLED);
     this->set(defaults::DEFAULT_API_MULTICAST_PORT);
     this->set(defaults::DEFAULT_API_MULTICAST_IP);
+    LOG("loaded configuration defaults parameters=%zu", config.size());
 }
 
 void capiocl::configuration::CapioClConfiguration::set(const std::string &key, std::string value) {
+    START_LOG(calf_current_tid(), "call()");
     config[key] = std::move(value);
 }
 
 void capiocl::configuration::CapioClConfiguration::set(const ConfigurationEntry &entry) {
+    START_LOG(calf_current_tid(), "call()");
     this->set(entry.k, entry.v);
 }
 
 void capiocl::configuration::CapioClConfiguration::load(const std::filesystem::path &path) {
+    START_LOG(calf_current_tid(), "call()");
+    LOG("loading configuration path=%s", path.string().c_str());
     if (path.empty()) {
         throw CapioClConfigurationException("Empty pathname!");
     }
@@ -63,16 +71,18 @@ void capiocl::configuration::CapioClConfiguration::load(const std::filesystem::p
     try {
         tbl = toml::parse_file(path.string());
     } catch (const toml::parse_error &err) {
+        LOG("failed to parse configuration path=%s error=%s", path.string().c_str(), err.what());
         throw CapioClConfigurationException(err.what());
     }
 
     // copy into the local configuration the parameter from the toml config file
     load_config_to_memory(tbl, config);
+    LOG("loaded configuration path=%s parameters=%zu", path.string().c_str(), config.size());
 }
 
 void capiocl::configuration::CapioClConfiguration::getParameter(const std::string &key,
                                                                 int *value) const {
-
+    START_LOG(calf_current_tid(), "call()");
     if (config.find(key) != config.end()) {
         *value = std::stoi(config.at(key));
     } else {
@@ -82,6 +92,7 @@ void capiocl::configuration::CapioClConfiguration::getParameter(const std::strin
 
 void capiocl::configuration::CapioClConfiguration::getParameter(const std::string &key,
                                                                 std::string *value) const {
+    START_LOG(calf_current_tid(), "call()");
     if (config.find(key) != config.end()) {
         *value = config.at(key);
     } else {
@@ -91,5 +102,7 @@ void capiocl::configuration::CapioClConfiguration::getParameter(const std::strin
 capiocl::configuration::CapioClConfigurationException::CapioClConfigurationException(
     const std::string &msg)
     : message(msg) {
-    printer::print(printer::CLI_LEVEL_ERROR, msg);
+    START_LOG(calf_current_tid(), "call()");
+    UPDATE_CALF_WORKFLOW_NAME("");
+    CALF_PRINT_COLOR(CALF_CLI_LEVEL_ERROR, "%s", msg.c_str());
 }

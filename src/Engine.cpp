@@ -3,19 +3,26 @@
 #include <memory>
 #include <sstream>
 
+#include "calf/StdOutLogger.h"
+#include "calf/StlLogger.h"
 #include "capiocl.hpp"
 #include "capiocl/configuration.h"
 #include "capiocl/engine.h"
 #include "capiocl/monitor.h"
-#include "capiocl/printer.h"
 
 /// @brief Class to implement a shared mutex lock guard
 template <typename SharedMutex> class shared_lock_guard {
   public:
     /// @brief Constructor: acquire semaphore shared
-    explicit shared_lock_guard(SharedMutex &m) : mutex_(m) { mutex_.lock_shared(); }
+    explicit shared_lock_guard(SharedMutex &m) : mutex_(m) {
+        START_LOG(calf_current_tid(), "call()");
+        mutex_.lock_shared();
+    }
     /// @brief Destructor: release resources
-    ~shared_lock_guard() { mutex_.unlock_shared(); }
+    ~shared_lock_guard() {
+        START_LOG(calf_current_tid(), "call()");
+        mutex_.unlock_shared();
+    }
 
     shared_lock_guard(const shared_lock_guard &)            = delete;
     shared_lock_guard &operator=(const shared_lock_guard &) = delete;
@@ -26,47 +33,49 @@ template <typename SharedMutex> class shared_lock_guard {
 };
 
 void capiocl::engine::Engine::print() const {
-
+    START_LOG(calf_current_tid(), "call()");
+    UPDATE_CALF_WORKFLOW_NAME(workflow_name);
     // First message
-    printer::print(printer::CLI_LEVEL_JSON, "");
-    printer::print(printer::CLI_LEVEL_JSON, "Composition of expected CAPIO FS: ");
+    CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, " ");
+    CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "Composition of expected CAPIO FS: ");
 
     // Table header lines
-    printer::print(printer::CLI_LEVEL_JSON, "*" + std::string(134, '=') + "*");
+    CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "*%s*", std::string(134, '=').c_str());
+    CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "|%s|", std::string(134, ' ').c_str());
 
-    printer::print(printer::CLI_LEVEL_JSON, "|" + std::string(134, ' ') + "|");
+    CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO,
+                     "|     Parsed configuration file for workflow: \033[1;36m %s%s \033[0m |",
+                     workflow_name.c_str(), std::string(86 - workflow_name.length(), ' ').c_str());
 
-    {
-        std::ostringstream oss;
-        oss << "|     Parsed configuration file for workflow: \033[1;36m" << workflow_name
-            << std::setw(94 - workflow_name.length()) << "\033[0m |";
-        printer::print(printer::CLI_LEVEL_JSON, oss.str());
-    }
+    CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "|%s|", std::string(134, ' ').c_str());
 
-    printer::print(printer::CLI_LEVEL_JSON, "|" + std::string(134, ' ') + "|");
+    CALF_PRINT_COLOR(
+        CALF_CLI_LEVEL_INFO,
+        "|     File color legend:     \033[48;5;034m  \033[0m File stored in memory%s|",
+        std::string(82, ' ').c_str());
 
-    std::string msg = "|     File color legend:     \033[48;5;034m  \033[0m File stored in memory";
-    msg += std::string(82, ' ') + "|";
-    printer::print(printer::CLI_LEVEL_JSON, msg);
+    CALF_PRINT_COLOR(
+        CALF_CLI_LEVEL_INFO,
+        "|                            \033[48;5;172m  \033[0m File stored on file system%s|",
+        std::string(77, ' ').c_str());
 
-    printer::print(
-        printer::CLI_LEVEL_JSON, // LCOV_EXCL_LINE
-        "|                            \033[48;5;172m  \033[0m File stored on file system" +
-            std::string(77, ' ') + "|");
+    CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "|%s|", std::string(134, ' ').c_str());
 
-    printer::print(printer::CLI_LEVEL_JSON, "|" + std::string(134, '=') + "|");
+    CALF_PRINT_COLOR(
+        CALF_CLI_LEVEL_INFO, "|%s|%s|%s|%s|%s|%s|%s|%s|%s|", std::string(6, '=').c_str(),
+        std::string(19, '=').c_str(), std::string(19, '=').c_str(), std::string(20, '=').c_str(),
+        std::string(20, '=').c_str(), std::string(12, '=').c_str(), std::string(11, '=').c_str(),
+        std::string(9, '=').c_str(), std::string(10, '=').c_str());
 
-    std::string line = "|======|===================|===================|====================";
-    line += "|====================|============|===========|=========|==========|";
-    printer::print(printer::CLI_LEVEL_JSON, line);
+    CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO,
+                     "| Kind | Filename          | Producer step     | Consumer step      |  "
+                     "Commit Rule       |  Fire Rule | Permanent | Exclude | n_files  |");
 
-    line = "| Kind | Filename          | Producer step     | Consumer step      |  ";
-    line += "Commit Rule       |  Fire Rule | Permanent | Exclude | n_files  |";
-    printer::print(printer::CLI_LEVEL_JSON, line);
-
-    line = "|======|===================|===================|====================|========";
-    line += "============|============|===========|=========|==========|";
-    printer::print(printer::CLI_LEVEL_JSON, line);
+    CALF_PRINT_COLOR(
+        CALF_CLI_LEVEL_INFO, "|%s|%s|%s|%s|%s|%s|%s|%s|%s|", std::string(6, '=').c_str(),
+        std::string(19, '=').c_str(), std::string(19, '=').c_str(), std::string(20, '=').c_str(),
+        std::string(20, '=').c_str(), std::string(12, '=').c_str(), std::string(11, '=').c_str(),
+        std::string(9, '=').c_str(), std::string(10, '=').c_str());
 
     // Iterate over _locations
     for (auto &itm : _capio_cl_entries) {
@@ -136,24 +145,29 @@ void capiocl::engine::Engine::print() const {
                 line << std::setfill(' ') << std::setw(10) << "|" << std::setw(11) << "|";
             }
 
-            printer::print(printer::CLI_LEVEL_JSON, line.str());
+            CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "%s", line.str().c_str());
         }
 
-        printer::print(printer::CLI_LEVEL_JSON, "*" + std::string(134, '~') + "*");
+        CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "*%s*", std::string(134, '~').c_str());
     }
 
-    printer::print(printer::CLI_LEVEL_JSON, "");
+    CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, " ");
 }
 
 capiocl::engine::Engine::Engine(const bool use_default_settings) {
+    START_LOG(calf_current_tid(), "call()");
     node_name = std::string(1024, '\0');
     gethostname(node_name.data(), node_name.size());
     node_name.resize(std::strlen(node_name.c_str()));
 
     if (const char *_wf_name = std::getenv("WORKFLOW_NAME"); _wf_name != nullptr) {
         this->workflow_name = _wf_name;
+        LOG("selected workflow name=%s source=environment node=%s", workflow_name.c_str(),
+            node_name.c_str());
     } else {
         this->workflow_name = CAPIO_CL_DEFAULT_WF_NAME;
+        LOG("selected workflow name=%s source=default node=%s", workflow_name.c_str(),
+            node_name.c_str());
     }
 
     if (use_default_settings) {
@@ -162,6 +176,7 @@ capiocl::engine::Engine::Engine(const bool use_default_settings) {
 }
 
 void capiocl::engine::Engine::_newFile(const std::filesystem::path &path) const {
+    START_LOG(calf_current_tid(), "call()");
     if (path.empty()) {
         return;
     }
@@ -198,6 +213,10 @@ void capiocl::engine::Engine::_newFile(const std::filesystem::path &path) const 
         } else {
             entry.store_in_memory = store_all_in_memory;
         }
+        LOG("creating entry path=%s source=%s commit_rule=%s fire_rule=%s memory=%d",
+            path.string().c_str(), matchSize > 0 ? matchKey.c_str() : "defaults",
+            entry.commit_rule.c_str(), entry.fire_rule.c_str(),
+            static_cast<int>(entry.store_in_memory));
         _capio_cl_entries.emplace(path, std::move(entry));
         this->compute_directory_entry_count(path);
     }
@@ -205,11 +224,14 @@ void capiocl::engine::Engine::_newFile(const std::filesystem::path &path) const 
 
 void capiocl::engine::Engine::compute_directory_entry_count(
     const std::filesystem::path &path) const {
+    START_LOG(calf_current_tid(), "call()");
     if (const auto parent = path.parent_path(); !parent.empty()) {
         if (const auto &entry = _capio_cl_entries.find(parent); entry != _capio_cl_entries.end()) {
             if (entry->second.enable_directory_count_update) {
                 entry->second.directory_children_count++;
                 entry->second.is_file = false;
+                LOG("updated directory path=%s children=%ld", parent.string().c_str(),
+                    entry->second.directory_children_count);
             } else {
                 return;
             }
@@ -220,6 +242,7 @@ void capiocl::engine::Engine::compute_directory_entry_count(
 }
 
 bool capiocl::engine::Engine::contains(const std::filesystem::path &file) const {
+    START_LOG(calf_current_tid(), "call()");
     shared_lock_guard slg(_shared_mutex);
     return std::any_of(_capio_cl_entries.begin(), _capio_cl_entries.end(), [&](auto const &entry) {
         return fnmatch(entry.first.c_str(), file.c_str(), FNM_NOESCAPE) == 0;
@@ -227,6 +250,7 @@ bool capiocl::engine::Engine::contains(const std::filesystem::path &file) const 
 }
 
 size_t capiocl::engine::Engine::size() const {
+    START_LOG(calf_current_tid(), "call()");
     shared_lock_guard slg(_shared_mutex);
     return this->_capio_cl_entries.size();
 }
@@ -236,7 +260,7 @@ void capiocl::engine::Engine::add(std::filesystem::path &path, std::vector<std::
                                   const std::string &commit_rule, const std::string &fire_rule,
                                   bool permanent, bool exclude,
                                   std::vector<std::filesystem::path> &dependencies) {
-
+    START_LOG(calf_current_tid(), "call()");
     if (path.empty()) {
         return;
     }
@@ -251,26 +275,34 @@ void capiocl::engine::Engine::add(std::filesystem::path &path, std::vector<std::
     entry.permanent         = permanent;
     entry.excluded          = exclude;
     entry.file_dependencies = dependencies;
+    LOG("configured entry path=%s producers=%zu consumers=%zu dependencies=%zu commit_rule=%s "
+        "fire_rule=%s permanent=%d excluded=%d",
+        path.string().c_str(), entry.producers.size(), entry.consumers.size(),
+        entry.file_dependencies.size(), entry.commit_rule.c_str(), entry.fire_rule.c_str(),
+        static_cast<int>(entry.permanent), static_cast<int>(entry.excluded));
 }
 void capiocl::engine::Engine::add(const std::filesystem::path &path,
                                   const CapioCLEntry &entry) const {
-
+    START_LOG(calf_current_tid(), "call()");
     std::lock_guard lg(_shared_mutex);
 
     if (_capio_cl_entries.find(path) == _capio_cl_entries.end()) {
         _capio_cl_entries[path] = entry;
+        LOG("inserted entry path=%s", path.string().c_str());
     } else {
         _capio_cl_entries[path] += entry;
+        LOG("merged entry path=%s", path.string().c_str());
     }
 }
 
 void capiocl::engine::Engine::newFile(const std::filesystem::path &path) const {
+    START_LOG(calf_current_tid(), "call()");
     std::lock_guard lg(_shared_mutex);
     this->_newFile(path);
 }
 
 long capiocl::engine::Engine::getDirectoryFileCount(const std::filesystem::path &path) const {
-
+    START_LOG(calf_current_tid(), "call()");
     if (path.empty()) {
         return 0;
     }
@@ -286,7 +318,7 @@ long capiocl::engine::Engine::getDirectoryFileCount(const std::filesystem::path 
 
 void capiocl::engine::Engine::addProducer(const std::filesystem::path &path,
                                           std::string &producer) {
-
+    START_LOG(calf_current_tid(), "call()");
     if (path.empty()) {
         return;
     }
@@ -300,6 +332,8 @@ void capiocl::engine::Engine::addProducer(const std::filesystem::path &path,
             auto &vec = itm->second.producers;
             if (std::find(vec.begin(), vec.end(), producer) == vec.end()) {
                 vec.emplace_back(producer);
+                LOG("added producer path=%s producer=%s count=%zu", path.string().c_str(),
+                    producer.c_str(), vec.size());
                 return;
             } else {
                 return;
@@ -313,6 +347,7 @@ void capiocl::engine::Engine::addProducer(const std::filesystem::path &path,
 
 void capiocl::engine::Engine::addConsumer(const std::filesystem::path &path,
                                           std::string &consumer) {
+    START_LOG(calf_current_tid(), "call()");
     if (path.empty()) {
         return;
     }
@@ -324,6 +359,8 @@ void capiocl::engine::Engine::addConsumer(const std::filesystem::path &path,
             auto &vec = itm->second.consumers;
             if (std::find(vec.begin(), vec.end(), consumer) == vec.end()) {
                 vec.emplace_back(consumer);
+                LOG("added consumer path=%s consumer=%s count=%zu", path.string().c_str(),
+                    consumer.c_str(), vec.size());
             }
             return;
         }
@@ -335,6 +372,7 @@ void capiocl::engine::Engine::addConsumer(const std::filesystem::path &path,
 
 void capiocl::engine::Engine::addFileDependency(const std::filesystem::path &path,
                                                 std::filesystem::path &file_dependency) {
+    START_LOG(calf_current_tid(), "call()");
     if (path.empty()) {
         return;
     }
@@ -345,6 +383,8 @@ void capiocl::engine::Engine::addFileDependency(const std::filesystem::path &pat
             auto &vec = itm->second.file_dependencies;
             if (std::find(vec.begin(), vec.end(), file_dependency) == vec.end()) {
                 vec.emplace_back(file_dependency);
+                LOG("added dependency path=%s dependency=%s count=%zu", path.string().c_str(),
+                    file_dependency.string().c_str(), vec.size());
             }
             return;
         }
@@ -356,6 +396,7 @@ void capiocl::engine::Engine::addFileDependency(const std::filesystem::path &pat
 
 void capiocl::engine::Engine::setCommitRule(const std::filesystem::path &path,
                                             const std::string &commit_rule) {
+    START_LOG(calf_current_tid(), "call()");
     if (path.empty()) {
         return;
     }
@@ -364,6 +405,10 @@ void capiocl::engine::Engine::setCommitRule(const std::filesystem::path &path,
     {
         std::lock_guard lg(_shared_mutex);
         if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+            if (itm->second.commit_rule != commit) {
+                LOG("changing commit rule path=%s old=%s new=%s", path.string().c_str(),
+                    itm->second.commit_rule.c_str(), commit.c_str());
+            }
             itm->second.commit_rule = commit;
             return;
         }
@@ -376,6 +421,7 @@ void capiocl::engine::Engine::setCommitRule(const std::filesystem::path &path,
 }
 
 std::string capiocl::engine::Engine::getCommitRule(const std::filesystem::path &path) const {
+    START_LOG(calf_current_tid(), "call()");
     if (path.empty()) {
         return commitRules::ON_TERMINATION;
     }
@@ -396,6 +442,7 @@ std::string capiocl::engine::Engine::getCommitRule(const std::filesystem::path &
 }
 
 std::string capiocl::engine::Engine::getFireRule(const std::filesystem::path &path) const {
+    START_LOG(calf_current_tid(), "call()");
     if (path.empty()) {
         return fireRules::NO_UPDATE;
     }
@@ -417,6 +464,7 @@ std::string capiocl::engine::Engine::getFireRule(const std::filesystem::path &pa
 
 void capiocl::engine::Engine::setFireRule(const std::filesystem::path &path,
                                           const std::string &fire_rule) {
+    START_LOG(calf_current_tid(), "call()");
     if (path.empty()) {
         return;
     }
@@ -426,6 +474,10 @@ void capiocl::engine::Engine::setFireRule(const std::filesystem::path &path,
     {
         std::lock_guard lg(_shared_mutex);
         if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+            if (itm->second.fire_rule != fire) {
+                LOG("changing fire rule path=%s old=%s new=%s", path.string().c_str(),
+                    itm->second.fire_rule.c_str(), fire.c_str());
+            }
             itm->second.fire_rule = fire;
             return;
         }
@@ -436,6 +488,7 @@ void capiocl::engine::Engine::setFireRule(const std::filesystem::path &path,
 }
 
 bool capiocl::engine::Engine::isFirable(const std::filesystem::path &path) const {
+    START_LOG(calf_current_tid(), "call()");
     if (path.empty()) {
         return true;
     }
@@ -455,6 +508,7 @@ bool capiocl::engine::Engine::isFirable(const std::filesystem::path &path) const
 }
 
 void capiocl::engine::Engine::setPermanent(const std::filesystem::path &path, bool value) {
+    START_LOG(calf_current_tid(), "call()");
     if (path.empty()) {
         return;
     }
@@ -462,6 +516,10 @@ void capiocl::engine::Engine::setPermanent(const std::filesystem::path &path, bo
     {
         std::lock_guard lg(_shared_mutex);
         if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+            if (itm->second.permanent != value) {
+                LOG("changing permanent path=%s old=%d new=%d", path.string().c_str(),
+                    static_cast<int>(itm->second.permanent), static_cast<int>(value));
+            }
             itm->second.permanent = value;
             return;
         }
@@ -471,6 +529,7 @@ void capiocl::engine::Engine::setPermanent(const std::filesystem::path &path, bo
 }
 
 bool capiocl::engine::Engine::isPermanent(const std::filesystem::path &path) const {
+    START_LOG(calf_current_tid(), "call()");
     if (path.empty()) {
         return true;
     }
@@ -490,14 +549,18 @@ bool capiocl::engine::Engine::isPermanent(const std::filesystem::path &path) con
 }
 
 bool capiocl::engine::Engine::isCommitted(const std::filesystem::path &path) const {
+    START_LOG(calf_current_tid(), "call()");
     return monitor.isCommitted(path);
 }
 
 void capiocl::engine::Engine::setCommitted(const std::filesystem::path &path) const {
+    START_LOG(calf_current_tid(), "call()");
     monitor.setCommitted(path);
+    LOG("dispatched committed update path=%s", path.string().c_str());
 }
 
 std::vector<std::string> capiocl::engine::Engine::getPaths() const {
+    START_LOG(calf_current_tid(), "call()");
     shared_lock_guard slg(_shared_mutex);
 
     std::vector<std::string> paths;
@@ -508,12 +571,17 @@ std::vector<std::string> capiocl::engine::Engine::getPaths() const {
 }
 
 void capiocl::engine::Engine::setExclude(const std::filesystem::path &path, const bool value) {
+    START_LOG(calf_current_tid(), "call()");
     if (path.empty()) {
         return;
     }
     {
         std::lock_guard lg(_shared_mutex);
         if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+            if (itm->second.excluded != value) {
+                LOG("changing excluded path=%s old=%d new=%d", path.string().c_str(),
+                    static_cast<int>(itm->second.excluded), static_cast<int>(value));
+            }
             itm->second.excluded = value;
             return;
         }
@@ -523,6 +591,7 @@ void capiocl::engine::Engine::setExclude(const std::filesystem::path &path, cons
 }
 
 void capiocl::engine::Engine::setDirectory(const std::filesystem::path &path) {
+    START_LOG(calf_current_tid(), "call()");
     if (path.empty()) {
         return;
     }
@@ -530,6 +599,9 @@ void capiocl::engine::Engine::setDirectory(const std::filesystem::path &path) {
     {
         std::lock_guard lg(_shared_mutex);
         if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+            if (itm->second.is_file) {
+                LOG("changing entry type path=%s old=file new=directory", path.string().c_str());
+            }
             itm->second.is_file = false;
             return;
         }
@@ -539,6 +611,7 @@ void capiocl::engine::Engine::setDirectory(const std::filesystem::path &path) {
 }
 
 void capiocl::engine::Engine::setFile(const std::filesystem::path &path) {
+    START_LOG(calf_current_tid(), "call()");
     if (path.empty()) {
         return;
     }
@@ -546,6 +619,9 @@ void capiocl::engine::Engine::setFile(const std::filesystem::path &path) {
     {
         std::lock_guard lg(_shared_mutex);
         if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+            if (!itm->second.is_file) {
+                LOG("changing entry type path=%s old=directory new=file", path.string().c_str());
+            }
             itm->second.is_file = true;
             return;
         }
@@ -555,6 +631,7 @@ void capiocl::engine::Engine::setFile(const std::filesystem::path &path) {
 }
 
 bool capiocl::engine::Engine::isFile(const std::filesystem::path &path) const {
+    START_LOG(calf_current_tid(), "call()");
     if (path.empty()) {
         return true;
     }
@@ -574,6 +651,7 @@ bool capiocl::engine::Engine::isFile(const std::filesystem::path &path) const {
 }
 
 bool capiocl::engine::Engine::isDirectory(const std::filesystem::path &path) const {
+    START_LOG(calf_current_tid(), "call()");
     if (path.empty()) {
         return true;
     }
@@ -582,6 +660,7 @@ bool capiocl::engine::Engine::isDirectory(const std::filesystem::path &path) con
 
 void capiocl::engine::Engine::setCommitedCloseNumber(const std::filesystem::path &path,
                                                      const long num) {
+    START_LOG(calf_current_tid(), "call()");
     if (path.empty()) {
         return;
     }
@@ -589,6 +668,10 @@ void capiocl::engine::Engine::setCommitedCloseNumber(const std::filesystem::path
     {
         std::lock_guard lg(_shared_mutex);
         if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+            if (itm->second.commit_on_close_count != num) {
+                LOG("changing commit-close count path=%s old=%ld new=%ld", path.string().c_str(),
+                    itm->second.commit_on_close_count, num);
+            }
             itm->second.commit_on_close_count = num;
             return;
         }
@@ -599,6 +682,7 @@ void capiocl::engine::Engine::setCommitedCloseNumber(const std::filesystem::path
 
 void capiocl::engine::Engine::setDirectoryFileCount(const std::filesystem::path &path,
                                                     const long num) {
+    START_LOG(calf_current_tid(), "call()");
     if (path.empty()) {
         return;
     }
@@ -613,6 +697,8 @@ void capiocl::engine::Engine::setDirectoryFileCount(const std::filesystem::path 
         if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
             itm->second.directory_children_count      = num;
             itm->second.enable_directory_count_update = false;
+            LOG("fixed directory count path=%s count=%ld automatic_updates=disabled",
+                path.string().c_str(), num);
             return;
         }
         this->_newFile(path);
@@ -621,16 +707,19 @@ void capiocl::engine::Engine::setDirectoryFileCount(const std::filesystem::path 
 }
 
 void capiocl::engine::Engine::remove(const std::filesystem::path &path) const {
+    START_LOG(calf_current_tid(), "call()");
     std::lock_guard lg(_shared_mutex);
 
     if (const auto itm = _capio_cl_entries.find(path); itm == _capio_cl_entries.end()) {
         return;
     }
     _capio_cl_entries.erase(path);
+    LOG("removed entry path=%s", path.string().c_str());
 }
 
 std::vector<std::string>
 capiocl::engine::Engine::getConsumers(const std::filesystem::path &path) const {
+    START_LOG(calf_current_tid(), "call()");
     std::lock_guard lg(_shared_mutex);
 
     if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
@@ -641,6 +730,7 @@ capiocl::engine::Engine::getConsumers(const std::filesystem::path &path) const {
 
 bool capiocl::engine::Engine::isConsumer(const std::filesystem::path &path,
                                          const std::string &app_name) const {
+    START_LOG(calf_current_tid(), "call()");
     if (path.empty()) {
         return true;
     }
@@ -652,6 +742,8 @@ bool capiocl::engine::Engine::isConsumer(const std::filesystem::path &path,
             if (fnmatch(pattern.c_str(), path.c_str(), FNM_NOESCAPE) == 0) {
                 const auto &consumers = entry.consumers;
                 if (std::find(consumers.begin(), consumers.end(), app_name) != consumers.end()) {
+                    LOG("consumer matched path=%s pattern=%s application=%s", path.string().c_str(),
+                        pattern.c_str(), app_name.c_str());
                     return true;
                 }
             }
@@ -667,6 +759,7 @@ bool capiocl::engine::Engine::isConsumer(const std::filesystem::path &path,
 
 std::vector<std::string>
 capiocl::engine::Engine::getProducers(const std::filesystem::path &path) const {
+    START_LOG(calf_current_tid(), "call()");
     if (path.empty()) {
         return {};
     }
@@ -688,6 +781,7 @@ capiocl::engine::Engine::getProducers(const std::filesystem::path &path) const {
 
 bool capiocl::engine::Engine::isProducer(const std::filesystem::path &path,
                                          const std::string &app_name) const {
+    START_LOG(calf_current_tid(), "call()");
     if (path.empty()) {
         return true;
     }
@@ -698,6 +792,8 @@ bool capiocl::engine::Engine::isProducer(const std::filesystem::path &path,
             if (fnmatch(pattern.c_str(), path.c_str(), FNM_NOESCAPE) == 0) {
                 const auto &producers = entry.producers;
                 if (std::find(producers.begin(), producers.end(), app_name) != producers.end()) {
+                    LOG("producer matched path=%s pattern=%s application=%s", path.string().c_str(),
+                        pattern.c_str(), app_name.c_str());
                     return true;
                 }
             }
@@ -713,6 +809,7 @@ bool capiocl::engine::Engine::isProducer(const std::filesystem::path &path,
 
 void capiocl::engine::Engine::setFileDeps(const std::filesystem::path &path,
                                           const std::vector<std::filesystem::path> &dependencies) {
+    START_LOG(calf_current_tid(), "call()");
     if (path.empty()) {
         return;
     }
@@ -730,6 +827,8 @@ void capiocl::engine::Engine::setFileDeps(const std::filesystem::path &path,
 
         if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
             itm->second.file_dependencies = dependencies;
+            LOG("replaced dependencies path=%s count=%zu", path.string().c_str(),
+                dependencies.size());
             return;
         }
         this->_newFile(path);
@@ -738,6 +837,7 @@ void capiocl::engine::Engine::setFileDeps(const std::filesystem::path &path,
 }
 
 long capiocl::engine::Engine::getCommitCloseCount(const std::filesystem::path &path) const {
+    START_LOG(calf_current_tid(), "call()");
     if (path.empty()) {
         return 0;
     }
@@ -758,6 +858,7 @@ long capiocl::engine::Engine::getCommitCloseCount(const std::filesystem::path &p
 
 std::vector<std::filesystem::path>
 capiocl::engine::Engine::getCommitOnFileDependencies(const std::filesystem::path &path) const {
+    START_LOG(calf_current_tid(), "call()");
     shared_lock_guard slg(_shared_mutex);
 
     if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
@@ -767,6 +868,7 @@ capiocl::engine::Engine::getCommitOnFileDependencies(const std::filesystem::path
 }
 
 void capiocl::engine::Engine::setStoreFileInMemory(const std::filesystem::path &path) {
+    START_LOG(calf_current_tid(), "call()");
     if (path.empty()) {
         return;
     }
@@ -775,6 +877,9 @@ void capiocl::engine::Engine::setStoreFileInMemory(const std::filesystem::path &
         std::lock_guard lg(_shared_mutex);
 
         if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+            if (!itm->second.store_in_memory) {
+                LOG("changing storage path=%s target=memory", path.string().c_str());
+            }
             itm->second.store_in_memory = true;
             return;
         }
@@ -784,6 +889,7 @@ void capiocl::engine::Engine::setStoreFileInMemory(const std::filesystem::path &
 }
 
 void capiocl::engine::Engine::setAllStoreInMemory() {
+    START_LOG(calf_current_tid(), "call()");
     {
         std::lock_guard lg(_shared_mutex);
         this->store_all_in_memory = true;
@@ -793,25 +899,35 @@ void capiocl::engine::Engine::setAllStoreInMemory() {
     for (const auto &path : paths) {
         this->setStoreFileInMemory(path);
     }
+    LOG("enabled global memory storage updated_entries=%zu", paths.size());
 }
 
 void capiocl::engine::Engine::setWorkflowName(const std::string &name) {
+    START_LOG(calf_current_tid(), "call()");
     std::lock_guard lg(_shared_mutex);
+    if (this->workflow_name != name) {
+        LOG("changing workflow name old=%s new=%s", this->workflow_name.c_str(), name.c_str());
+    }
     this->workflow_name = name;
 }
 
 const std::string &capiocl::engine::Engine::getWorkflowName() const {
+    START_LOG(calf_current_tid(), "call()");
     shared_lock_guard slg(_shared_mutex);
     return this->workflow_name;
 }
 
 void capiocl::engine::Engine::setStoreFileInFileSystem(const std::filesystem::path &path) {
+    START_LOG(calf_current_tid(), "call()");
     if (path.empty()) {
         return;
     }
     {
         std::lock_guard lg(_shared_mutex);
         if (const auto itm = _capio_cl_entries.find(path); itm != _capio_cl_entries.end()) {
+            if (itm->second.store_in_memory) {
+                LOG("changing storage path=%s target=filesystem", path.string().c_str());
+            }
             itm->second.store_in_memory = false;
             return;
         }
@@ -821,6 +937,7 @@ void capiocl::engine::Engine::setStoreFileInFileSystem(const std::filesystem::pa
 }
 
 bool capiocl::engine::Engine::isStoredInMemory(const std::filesystem::path &path) const {
+    START_LOG(calf_current_tid(), "call()");
     if (path.empty()) {
         return true;
     }
@@ -840,6 +957,7 @@ bool capiocl::engine::Engine::isStoredInMemory(const std::filesystem::path &path
 }
 
 std::vector<std::string> capiocl::engine::Engine::getFileToStoreInMemory() const {
+    START_LOG(calf_current_tid(), "call()");
     std::vector<std::string> files;
 
     shared_lock_guard slg(_shared_mutex);
@@ -855,14 +973,18 @@ std::vector<std::string> capiocl::engine::Engine::getFileToStoreInMemory() const
 
 std::set<std::string>
 capiocl::engine::Engine::getHomeNode(const std::filesystem::path &path) const {
+    START_LOG(calf_current_tid(), "call()");
     return monitor.getHomeNode(path);
 }
 
 void capiocl::engine::Engine::setHomeNode(const std::filesystem::path &path) const {
+    START_LOG(calf_current_tid(), "call()");
     monitor.setHomeNode(path);
+    LOG("dispatched home-node update path=%s node=%s", path.string().c_str(), node_name.c_str());
 }
 
 bool capiocl::engine::Engine::isExcluded(const std::filesystem::path &path) const {
+    START_LOG(calf_current_tid(), "call()");
     if (path.empty()) {
         return true;
     }
@@ -881,6 +1003,7 @@ bool capiocl::engine::Engine::isExcluded(const std::filesystem::path &path) cons
 }
 
 bool capiocl::engine::Engine::operator==(const Engine &other) const {
+    START_LOG(calf_current_tid(), "call()");
     const auto &other_entries = other._capio_cl_entries;
 
     if (this->_capio_cl_entries.size() != other_entries.size()) {
@@ -899,7 +1022,10 @@ bool capiocl::engine::Engine::operator==(const Engine &other) const {
     return true;
 }
 void capiocl::engine::Engine::loadConfiguration(const std::string &path) {
+    START_LOG(calf_current_tid(), "call()");
+    UPDATE_CALF_WORKFLOW_NAME(workflow_name);
     configuration.load(path);
+    LOG("loaded engine configuration path=%s", path.c_str());
 
     std::string multicast_monitor_enabled, fs_monitor_enabled;
 
@@ -907,39 +1033,50 @@ void capiocl::engine::Engine::loadConfiguration(const std::string &path) {
         configuration.getParameter("monitor.mcast.enabled", &multicast_monitor_enabled);
     } catch (...) {
         multicast_monitor_enabled = "false";
+        LOG("configuration fallback key=monitor.mcast.enabled value=false");
     }
 
     if (multicast_monitor_enabled == "true") {
         monitor.registerMonitorBackend(new monitor::MulticastMonitor(configuration));
+        LOG("registered monitor backend=multicast");
     } else {
-        printer::print(printer::CLI_LEVEL_WARNING, "Skipping registration of  MulticastMonitor");
+        LOG("skipped monitor backend=multicast reason=disabled");
+        CALF_PRINT_COLOR(CALF_CLI_LEVEL_WARNING, "Skipping registration of  MulticastMonitor");
     }
 
     try {
         configuration.getParameter("monitor.filesystem.enabled", &fs_monitor_enabled);
     } catch (...) {
         fs_monitor_enabled = "false";
+        LOG("configuration fallback key=monitor.filesystem.enabled value=false");
     }
 
     if (fs_monitor_enabled == "true") {
         monitor.registerMonitorBackend(new monitor::FileSystemMonitor());
+        LOG("registered monitor backend=filesystem");
     } else {
-        printer::print(printer::CLI_LEVEL_WARNING, "Skipping registration of  FileSystemMonitor");
+        LOG("skipped monitor backend=filesystem reason=disabled");
+        CALF_PRINT_COLOR(CALF_CLI_LEVEL_WARNING, "Skipping registration of  FileSystemMonitor");
     }
 }
 void capiocl::engine::Engine::useDefaultConfiguration() {
+    START_LOG(calf_current_tid(), "call()");
     configuration.loadDefaults();
 
     // TODO: add a vector with registered instances of backends to avoid multiple instantiations
     monitor.registerMonitorBackend(new monitor::MulticastMonitor(configuration));
     monitor.registerMonitorBackend(new monitor::FileSystemMonitor());
+    LOG("loaded default configuration monitor_backends=multicast,filesystem");
 }
 
 void capiocl::engine::Engine::startApiServer() {
+    START_LOG(calf_current_tid(), "call()");
     webapi_server = std::make_unique<api::CapioClApiServer>(this, configuration);
+    LOG("started API server");
 }
 
 capiocl::engine::CapioCLEntry capiocl::engine::CapioCLEntry::fromJson(const std::string &in) {
+    START_LOG(calf_current_tid(), "call()");
     jsoncons::json j = jsoncons::json::parse(in);
     CapioCLEntry entry;
 
@@ -970,10 +1107,14 @@ capiocl::engine::CapioCLEntry capiocl::engine::CapioCLEntry::fromJson(const std:
     entry.excluded        = j.get_value_or<bool>("excluded", entry.excluded);
     entry.is_file         = j.get_value_or<bool>("is_file", entry.is_file);
 
+    LOG("decoded entry producers=%zu consumers=%zu dependencies=%zu commit_rule=%s fire_rule=%s",
+        entry.producers.size(), entry.consumers.size(), entry.file_dependencies.size(),
+        entry.commit_rule.c_str(), entry.fire_rule.c_str());
     return entry;
 }
 
 std::string capiocl::engine::CapioCLEntry::toJson() const {
+    START_LOG(calf_current_tid(), "call()");
     jsoncons::json j;
     j["producers"] = producers;
     j["consumers"] = consumers;
@@ -998,6 +1139,7 @@ std::string capiocl::engine::CapioCLEntry::toJson() const {
 }
 
 capiocl::engine::CapioCLEntry &capiocl::engine::CapioCLEntry::operator+=(const CapioCLEntry &rhs) {
+    START_LOG(calf_current_tid(), "call()");
     auto merge_vec = [](std::vector<std::string> &dest, const std::vector<std::string> &src) {
         dest.insert(dest.end(), src.begin(), src.end());
     };
@@ -1024,13 +1166,14 @@ capiocl::engine::CapioCLEntry &capiocl::engine::CapioCLEntry::operator+=(const C
 }
 
 capiocl::engine::CapioCLEntry capiocl::engine::CapioCLEntry::operator+(const CapioCLEntry &rhs) {
+    START_LOG(calf_current_tid(), "call()");
     CapioCLEntry result = *this;
     result += rhs;
     return result;
 }
 
 bool capiocl::engine::CapioCLEntry::operator==(const CapioCLEntry &other) {
-
+    START_LOG(calf_current_tid(), "call()");
     if (this->commit_rule != other.commit_rule || this->fire_rule != other.fire_rule ||
         this->permanent != other.permanent || this->excluded != other.excluded ||
         this->is_file != other.is_file ||
@@ -1080,5 +1223,6 @@ bool capiocl::engine::CapioCLEntry::operator==(const CapioCLEntry &other) {
 }
 
 bool capiocl::engine::CapioCLEntry::operator!=(const CapioCLEntry &other) {
+    START_LOG(calf_current_tid(), "call()");
     return !(*this == other);
 }

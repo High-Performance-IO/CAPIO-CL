@@ -43,8 +43,8 @@ TEST(EXCEPTION_SUITE_NAME, testFailedserializeVersion) {
 
 TEST(EXCEPTION_SUITE_NAME, testParserException) {
     std::filesystem::path JSON_DIR = "/tmp/capio_cl_jsons/";
-    capiocl::printer::print(capiocl::printer::CLI_LEVEL_INFO,
-                            "Loading jsons from " + JSON_DIR.string());
+
+    std::cout << "Loading jsons from " << JSON_DIR << std::endl;
 
     std::vector<std::filesystem::path> test_filenames = {
         "",
@@ -77,8 +77,7 @@ TEST(EXCEPTION_SUITE_NAME, testParserException) {
     for (const auto &version : CAPIO_CL_AVAIL_VERSIONS) {
         for (const auto &test : test_filenames) {
             const auto test_file_path = test.empty() ? test : JSON_DIR / ("V" + version) / test;
-            capiocl::printer::print(capiocl::printer::CLI_LEVEL_WARNING,
-                                    "Testing on file " + test_file_path.string());
+            std::cout << "Testing on file " << test_file_path << std::endl;
 
             EXPECT_THROW(capiocl::parser::Parser::parse(test_file_path),
                          capiocl::parser::ParserException);

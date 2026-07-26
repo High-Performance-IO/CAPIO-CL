@@ -48,7 +48,6 @@ TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testSerializeParseCAPIOCLV1) {
         auto new_engine               = capiocl::parser::Parser::parse(path, resolve);
 
         EXPECT_TRUE(new_engine->getWorkflowName() == workflow_name);
-        capiocl::printer::print("", "");
         EXPECT_TRUE(engine == *new_engine);
 
         auto new_engine1 = capiocl::parser::Parser::parse(path, resolve, true);
@@ -80,7 +79,6 @@ TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testSerializeParseCAPIOCLV1NcloseNfiles) 
         auto new_engine               = capiocl::parser::Parser::parse(path, resolve);
 
         EXPECT_TRUE(new_engine->getWorkflowName() == workflow_name);
-        capiocl::printer::print("", "");
         EXPECT_TRUE(engine == *new_engine);
 
         std::filesystem::remove(path);
@@ -116,7 +114,6 @@ TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testSerializeParseCAPIOCLV1FileDeps) {
         auto new_engine               = capiocl::parser::Parser::parse(path, resolve);
 
         EXPECT_TRUE(new_engine->getWorkflowName() == workflow_name);
-        capiocl::printer::print("", "");
         EXPECT_TRUE(engine == *new_engine);
 
         std::filesystem::remove(path);
@@ -146,7 +143,6 @@ TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testSerializeCommitOnCloseCountNoCommitRu
 
         EXPECT_TRUE(new_engine->getWorkflowName() == workflow_name);
         EXPECT_FALSE(engine == *new_engine);
-        capiocl::printer::print("", "");
         engine.setCommitRule(file_1_name, capiocl::commitRules::ON_CLOSE);
         EXPECT_TRUE(engine == *new_engine);
 
