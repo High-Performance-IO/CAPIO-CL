@@ -60,8 +60,10 @@ FetchContent_Declare(
 FetchContent_Declare(
         calf
         GIT_REPOSITORY https://github.com/High-Performance-IO/calf.git
-        GIT_TAG v0.1.1
+        GIT_TAG v0.2.0
 )
+
+set(CALF_PROTOBUF ON CACHE BOOL "" FORCE)
 
 # JSONCONS build flags
 set(JSONCONS_BUILD_TESTS OFF CACHE BOOL "" FORCE)
@@ -161,6 +163,7 @@ endif ()
 calf_enable_log(libcapio_cl $<IF:$<CONFIG:Debug>,ON,OFF>)
 calf_set_component(libcapio_cl "capiocl")
 calf_set_default_log_dir(libcapio_cl "./capiocl_logs")
+target_link_libraries(libcapio_cl PRIVATE calf::protobuf)
 target_include_directories(libcapio_cl PRIVATE ${CALF_SOURCE_DIR})
 
 #####################################
