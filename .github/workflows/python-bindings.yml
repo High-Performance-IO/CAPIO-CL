@@ -20,6 +20,7 @@ jobs:
     runs-on: ${{ matrix.on }}
     env:
       INSTALL_PREFIX: "/usr/local"
+      CALF_LOG_DIR: ${{ github.workspace }}/capiocl_logs
 
     steps:
       - name: "Checkout repository"
@@ -67,6 +68,22 @@ jobs:
         if: startsWith(matrix.on, 'macos-')
         run: |
           pytest -k "not test_home_node" -v tests/python/test_*
+
+      - name: "Zip CALF logs"
+        if: always()
+        run: |
+          if [ -d "capiocl_logs" ]; then
+            cmake -E tar cf capiocl_logs.zip --format=zip capiocl_logs
+          fi
+
+      - name: "Upload CALF logs"
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ format('capiocl-logs-{0}-{1}', matrix.on, matrix.python) }}
+          path: capiocl_logs.zip
+          retention-days: 1
+          if-no-files-found: ignore
 
 
       - name: "Generate coverage report"

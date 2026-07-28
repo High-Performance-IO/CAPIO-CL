@@ -13,6 +13,8 @@ jobs:
   unit-tests:
     name: "Build ${{ matrix.build_type }} with ${{ matrix.compiler }}"
     runs-on: ubuntu-latest
+    env:
+      CALF_LOG_DIR: ${{ github.workspace }}/capiocl_logs
     strategy:
       fail-fast: false
       matrix:
@@ -63,11 +65,28 @@ jobs:
         shell: bash
         run: CAPIO_CL_tests --gtest_break_on_failure --gtest_print_time=1
 
+      - name: Zip logs
+        if: always()
+        run: |
+          if [ -d "capiocl_logs" ]; then
+            cmake -E tar cf capiocl_logs.zip --format=zip capiocl_logs
+          fi
+
+      - name: Upload logs artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: capiocl-logs-${{ matrix.build_type }}-${{ strategy.job-index }}
+          path: capiocl_logs.zip
+          retention-days: 1
+          if-no-files-found: ignore
 
   upload-to-codecov:
     name: "compute Codecov"
     needs: [ "unit-tests"]
     runs-on: ubuntu-latest
+    env:
+      CALF_LOG_DIR: ${{ github.workspace }}/capiocl_logs
     steps:
       - uses: actions/checkout@v7
 
@@ -95,6 +114,22 @@ jobs:
       - name: Run unit tests
         shell: bash
         run: CAPIO_CL_tests --gtest_break_on_failure --gtest_print_time=1
+
+      - name: Zip logs
+        if: always()
+        run: |
+          if [ -d "capiocl_logs" ]; then
+            cmake -E tar cf capiocl_logs.zip --format=zip capiocl_logs
+          fi
+
+      - name: Upload logs artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: capiocl-logs-coverage
+          path: capiocl_logs.zip
+          retention-days: 1
+          if-no-files-found: ignore
 
       - name: "Generate coverage report"
         run: |
