@@ -60,7 +60,7 @@ FetchContent_Declare(
 FetchContent_Declare(
         calf
         GIT_REPOSITORY https://github.com/High-Performance-IO/calf.git
-        GIT_TAG perfecto-trace-format
+        GIT_TAG v0.3.0
 )
 
 set(CALF_PROTOBUF ON CACHE BOOL "" FORCE)

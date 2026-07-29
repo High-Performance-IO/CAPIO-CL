@@ -61,6 +61,7 @@ At runtime, CAPIO-CL’s parser and engine components analyze, track, and manage
   config files
 - [GoogleTest](https://github.com/google/googletest) for automated testing
 - [pybind11](https://github.com/pybind/pybind11) when building python wheels
+- [CALF](https://github.com/High-Performance-IO/CALF) for both logs and CLI messages
 
 jsoncons, GoogleTest and pybind11 are fetched automatically by CMake — no manual setup required.
 
