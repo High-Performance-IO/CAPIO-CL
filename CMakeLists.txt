@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.15)
 project(CAPIO-CL
         LANGUAGES CXX
         DESCRIPTION "Cross-Application Programmable IO - Coordination Language"
-        VERSION 1.5.0
+        VERSION 1.5.1
 )
 
 set(CMAKE_CXX_STANDARD 17)
@@ -60,7 +60,7 @@ FetchContent_Declare(
 FetchContent_Declare(
         calf
         GIT_REPOSITORY https://github.com/High-Performance-IO/calf.git
-        GIT_TAG v0.2.0
+        GIT_TAG v0.3.0
 )
 
 set(CALF_PROTOBUF ON CACHE BOOL "" FORCE)

@@ -50,3 +50,4 @@ dist/**
 **.DS_Store
 
 *build*
+*capiocl_logs*
