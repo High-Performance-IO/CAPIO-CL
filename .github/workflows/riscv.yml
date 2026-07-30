@@ -32,7 +32,7 @@ jobs:
             python3 python3-dev python3-pip python3-venv python3-wheel python3-setuptools \
             g++ cmake ninja-build git
 
-      - name: "Upgrade pip (riscv64 wheels need pip >= 24.1)"
+      - name: "Upgrade pip"
         run: python3 -m pip install --upgrade pip --break-system-packages
 
       - name: "Install build requirements"
