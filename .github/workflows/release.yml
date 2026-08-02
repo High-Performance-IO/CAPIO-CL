@@ -94,6 +94,7 @@ jobs:
             cmake.define.ENABLE_COVERAGE=OFF
             cmake.build-type=Release
             cmake.define.CAPIO_CL_BUILD_TESTS=OFF
+          CIBW_BEFORE_ALL_LINUX: dnf install -y protobuf-devel protobuf-compiler
           CIBW_BUILD_VERBOSITY: "1"
         run: |
           set -eux
@@ -163,6 +164,8 @@ jobs:
           CIBW_BUILD: "cp310-* cp311-* cp312-* cp313-* cp314-*"
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
           CIBW_MANYLINUX_AARCH64_IMAGE: manylinux_2_28
+          CIBW_BEFORE_ALL_LINUX: dnf install -y protobuf-devel protobuf-compiler
+          CIBW_BEFORE_ALL_MACOS: brew install protobuf
           MACOSX_DEPLOYMENT_TARGET: "15.0"
           CIBW_BUILD_VERBOSITY: 1
 
