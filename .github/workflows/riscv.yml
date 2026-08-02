@@ -9,7 +9,7 @@ on:
       - main
 
 concurrency:
-  group: build-python-${{ github.event.pull_request.number || github.ref }}
+  group: build-riscv-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
