@@ -97,7 +97,7 @@ jobs:
 
       - name: "Build RISC-V wheel (CPython ${{ matrix.python }})"
         env:
-          CIBW_BUILD: "${{ matrix.abi }}-*"
+          CIBW_BUILD: "${{ matrix.abi }}-manylinux_riscv64"
           CIBW_ARCHS: "riscv64"
           CIBW_MANYLINUX_RISCV64_IMAGE: "manylinux_2_39"
           CIBW_CONFIG_SETTINGS: >-
