@@ -64,61 +64,59 @@ jobs:
           username: capio-user
 
   riscv-wheels:
-    name: "Build RiscV Ubuntu python wheels"
+    name: "Build RISC-V Ubuntu Python wheels"
     if: ${{ needs.check-tag-existance.outputs.exists == 'false' }}
     needs:
       - check-tag-existance
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-riscv
     strategy:
+      fail-fast: false
       matrix:
-        python: [ '3.10', '3.11', '3.12', '3.13', '3.14' ]
-
-    env:
-      INSTALL_PREFIX: "/usr/local"
-      PYTHON_VERSION: "${{ matrix.python }}"
+        include:
+          - python: '3.10'
+            abi: cp310
+          - python: '3.11'
+            abi: cp311
+          - python: '3.12'
+            abi: cp312
+          - python: '3.13'
+            abi: cp313
+          - python: '3.14'
+            abi: cp314
 
     steps:
       - name: "Checkout repository"
         uses: actions/checkout@v7
 
-      - name: "Build and test inside RISC-V emulated environment (Debian based)"
-        uses: uraimo/run-on-arch-action@v3
-        with:
-          arch: riscv64
-          distro: ubuntu22.04
-          githubToken: ${{ github.token }}
+      - name: "Install cibuildwheel"
+        run: |
+          set -eux
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y python3 python3-pip git
+          python3 -m pip install --upgrade pip cibuildwheel --break-system-packages
 
-          install: |
-            apt-get update
-            DEBIAN_FRONTEND=noninteractive apt-get install -y \
-              python3 python3-pip python3-venv python3-wheel python3-setuptools \
-              g++ cmake ninja-build git
-
-          run: |
-            set -eux
-            echo "Building for RISC-V on Ubuntu 22.04"
-
-            python3 -m pip install --upgrade pip
-            python3 -m pip install -r build-requirements.txt
-
-            mkdir -p /tmp/capio_cl_jsons
-            mkdir -p /tmp/capio_cl_tomls
-            cp -r tests/jsons/* /tmp/capio_cl_jsons
-            cp -r tests/tomls/* /tmp/capio_cl_tomls
-
-            python3 -m build \
-              -Ccmake.define.ENABLE_COVERAGE=OFF \
-              -Ccmake.build-type=Release \
-              -Ccmake.define.CAPIO_CL_BUILD_TESTS=OFF
-
-            mv dist/*.whl dist/py_capio_cl_ubunturv64_python_${{matrix.python}}.whl
+      - name: "Build RISC-V wheel (CPython ${{ matrix.python }})"
+        env:
+          CIBW_BUILD: "${{ matrix.abi }}-*"
+          CIBW_ARCHS: "riscv64"
+          CIBW_MANYLINUX_RISCV64_IMAGE: "manylinux_2_39"
+          CIBW_CONFIG_SETTINGS: >-
+            cmake.define.ENABLE_COVERAGE=OFF
+            cmake.build-type=Release
+            cmake.define.CAPIO_CL_BUILD_TESTS=OFF
+          CIBW_BEFORE_ALL_LINUX: dnf install -y protobuf-devel protobuf-compiler
+          CIBW_BUILD_VERBOSITY: "1"
+        run: |
+          set -eux
+          echo "Building on $(uname -m) / Ubuntu 24.04 for CPython ${{ matrix.python }}"
+          python3 -m cibuildwheel --output-dir wheelhouse
 
       - name: "Upload built RISC-V wheel"
         if: success()
         uses: actions/upload-artifact@v7
         with:
-          name: "${{ format('py_capio_cl_ubunturv64_python_{0}.whl', matrix.python) }}"
-          path: "dist/${{ format('py_capio_cl_ubunturv64_python_{0}.whl', matrix.python) }}"
+          name: "wheels-ubuntu-24.04-riscv-py${{ matrix.python }}"
+          path: "wheelhouse/*.whl"
 
   github:
     name: "Create GitHub Release"
@@ -176,6 +174,8 @@ jobs:
           CIBW_BUILD: "cp310-* cp311-* cp312-* cp313-* cp314-*"
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
           CIBW_MANYLINUX_AARCH64_IMAGE: manylinux_2_28
+          CIBW_BEFORE_ALL_LINUX: dnf install -y protobuf-devel protobuf-compiler
+          CIBW_BEFORE_ALL_MACOS: brew install protobuf
           MACOSX_DEPLOYMENT_TARGET: "15.0"
           CIBW_BUILD_VERBOSITY: 1
 
