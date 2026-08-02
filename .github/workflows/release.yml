@@ -72,7 +72,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: [ '3.10', '3.11', '3.12', '3.13', '3.14' ]
+        include:
+          - python: '3.10'
+            abi: cp310
+          - python: '3.11'
+            abi: cp311
+          - python: '3.12'
+            abi: cp312
+          - python: '3.13'
+            abi: cp313
+          - python: '3.14'
+            abi: cp314
 
     steps:
       - name: "Checkout repository"
@@ -87,7 +97,7 @@ jobs:
 
       - name: "Build RISC-V wheel (CPython ${{ matrix.python }})"
         env:
-          CIBW_BUILD: "cp${{ replace(matrix.python, '.', '') }}-*"
+          CIBW_BUILD: "${{ matrix.abi }}-*"
           CIBW_ARCHS: "riscv64"
           CIBW_MANYLINUX_RISCV64_IMAGE: "manylinux_2_39"
           CIBW_CONFIG_SETTINGS: >-
