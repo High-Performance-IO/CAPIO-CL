@@ -60,7 +60,7 @@ FetchContent_Declare(
 FetchContent_Declare(
         calf
         GIT_REPOSITORY https://github.com/High-Performance-IO/calf.git
-        GIT_TAG v0.3.0
+        GIT_TAG v0.3.1
 )
 
 set(CALF_PROTOBUF ON CACHE BOOL "" FORCE)
