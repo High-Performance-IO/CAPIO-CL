@@ -1,6 +1,10 @@
 #ifndef CAPIO_CL_SERIALIZER_H
 #define CAPIO_CL_SERIALIZER_H
 
+#include <filesystem>
+#include <utility>
+#include <vector>
+
 #include "capiocl.hpp"
 
 /// @brief Namespace containing the CAPIO-CL Serializer component
@@ -28,16 +32,8 @@ class SerializerException final : public std::exception {
 /// @brief Dump the current loaded CAPIO-CL configuration from class Engine to a CAPIO-CL
 /// configuration file.
 class Serializer final {
-    /**
-     * Check whether a CAPIO-CL entry has a parent entry for which the same rules applies, and tell
-     * whether this entry can be omitted by using rule inheritance.
-     * @param compress
-     * @param path
-     * @param engine
-     * @return
-     */
-    static bool entryCanBeCompressed(bool compress, const std::filesystem::path &path,
-                                       const engine::Engine &engine);
+    static std::vector<std::pair<std::string, std::string>>
+    compressedPaths(const engine::Engine &engine);
 
     /**
      * Sort path entries from longest to shortest

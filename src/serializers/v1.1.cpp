@@ -12,15 +12,21 @@ void capiocl::serializer::Serializer::available_serializers::serialize_v1_1(
     UPDATE_CALF_WORKFLOW_NAME(engine.getWorkflowName());
 
     if (compress) {
-        CALF_PRINT_COLOR(CALF_CLI_LEVEL_WARNING,
-                         "Using configuration compression to directories!");
+        CALF_PRINT_COLOR(CALF_CLI_LEVEL_WARNING, "Using configuration compression to directories!");
     }
 
     jsoncons::json doc;
     doc["version"] = 1.1;
     doc["name"]    = engine.getWorkflowName();
 
-    const auto files = engine._capio_cl_entries;
+    auto files = engine._capio_cl_entries;
+    if (compress) {
+        decltype(files) compressed;
+        for (const auto &[path, source] : compressedPaths(engine)) {
+            compressed.emplace(path, files.at(source));
+        }
+        files = std::move(compressed);
+    }
 
     std::unordered_map<std::string, std::vector<std::string>> app_inputs;
     std::unordered_map<std::string, std::vector<std::string>> app_outputs;
@@ -43,11 +49,6 @@ void capiocl::serializer::Serializer::available_serializers::serialize_v1_1(
 
     for (const auto &path : keys) {
         const auto entry = files.at(path);
-
-        if (entryCanBeCompressed(compress, path, engine)) {
-            CALF_PRINT_COLOR(CALF_CLI_LEVEL_WARNING, "Compressing entry %s", path.c_str());
-            continue;
-        }
 
         if (entry.permanent) {
             permanent.push_back(path);
@@ -74,10 +75,6 @@ void capiocl::serializer::Serializer::available_serializers::serialize_v1_1(
 
         for (const auto &path : outputs) {
             const auto &entry = files.at(path);
-
-            if (entryCanBeCompressed(compress, path, engine)) {
-                continue;
-            }
 
             filtered_outputs.push_back(path);
 

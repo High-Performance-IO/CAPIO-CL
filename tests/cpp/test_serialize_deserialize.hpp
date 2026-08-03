@@ -150,6 +150,58 @@ TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testSerializeCommitOnCloseCountNoCommitRu
     }
 }
 
+TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testCompressedSerializationUsesLongestPrefix) {
+    for (const auto &_cl_version : CAPIO_CL_AVAIL_VERSIONS) {
+        const std::filesystem::path config_path("./compressed-config.json");
+        const std::vector<std::string> regular = {"/data/one", "/data/two"};
+        const std::vector<std::string> special = {"/data/special/one", "/data/special/two"};
+        std::string producer = "producer", consumer = "consumer";
+
+        capiocl::engine::Engine engine;
+        for (const auto &path : regular) {
+            engine.addProducer(path, producer);
+            engine.addConsumer(path, consumer);
+            engine.setCommitRule(path, capiocl::commitRules::ON_CLOSE);
+            engine.setCommitedCloseNumber(path, 2);
+            engine.setFireRule(path, capiocl::fireRules::NO_UPDATE);
+            engine.setStoreFileInMemory(path);
+            engine.setPermanent(path, true);
+        }
+        for (const auto &path : special) {
+            engine.addProducer(path, producer);
+            engine.addConsumer(path, consumer);
+            engine.setCommitRule(path, capiocl::commitRules::ON_TERMINATION);
+            engine.setFireRule(path, capiocl::fireRules::UPDATE);
+        }
+
+        capiocl::serializer::Serializer::dump(engine, config_path, true, _cl_version);
+        auto compressed = capiocl::parser::Parser::parse(config_path, "");
+        const auto paths = compressed->getPaths();
+
+        EXPECT_EQ(paths.size(), 2);
+        EXPECT_NE(std::find(paths.begin(), paths.end(), "/data/*"), paths.end());
+        EXPECT_NE(std::find(paths.begin(), paths.end(), "/data/special/*"), paths.end());
+
+        EXPECT_EQ(compressed->getCommitRule(regular.front()), capiocl::commitRules::ON_CLOSE);
+        EXPECT_EQ(compressed->getCommitCloseCount(regular.front()), 2);
+        EXPECT_EQ(compressed->getFireRule(regular.front()), capiocl::fireRules::NO_UPDATE);
+        EXPECT_TRUE(compressed->isStoredInMemory(regular.front()));
+        EXPECT_TRUE(compressed->isPermanent(regular.front()));
+        EXPECT_TRUE(compressed->isProducer(regular.front(), "producer"));
+        EXPECT_TRUE(compressed->isConsumer(regular.front(), "consumer"));
+
+        EXPECT_EQ(compressed->getCommitRule(special.front()),
+                  capiocl::commitRules::ON_TERMINATION);
+        EXPECT_EQ(compressed->getFireRule(special.front()), capiocl::fireRules::UPDATE);
+        EXPECT_FALSE(compressed->isStoredInMemory(special.front()));
+        EXPECT_FALSE(compressed->isPermanent(special.front()));
+        EXPECT_TRUE(compressed->isProducer(special.front(), "producer"));
+        EXPECT_TRUE(compressed->isConsumer(special.front(), "consumer"));
+
+        std::filesystem::remove(config_path);
+    }
+}
+
 TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testParserResolveAbsolute) {
     for (const auto &_cl_version : CAPIO_CL_AVAIL_VERSIONS) {
         const std::filesystem::path json_path("/tmp/capio_cl_jsons/V" + _cl_version +
