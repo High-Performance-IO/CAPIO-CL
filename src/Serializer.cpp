@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
+#include <unordered_set>
 #include <jsoncons/json.hpp>
 
 #include "calf/StdOutLogger.h"
@@ -47,7 +48,19 @@ void capiocl::serializer::Serializer::sortPathsByDecreasingLength(std::vector<st
 std::vector<std::pair<std::string, std::string>>
 capiocl::serializer::Serializer::compressedPaths(const engine::Engine &engine) {
     std::unordered_map<std::string, std::string> paths;
+    std::unordered_map<std::string, std::unordered_set<std::string>> candidates;
     std::vector<std::string> directories;
+    std::unordered_set<std::string> known_directories;
+
+    const auto for_each_parent = [](const std::string &path, const auto &callback) {
+        for (auto parent = std::filesystem::path(path).parent_path();;) {
+            callback(parent.string());
+            if (parent.empty() || parent == parent.root_path()) {
+                break;
+            }
+            parent = parent.parent_path();
+        }
+    };
 
     for (const auto &[path, entry] : engine._capio_cl_entries) {
         paths.emplace(path, path);
@@ -55,16 +68,14 @@ capiocl::serializer::Serializer::compressedPaths(const engine::Engine &engine) {
             continue;
         }
 
-        for (auto parent = std::filesystem::path(path).parent_path();;) {
-            if (const auto value = parent.string();
-                std::find(directories.begin(), directories.end(), value) == directories.end()) {
-                directories.push_back(value);
+        // Index each file under its ancestors once. Compression then examines
+        // only descendants of the current directory instead of every path.
+        for_each_parent(path, [&](const std::string &parent) {
+            candidates[parent].insert(path);
+            if (known_directories.insert(parent).second) {
+                directories.push_back(parent);
             }
-            if (parent.empty() || parent == parent.root_path()) {
-                break;
-            }
-            parent = parent.parent_path();
-        }
+        });
     }
 
     sortPathsByDecreasingLength(directories);
@@ -76,16 +87,14 @@ capiocl::serializer::Serializer::compressedPaths(const engine::Engine &engine) {
         }
 
         std::vector<std::vector<std::string>> groups;
-        for (const auto &[output, source] : paths) {
-            if (!engine._capio_cl_entries.at(source).is_file ||
-                (output == source && output.find_first_of("*?[") != std::string::npos)) {
+        for (const auto &output : candidates[directory]) {
+            const auto path = paths.find(output);
+            if (path == paths.end()) {
                 continue;
             }
-            const std::filesystem::path output_path(output);
-            const auto relative = output_path.lexically_relative(directory);
-            if ((!directory.empty() &&
-                 (relative.empty() || *relative.begin() == std::filesystem::path(".."))) ||
-                (directory.empty() && output_path.is_absolute())) {
+            const auto &source = path->second;
+            if (!engine._capio_cl_entries.at(source).is_file ||
+                (output == source && output.find_first_of("*?[") != std::string::npos)) {
                 continue;
             }
 
@@ -111,8 +120,18 @@ capiocl::serializer::Serializer::compressedPaths(const engine::Engine &engine) {
         const auto source = paths.at(largest->front());
         for (const auto &path : *largest) {
             paths.erase(path);
+            for_each_parent(path,
+                            [&](const std::string &parent) { candidates[parent].erase(path); });
         }
         paths.emplace(wildcard, source);
+
+        // Parent directories must see the replacement wildcard, but this
+        // directory has already selected its one compression group.
+        for_each_parent(wildcard, [&](const std::string &parent) {
+            if (parent != directory) {
+                candidates[parent].insert(wildcard);
+            }
+        });
         CALF_PRINT_COLOR(CALF_CLI_LEVEL_WARNING, "Compressing entries to %s", wildcard.c_str());
     }
 
