@@ -32,6 +32,11 @@ class SerializerException final : public std::exception {
 /// @brief Dump the current loaded CAPIO-CL configuration from class Engine to a CAPIO-CL
 /// configuration file.
 class Serializer final {
+    /**
+     * Compress entries from a CAPIO-CL engine into entries using wildcards.
+     * @param engine
+     * @return
+     */
     static std::vector<std::pair<std::string, std::string>>
     compressedPaths(const engine::Engine &engine);
 

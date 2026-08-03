@@ -1,6 +1,8 @@
 #ifndef CAPIO_CL_TEST_SERIALIZE_DESERIALIZE_HPP
 #define CAPIO_CL_TEST_SERIALIZE_DESERIALIZE_HPP
 
+#include <fstream>
+
 #define SERIALIZE_DESERIALIZE_SUITE_NAME TestSerializeAndDeserialize
 
 TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testSerializeParseCAPIOCLV1) {
@@ -197,6 +199,36 @@ TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testCompressedSerializationUsesLongestPre
         EXPECT_FALSE(compressed->isPermanent(special.front()));
         EXPECT_TRUE(compressed->isProducer(special.front(), "producer"));
         EXPECT_TRUE(compressed->isConsumer(special.front(), "consumer"));
+
+        std::filesystem::remove(config_path);
+    }
+}
+
+TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testCompressedSerializationGroupsThousandsOfFiles) {
+    for (const auto &_cl_version : CAPIO_CL_AVAIL_VERSIONS) {
+        const std::filesystem::path config_path("./large-compressed-config.json");
+        std::string producer = "producer";
+        capiocl::engine::Engine engine;
+
+        for (int i = 0; i < 5000; ++i) {
+            const auto path = "/data/regular/file-" + std::to_string(i);
+            engine.addProducer(path, producer);
+            engine.setCommitRule(path, capiocl::commitRules::ON_CLOSE);
+        }
+        for (int i = 0; i < 1000; ++i) {
+            const auto path = "/data/special/file-" + std::to_string(i);
+            engine.addProducer(path, producer);
+            engine.setCommitRule(path, capiocl::commitRules::ON_TERMINATION);
+        }
+
+        capiocl::serializer::Serializer::dump(engine, config_path, true, _cl_version);
+        std::ifstream config(config_path);
+        const auto doc = jsoncons::json::parse(config);
+        const auto paths = doc["IO_Graph"][0]["output_stream"].as<std::vector<std::string>>();
+
+        EXPECT_EQ(paths.size(), 2);
+        EXPECT_NE(std::find(paths.begin(), paths.end(), "/data/regular/*"), paths.end());
+        EXPECT_NE(std::find(paths.begin(), paths.end(), "/data/special/*"), paths.end());
 
         std::filesystem::remove(config_path);
     }
