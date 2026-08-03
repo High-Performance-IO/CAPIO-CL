@@ -1,6 +1,8 @@
 #ifndef CAPIO_CL_TEST_SERIALIZE_DESERIALIZE_HPP
 #define CAPIO_CL_TEST_SERIALIZE_DESERIALIZE_HPP
 
+#include <fstream>
+
 #define SERIALIZE_DESERIALIZE_SUITE_NAME TestSerializeAndDeserialize
 
 TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testSerializeParseCAPIOCLV1) {
@@ -42,7 +44,7 @@ TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testSerializeParseCAPIOCLV1) {
 
         engine.print();
 
-        capiocl::serializer::Serializer::dump(engine, path, _cl_version);
+        capiocl::serializer::Serializer::dump(engine, path, false, _cl_version);
 
         std::filesystem::path resolve = "";
         auto new_engine               = capiocl::parser::Parser::parse(path, resolve);
@@ -73,7 +75,7 @@ TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testSerializeParseCAPIOCLV1NcloseNfiles) 
         engine.addProducer(file_1_name, producer_name);
         engine.addConsumer(file_1_name, consumer_name);
 
-        capiocl::serializer::Serializer::dump(engine, path, _cl_version);
+        capiocl::serializer::Serializer::dump(engine, path, false, _cl_version);
 
         std::filesystem::path resolve = "";
         auto new_engine               = capiocl::parser::Parser::parse(path, resolve);
@@ -108,7 +110,7 @@ TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testSerializeParseCAPIOCLV1FileDeps) {
         engine.setFileDeps(file_3_name, {file_1_name, file_2_name});
 
         engine.print();
-        capiocl::serializer::Serializer::dump(engine, path, _cl_version);
+        capiocl::serializer::Serializer::dump(engine, path, false, _cl_version);
 
         std::filesystem::path resolve = "";
         auto new_engine               = capiocl::parser::Parser::parse(path, resolve);
@@ -136,7 +138,7 @@ TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testSerializeCommitOnCloseCountNoCommitRu
         engine.setCommitedCloseNumber(file_1_name, 10);
 
         engine.print();
-        capiocl::serializer::Serializer::dump(engine, path, _cl_version);
+        capiocl::serializer::Serializer::dump(engine, path, false, _cl_version);
 
         std::filesystem::path resolve = "";
         auto new_engine               = capiocl::parser::Parser::parse(path, resolve);
@@ -147,6 +149,88 @@ TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testSerializeCommitOnCloseCountNoCommitRu
         EXPECT_TRUE(engine == *new_engine);
 
         std::filesystem::remove(path);
+    }
+}
+
+TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testCompressedSerializationUsesLongestPrefix) {
+    for (const auto &_cl_version : CAPIO_CL_AVAIL_VERSIONS) {
+        const std::filesystem::path config_path("./compressed-config.json");
+        const std::vector<std::string> regular = {"/data/one", "/data/two"};
+        const std::vector<std::string> special = {"/data/special/one", "/data/special/two"};
+        std::string producer = "producer", consumer = "consumer";
+
+        capiocl::engine::Engine engine;
+        for (const auto &path : regular) {
+            engine.addProducer(path, producer);
+            engine.addConsumer(path, consumer);
+            engine.setCommitRule(path, capiocl::commitRules::ON_CLOSE);
+            engine.setCommitedCloseNumber(path, 2);
+            engine.setFireRule(path, capiocl::fireRules::NO_UPDATE);
+            engine.setStoreFileInMemory(path);
+            engine.setPermanent(path, true);
+        }
+        for (const auto &path : special) {
+            engine.addProducer(path, producer);
+            engine.addConsumer(path, consumer);
+            engine.setCommitRule(path, capiocl::commitRules::ON_TERMINATION);
+            engine.setFireRule(path, capiocl::fireRules::UPDATE);
+        }
+
+        capiocl::serializer::Serializer::dump(engine, config_path, true, _cl_version);
+        auto compressed = capiocl::parser::Parser::parse(config_path, "");
+        const auto paths = compressed->getPaths();
+
+        EXPECT_EQ(paths.size(), 2);
+        EXPECT_NE(std::find(paths.begin(), paths.end(), "/data/*"), paths.end());
+        EXPECT_NE(std::find(paths.begin(), paths.end(), "/data/special/*"), paths.end());
+
+        EXPECT_EQ(compressed->getCommitRule(regular.front()), capiocl::commitRules::ON_CLOSE);
+        EXPECT_EQ(compressed->getCommitCloseCount(regular.front()), 2);
+        EXPECT_EQ(compressed->getFireRule(regular.front()), capiocl::fireRules::NO_UPDATE);
+        EXPECT_TRUE(compressed->isStoredInMemory(regular.front()));
+        EXPECT_TRUE(compressed->isPermanent(regular.front()));
+        EXPECT_TRUE(compressed->isProducer(regular.front(), "producer"));
+        EXPECT_TRUE(compressed->isConsumer(regular.front(), "consumer"));
+
+        EXPECT_EQ(compressed->getCommitRule(special.front()),
+                  capiocl::commitRules::ON_TERMINATION);
+        EXPECT_EQ(compressed->getFireRule(special.front()), capiocl::fireRules::UPDATE);
+        EXPECT_FALSE(compressed->isStoredInMemory(special.front()));
+        EXPECT_FALSE(compressed->isPermanent(special.front()));
+        EXPECT_TRUE(compressed->isProducer(special.front(), "producer"));
+        EXPECT_TRUE(compressed->isConsumer(special.front(), "consumer"));
+
+        std::filesystem::remove(config_path);
+    }
+}
+
+TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testCompressedSerializationGroupsThousandsOfFiles) {
+    for (const auto &_cl_version : CAPIO_CL_AVAIL_VERSIONS) {
+        const std::filesystem::path config_path("./large-compressed-config.json");
+        std::string producer = "producer";
+        capiocl::engine::Engine engine;
+
+        for (int i = 0; i < 5000; ++i) {
+            const auto path = "/data/regular/file-" + std::to_string(i);
+            engine.addProducer(path, producer);
+            engine.setCommitRule(path, capiocl::commitRules::ON_CLOSE);
+        }
+        for (int i = 0; i < 1000; ++i) {
+            const auto path = "/data/special/file-" + std::to_string(i);
+            engine.addProducer(path, producer);
+            engine.setCommitRule(path, capiocl::commitRules::ON_TERMINATION);
+        }
+
+        capiocl::serializer::Serializer::dump(engine, config_path, true, _cl_version);
+        std::ifstream config(config_path);
+        const auto doc = jsoncons::json::parse(config);
+        const auto paths = doc["IO_Graph"][0]["output_stream"].as<std::vector<std::string>>();
+
+        EXPECT_EQ(paths.size(), 2);
+        EXPECT_NE(std::find(paths.begin(), paths.end(), "/data/regular/*"), paths.end());
+        EXPECT_NE(std::find(paths.begin(), paths.end(), "/data/special/*"), paths.end());
+
+        std::filesystem::remove(config_path);
     }
 }
 

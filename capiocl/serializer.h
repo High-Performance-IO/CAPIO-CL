@@ -1,6 +1,10 @@
 #ifndef CAPIO_CL_SERIALIZER_H
 #define CAPIO_CL_SERIALIZER_H
 
+#include <filesystem>
+#include <utility>
+#include <vector>
+
 #include "capiocl.hpp"
 
 /// @brief Namespace containing the CAPIO-CL Serializer component
@@ -28,6 +32,19 @@ class SerializerException final : public std::exception {
 /// @brief Dump the current loaded CAPIO-CL configuration from class Engine to a CAPIO-CL
 /// configuration file.
 class Serializer final {
+    /**
+     * Compress entries from a CAPIO-CL engine into entries using wildcards.
+     * @param engine
+     * @return
+     */
+    static std::vector<std::pair<std::string, std::string>>
+    compressedPaths(const engine::Engine &engine);
+
+    /**
+     * Sort path entries from longest to shortest
+     * @param paths
+     */
+    static void sortPathsByDecreasingLength(std::vector<std::string> &paths);
 
     /// @brief Available serializers for CAPIO-CL
     struct available_serializers {
@@ -37,10 +54,11 @@ class Serializer final {
          *
          * @param engine instance of Engine to dump
          * @param filename path of output file
+         * @param compress Compress the serialized output
          * @throws SerializerException
          */
         static void serialize_v1(const engine::Engine &engine,
-                                 const std::filesystem::path &filename);
+                                 const std::filesystem::path &filename, bool compress = false);
 
         /**
          * @brief Dump the current configuration loaded into an instance of  Engine to a CAPIO-CL
@@ -48,10 +66,11 @@ class Serializer final {
          *
          * @param engine instance of Engine to dump
          * @param filename path of output file
+         * @param compress Compress the serialized output
          * @throws SerializerException
          */
         static void serialize_v1_1(const engine::Engine &engine,
-                                   const std::filesystem::path &filename);
+                                   const std::filesystem::path &filename, bool compress = false);
     };
 
   public:
@@ -61,10 +80,11 @@ class Serializer final {
      *
      * @param engine instance of Engine to dump
      * @param filename path of output file
+     * @param compress Compress directories entries when possible
      * @param version Version of CAPIO-CL used to generate configuration files.
      */
     static void dump(const engine::Engine &engine, const std::filesystem::path &filename,
-                     const std::string &version = CAPIO_CL_VERSION::V1);
+                     bool compress = false, const std::string &version = CAPIO_CL_VERSION::V1);
 };
 } // namespace capiocl::serializer
 #endif // CAPIO_CL_SERIALIZER_H

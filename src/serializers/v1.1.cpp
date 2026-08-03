@@ -7,14 +7,26 @@
 #include "capiocl/serializer.h"
 
 void capiocl::serializer::Serializer::available_serializers::serialize_v1_1(
-    const engine::Engine &engine, const std::filesystem::path &filename) {
+    const engine::Engine &engine, const std::filesystem::path &filename, const bool compress) {
     START_LOG(calf_current_tid(), "call()");
     UPDATE_CALF_WORKFLOW_NAME(engine.getWorkflowName());
+
+    if (compress) {
+        CALF_PRINT_COLOR(CALF_CLI_LEVEL_WARNING, "Using configuration compression to directories!");
+    }
+
     jsoncons::json doc;
     doc["version"] = 1.1;
     doc["name"]    = engine.getWorkflowName();
 
-    const auto files = engine._capio_cl_entries;
+    auto files = engine._capio_cl_entries;
+    if (compress) {
+        decltype(files) compressed;
+        for (const auto &[path, source] : compressedPaths(engine)) {
+            compressed.emplace(path, files.at(source));
+        }
+        files = std::move(compressed);
+    }
 
     std::unordered_map<std::string, std::vector<std::string>> app_inputs;
     std::unordered_map<std::string, std::vector<std::string>> app_outputs;
@@ -27,7 +39,17 @@ void capiocl::serializer::Serializer::available_serializers::serialize_v1_1(
     jsoncons::json storage  = jsoncons::json::object();
     jsoncons::json io_graph = jsoncons::json::array();
 
-    for (const auto &[path, entry] : files) {
+    std::vector<std::string> keys;
+    keys.reserve(files.size());
+    for (const auto &[k, v] : files) {
+        keys.push_back(k);
+    }
+
+    sortPathsByDecreasingLength(keys);
+
+    for (const auto &path : keys) {
+        const auto entry = files.at(path);
+
         if (entry.permanent) {
             permanent.push_back(path);
         }
@@ -44,12 +66,17 @@ void capiocl::serializer::Serializer::available_serializers::serialize_v1_1(
         }
     }
 
-    for (const auto &[app_name, outputs] : app_outputs) {
+    for (auto &[app_name, outputs] : app_outputs) {
         jsoncons::json app       = jsoncons::json::object();
         jsoncons::json streaming = jsoncons::json::array();
+        std::vector<std::string> filtered_outputs;
+
+        sortPathsByDecreasingLength(outputs);
 
         for (const auto &path : outputs) {
             const auto &entry = files.at(path);
+
+            filtered_outputs.push_back(path);
 
             jsoncons::json streaming_item = jsoncons::json::object();
             std::string committed         = entry.commit_rule;
@@ -90,7 +117,7 @@ void capiocl::serializer::Serializer::available_serializers::serialize_v1_1(
 
         app["name"]          = app_name;
         app["input_stream"]  = app_inputs[app_name];
-        app["output_stream"] = outputs;
+        app["output_stream"] = filtered_outputs;
         app["streaming"]     = streaming;
 
         io_graph.push_back(app);
