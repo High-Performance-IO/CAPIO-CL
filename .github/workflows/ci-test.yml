@@ -22,17 +22,22 @@ jobs:
           - Debug
           - Release
         compiler:
-          - gcc:9
-          - gcc:10
-          - gcc:11
-          - gcc:12
-          - gcc:13
-          - silkeh/clang:13
-          - silkeh/clang:14
-          - silkeh/clang:15
-          - silkeh/clang:16
-          - silkeh/clang:17
-          - silkeh/clang:18
+        - gcc:12
+        - gcc:13
+        - gcc:14
+        - gcc:15
+        - gcc:16
+        - zhongruoyu/llvm-ports:13-trixie
+        - zhongruoyu/llvm-ports:14-trixie
+        - zhongruoyu/llvm-ports:15-trixie
+        - zhongruoyu/llvm-ports:16-trixie
+        - zhongruoyu/llvm-ports:17-trixie
+        - zhongruoyu/llvm-ports:18-trixie
+        - zhongruoyu/llvm-ports:19-trixie
+        - zhongruoyu/llvm-ports:20-trixie
+        - zhongruoyu/llvm-ports:21-trixie
+        - zhongruoyu/llvm-ports:22-trixie
+        - zhongruoyu/llvm-ports:23-trixie
 
     container:
       image: ${{ matrix.compiler }}
