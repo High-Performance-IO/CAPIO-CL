@@ -13,8 +13,6 @@ jobs:
   unit-tests:
     name: "Build ${{ matrix.build_type }} with ${{ matrix.compiler }}"
     runs-on: ubuntu-latest
-    env:
-      CALF_LOG_DIR: ${{ github.workspace }}/capiocl_logs
     strategy:
       fail-fast: false
       matrix:
@@ -22,17 +20,22 @@ jobs:
           - Debug
           - Release
         compiler:
-          - gcc:9
-          - gcc:10
-          - gcc:11
           - gcc:12
           - gcc:13
-          - silkeh/clang:13
-          - silkeh/clang:14
-          - silkeh/clang:15
-          - silkeh/clang:16
-          - silkeh/clang:17
-          - silkeh/clang:18
+          - gcc:14
+          - gcc:15
+          - gcc:16
+          - zhongruoyu/llvm-ports:13-trixie
+          - zhongruoyu/llvm-ports:14-trixie
+          - zhongruoyu/llvm-ports:15-trixie
+          - zhongruoyu/llvm-ports:16-trixie
+          - zhongruoyu/llvm-ports:17-trixie
+          - zhongruoyu/llvm-ports:18-trixie
+          - zhongruoyu/llvm-ports:19-trixie
+          - zhongruoyu/llvm-ports:20-trixie
+          - zhongruoyu/llvm-ports:21-trixie
+          - zhongruoyu/llvm-ports:22-trixie
+          - zhongruoyu/llvm-ports:23-trixie
 
     container:
       image: ${{ matrix.compiler }}
@@ -48,25 +51,57 @@ jobs:
             python3 python3-pip python3-venv  \
             libcurl4-gnutls-dev libprotobuf-dev protobuf-compiler
 
+      - name: "Set log directory"
+        shell: bash
+        run: echo "CALF_LOG_DIR=$GITHUB_WORKSPACE/capiocl_logs" >> "$GITHUB_ENV"
+
       - name: "Run CMake"
         shell: bash
         run: |
           cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-                -DENABLE_COVERAGE=OFF                       \
+                -DENABLE_COVERAGE=${{ matrix.build_type == 'Debug' && matrix.compiler == 'gcc:16' && 'ON' || 'OFF' }} \
                 -DBUILD_PYTHON_BINDINGS=OFF                 \
                 -DCAPIO_CL_BUILD_TESTS=ON                   \
                 -G Ninja                                    \
-                -B ${{ github.workspace }}/build            \
-                .
-          cmake --build ${{ github.workspace }}/build -j $(nproc)
-          sudo cmake --install ${{ github.workspace }}/build --prefix /usr/local
+                -B "$GITHUB_WORKSPACE/build"                \
+                -S "$GITHUB_WORKSPACE"
+          cmake --build "$GITHUB_WORKSPACE/build" -j $(nproc)
+          sudo cmake --install "$GITHUB_WORKSPACE/build" --prefix /usr/local
 
       - name: Run unit tests
         shell: bash
         run: CAPIO_CL_tests --gtest_break_on_failure --gtest_print_time=1
 
+      - name: Generate coverage report
+        if: matrix.build_type == 'Debug' && matrix.compiler == 'gcc:16'
+        shell: bash
+        run: |
+          python3 -m venv /tmp/gcovr
+          /tmp/gcovr/bin/pip install gcovr
+          /tmp/gcovr/bin/gcovr \
+            --root "$GITHUB_WORKSPACE"                    \
+            --exclude '^build/'                           \
+            --exclude '^tests/'                           \
+            --exclude-throw-branches                      \
+            --gcov-ignore-parse-errors=negative_hits.warn \
+            --xml coverage.xml                            \
+            --txt-summary                                 \
+            "$GITHUB_WORKSPACE/build"
+          # Fail here instead of silently uploading an empty report to Codecov
+          grep -q '<class ' coverage.xml || { echo "::error::coverage.xml contains no files"; exit 1; }
+
+      - name: Upload coverage artifact
+        if: matrix.build_type == 'Debug' && matrix.compiler == 'gcc:16'
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage
+          path: coverage.xml
+          retention-days: 1
+          if-no-files-found: error
+
       - name: Zip logs
         if: always()
+        shell: bash
         run: |
           if [ -d "capiocl_logs" ]; then
             cmake -E tar cf capiocl_logs.zip --format=zip capiocl_logs
@@ -83,78 +118,22 @@ jobs:
 
   upload-to-codecov:
     name: "compute Codecov"
-    needs: [ "unit-tests"]
+    needs: [ "unit-tests" ]
     runs-on: ubuntu-latest
-    env:
-      CALF_LOG_DIR: ${{ github.workspace }}/capiocl_logs
     steps:
       - uses: actions/checkout@v7
 
-      - name: "Install packages"
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y git              \
-               cmake make ninja-build  sudo      \
-               python3 python3-pip python3-venv  \
-               gcc g++ libcurl4-gnutls-dev libprotobuf-dev protobuf-compiler
-
-      - name: "Compile tests"
-        run: |
-          cmake -DCMAKE_BUILD_TYPE=Debug    \
-               -DENABLE_COVERAGE=ON         \
-               -DBUILD_PYTHON_BINDINGS=OFF  \
-               -DCAPIO_CL_BUILD_TESTS=ON    \
-               -G Ninja                     \
-               -B ../build                  \
-               -S  ${GITHUB_WORKSPACE}                      
-
-          cmake --build ../build -j $(nproc)
-          sudo cmake --install ../build --prefix /usr/local
-
-      - name: Run unit tests
-        shell: bash
-        run: CAPIO_CL_tests --gtest_break_on_failure --gtest_print_time=1
-
-      - name: Zip logs
-        if: always()
-        run: |
-          if [ -d "capiocl_logs" ]; then
-            cmake -E tar cf capiocl_logs.zip --format=zip capiocl_logs
-          fi
-
-      - name: Upload logs artifact
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: capiocl-logs-coverage
-          path: capiocl_logs.zip
-          retention-days: 1
-          if-no-files-found: ignore
-
-      - name: "Generate coverage report"
-        run: |
-          pip install --upgrade gcovr
-          gcovr \
-            --exclude-throw-branches                      \
-            --gcov-ignore-parse-errors=negative_hits.warn \
-            --exclude tests/                              \
-            --xml coverage.xml                            \
-            ../build
-
-      - name: Upload coverage artifact
-        uses: actions/upload-artifact@v7
+      - name: "Download coverage artifact"
+        uses: actions/download-artifact@v8
         with:
           name: coverage
-          path: coverage.xml
-          retention-days: 1
-
-      - name: "Download artifacts"
-        uses: actions/download-artifact@v8
 
       - name: "Upload coverage to Codecov"
         uses: codecov/codecov-action@v7
         with:
           fail_ci_if_error: true
+          files: ./coverage.xml
+          disable_search: true
           token: ${{ secrets.CODECOV_TOKEN }}
 
   build-documentation:

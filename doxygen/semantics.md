@@ -24,7 +24,18 @@ commit behaviors:
 
 - `Commit on Close (CoC)`: This behavior allows subsequent steps to initiate reading a file as soon as the producer step
   invokes a close operation on a given file, signaling that all I/O operations on that file are completed. It is also
-  allowed to consider a file committed after `n` close operations are performed. The following Gant diagram visually
+  allowed to consider a file committed after `n` close operations are performed. Counts of zero or one commit on the
+  first close; larger counts require a counter-capable filesystem or multicast monitor. Filesystem counters require
+  `CAPIO_METADATA_DIR` to name a trusted, non-attacker-writable directory unique to the workflow run. CAPIO-CL owns its
+  `capiocl` subtree. Multi-process and multi-node producers must share this metadata directory through a distributed
+  filesystem providing coherent atomic exclusive file creation and unlink.
+  Transient locks use a private subtree separate from counters. Counter replacement is atomic, but CAPIO-CL does not
+  claim power-loss durability for the latest close on distributed storage.
+  A producer crash can leave a stale lock file; CAPIO-CL does not steal or expire such locks automatically.
+  Multicast counters exchange monotonic per-origin snapshots and are eventual and volatile. UDP loss can defer
+  commitment, and origin death before propagation can lose a close; there is no durability, consensus, or
+  authentication.
+  The following Gant diagram visually
   explains the CoC semantics:
   
   ![The Commit on Close rule](media/coc.png){ width=60% }
@@ -33,7 +44,9 @@ commit behaviors:
   when the number of `open()` and `close()` system calls operations for a given file is not statically known. Instead,
   we are aware that the I/O operations can be considered concluded on a given file if another file has been committed.
   This additional commit behavior introduces a dependency among files in the commit rule, expanding opportunities to
-  leverage temporal parallelism for I/O operations across different workflow steps.The following Gant diagram visually
+  leverage temporal parallelism for I/O operations across different workflow steps. Multiple dependencies use AND
+  semantics and are evaluated transitively; unresolved dependency cycles remain uncommitted. Runtime dependencies are
+  concrete literal paths, and dependency glob patterns do not resolve. The following Gant diagram visually
   explains the CoF semantics:
   
   ![The Commit on File rule](media/cof.png){ width=60% }

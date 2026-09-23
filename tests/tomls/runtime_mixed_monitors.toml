@@ -1,0 +1,14 @@
+[monitor.filesystem]
+enabled = true
+
+[monitor.mcast]
+delay_ms = 50
+enabled = true
+
+[monitor.mcast.commit]
+ip = "224.224.226.12"
+port = 26103
+
+[monitor.mcast.homenode]
+ip = "224.224.226.13"
+port = 26104

@@ -15,6 +15,16 @@ void capiocl::monitor::MonitorInterface::setCommitted(const std::filesystem::pat
     msg += path.string();
     throw MonitorException(msg);
 }
+
+std::optional<bool>
+capiocl::monitor::MonitorInterface::increaseCloseCount(const std::filesystem::path &,
+                                                       const long threshold) const {
+    if (threshold <= 1) {
+        throw std::invalid_argument("Persistent ON_CLOSE threshold must be greater than one");
+    }
+    return std::nullopt;
+}
+
 void capiocl::monitor::MonitorInterface::setHomeNode(const std::filesystem::path &path) const {
     START_LOG(calf_current_tid(), "call()");
     std::string msg = "Attempted to use MonitorInterface as Monitor backend to set commit for: ";

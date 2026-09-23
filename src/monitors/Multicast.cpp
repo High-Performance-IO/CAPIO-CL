@@ -1,4 +1,8 @@
+#include <algorithm>
 #include <arpa/inet.h>
+#include <cctype>
+#include <charconv>
+#include <limits>
 #include <netinet/in.h>
 #include <poll.h>
 #include <sys/socket.h>
@@ -7,6 +11,8 @@
 #include "calf/StlLogger.h"
 #include "capiocl.hpp"
 #include "capiocl/monitor.h"
+
+std::atomic<unsigned long> close_count_origin_sequence{0};
 
 static std::tuple<int, sockaddr_in> outgoing_socket_multicast(const std::string &address,
                                                               const int port) {
@@ -99,11 +105,11 @@ static int incoming_socket_multicast(const std::string &address_ip, const int po
     return _socket;
 }
 
-void capiocl::monitor::MulticastMonitor::commit_listener(std::vector<std::string> &committed_files,
-                                                         std::mutex &lock,
-                                                         const std::string &ip_addr,
-                                                         const int ip_port,
-                                                         const std::atomic<bool> *terminate) {
+void capiocl::monitor::MulticastMonitor::commit_listener(
+    std::vector<std::string> &committed_files, std::mutex &lock,
+    std::unordered_map<std::string, std::unordered_map<std::string, std::uint64_t>> &close_counts,
+    std::mutex &close_count_lock, const std::string &ip_addr, const int ip_port,
+    const std::atomic<bool> *terminate) {
     START_LOG(calf_current_tid(), "call()");
     sockaddr_in addr_in = {};
     socklen_t addr_len  = {};
@@ -113,8 +119,8 @@ void capiocl::monitor::MulticastMonitor::commit_listener(std::vector<std::string
     } catch (const MonitorException &) {
         return;
     }
-    const auto addr                     = reinterpret_cast<sockaddr *>(&addr_in);
-    char incoming_message[MESSAGE_SIZE] = {0};
+    const auto addr                         = reinterpret_cast<sockaddr *>(&addr_in);
+    char incoming_message[MESSAGE_SIZE + 1] = {0};
 
     // Polling for non blocking
     pollfd pfd = {};
@@ -122,30 +128,32 @@ void capiocl::monitor::MulticastMonitor::commit_listener(std::vector<std::string
     pfd.events = POLLIN | POLLPRI;
 
     do {
+        if (*terminate) {
+            close(socket);
+            return;
+        }
         bzero(incoming_message, sizeof(incoming_message));
 
         // TODO: migrate to epoll for linux and kqueue on MacOS
         if (poll(&pfd, 1, MULTICAST_THREAD_POLL_INTERVAL) == 0) {
-            // No data from incoming socket. Continue, awaking thread ensuring pthread_cancel points
-            // can be reached
-            if (*terminate) {
-                close(socket);
-                return;
-            }
-
             continue;
         }
 
         // LCOV_EXCL_START
-        const auto incoming_size =
-            recvfrom(socket, incoming_message, MESSAGE_SIZE, MSG_DONTWAIT, addr, &addr_len);
+        const auto incoming_size = recvfrom(socket, incoming_message, sizeof(incoming_message),
+                                            MSG_DONTWAIT, addr, &addr_len);
         if (incoming_size < 0) {
             continue;
         }
         // LCOV_EXCL_STOP
 
+        if (incoming_size > MESSAGE_SIZE) {
+            LOG("multicast message discarded reason=oversize size=%zd limit=%d", incoming_size,
+                MESSAGE_SIZE);
+            continue;
+        }
         const std::string msg(incoming_message, static_cast<size_t>(incoming_size));
-        if (msg.size() < 2) {
+        if (msg.size() < 3 || msg[1] != ' ') {
             continue;
         }
         const auto path = msg.substr(2);
@@ -158,12 +166,50 @@ void capiocl::monitor::MulticastMonitor::commit_listener(std::vector<std::string
                 committed_files.emplace_back(path);
                 LOG("received committed path=%s total=%zu", path.c_str(), committed_files.size());
             }
-        } else {
+        } else if (command == GET) {
             // Received a query for a committed file: message begins with capiocl::Monitor::REQUEST
             std::lock_guard lg(lock);
             if (std::find(committed_files.begin(), committed_files.end(), path) !=
                 committed_files.end()) {
                 _send_message(ip_addr, ip_port, path, SET);
+            }
+        } else if (command == COUNT_SET) {
+            const auto origin_end = path.find(' ');
+            const auto count_end  = origin_end == std::string::npos ? std::string::npos
+                                                                    : path.find(' ', origin_end + 1);
+            if (origin_end == 0 || count_end == std::string::npos || count_end == origin_end + 1 ||
+                count_end + 1 >= path.size()) {
+                continue;
+            }
+            const auto origin = path.substr(0, origin_end);
+            if (origin.find_first_of(" \t\r\n") != std::string::npos) {
+                continue;
+            }
+            std::uint64_t count   = 0;
+            const auto count_text = path.substr(origin_end + 1, count_end - origin_end - 1);
+            const auto parsed =
+                std::from_chars(count_text.data(), count_text.data() + count_text.size(), count);
+            if (count == 0 || parsed.ec != std::errc{} ||
+                parsed.ptr != count_text.data() + count_text.size()) {
+                continue;
+            }
+            const auto count_path =
+                std::filesystem::absolute(path.substr(count_end + 1)).lexically_normal().string();
+            std::lock_guard count_guard(close_count_lock);
+            auto &known = close_counts[count_path][origin];
+            known       = std::max(known, count);
+        } else if (command == COUNT_GET && !path.empty()) {
+            const auto count_path = std::filesystem::absolute(path).lexically_normal().string();
+            std::vector<std::pair<std::string, std::uint64_t>> snapshots;
+            {
+                std::lock_guard count_guard(close_count_lock);
+                if (const auto known = close_counts.find(count_path); known != close_counts.end()) {
+                    snapshots.assign(known->second.begin(), known->second.end());
+                }
+            }
+            for (const auto &[origin, count] : snapshots) {
+                _send_message(ip_addr, ip_port,
+                              origin + " " + std::to_string(count) + " " + count_path, COUNT_SET);
             }
         }
     } while (true);
@@ -186,10 +232,14 @@ void capiocl::monitor::MulticastMonitor::home_node_listener(
         return;
     }
 
-    const auto addr                     = reinterpret_cast<sockaddr *>(&addr_in);
-    char incoming_message[MESSAGE_SIZE] = {0};
+    const auto addr                         = reinterpret_cast<sockaddr *>(&addr_in);
+    char incoming_message[MESSAGE_SIZE + 1] = {0};
 
     do {
+        if (*terminate) {
+            close(socket);
+            return;
+        }
         bzero(incoming_message, sizeof(incoming_message));
 
         // Polling for non blocking
@@ -199,25 +249,26 @@ void capiocl::monitor::MulticastMonitor::home_node_listener(
 
         // TODO: migrate to epoll for linux and kqueue on MacOS
         if (poll(&pfd, 1, MULTICAST_THREAD_POLL_INTERVAL) == 0) {
-            // No data from incoming socket. Continue, awaking thread ensuring pthread_cancel points
-            // can be reached
-            if (*terminate) {
-                close(socket);
-                return;
-            }
-
             continue;
         }
 
         // LCOV_EXCL_START
-        const auto incoming_size =
-            recvfrom(socket, incoming_message, MESSAGE_SIZE, MSG_DONTWAIT, addr, &addr_len);
+        const auto incoming_size = recvfrom(socket, incoming_message, sizeof(incoming_message),
+                                            MSG_DONTWAIT, addr, &addr_len);
         if (incoming_size < 0) {
             continue;
         }
         // LCOV_EXCL_STOP
 
+        if (incoming_size > MESSAGE_SIZE) {
+            LOG("multicast home-node message discarded reason=oversize size=%zd limit=%d",
+                incoming_size, MESSAGE_SIZE);
+            continue;
+        }
         std::string incoming_message_str(incoming_message, incoming_size);
+        if (incoming_message_str.size() < 3 || incoming_message_str[1] != ' ') {
+            continue;
+        }
         std::vector<std::string> tokens;
         size_t start = 0, end = incoming_message_str.find(' ');
 
@@ -248,7 +299,7 @@ void capiocl::monitor::MulticastMonitor::home_node_listener(
             std::lock_guard lg(lock);
             home_nodes[path] = home_node;
             LOG("received home node path=%s node=%s", path.c_str(), home_node.c_str());
-        } else {
+        } else if (command == GET) {
             // Received a query for a home node, Message begins with capiocl::Monitor::REQUEST
             if (tokens.size() < 2) {
                 // need "? <path>" -> malformed message, skip
@@ -267,19 +318,24 @@ void capiocl::monitor::MulticastMonitor::home_node_listener(
 }
 
 void capiocl::monitor::MulticastMonitor::_send_message(const std::string &ip_addr,
-                                                       const int ip_port, const std::string &path,
+                                                       const int ip_port,
+                                                       const std::string &payload,
                                                        const MESSAGE_COMMANDS action) {
     START_LOG(calf_current_tid(), "call()");
-    char message[MESSAGE_SIZE] = {0};
-    snprintf(message, sizeof(message), "%c %s", action, path.c_str());
+    const std::string message = static_cast<char>(action) + std::string(" ") + payload;
+    if (message.size() > MESSAGE_SIZE) {
+        LOG("multicast message rejected reason=oversize size=%zu limit=%d", message.size(),
+            MESSAGE_SIZE);
+        return;
+    }
     auto [out_s, addr] = outgoing_socket_multicast(ip_addr, ip_port);
-    if (sendto(out_s, message, strlen(message), 0, reinterpret_cast<sockaddr *>(&addr),
+    if (sendto(out_s, message.data(), message.size(), 0, reinterpret_cast<sockaddr *>(&addr),
                sizeof(addr)) < 0) {
         LOG("multicast send failed address=%s port=%d action=%c path=%s errno=%d", ip_addr.c_str(),
-            ip_port, action, path.c_str(), errno);
+            ip_port, action, payload.c_str(), errno);
     } else {
         LOG("multicast message sent address=%s port=%d action=%c path=%s", ip_addr.c_str(), ip_port,
-            action, path.c_str());
+            action, payload.c_str());
     }
     close(out_s);
 }
@@ -292,20 +348,28 @@ capiocl::monitor::MulticastMonitor::MulticastMonitor(
     config.getParameter("monitor.mcast.homenode.ip", &MULTICAST_HOME_NODE_ADDR);
     config.getParameter("monitor.mcast.homenode.port", &MULTICAST_HOME_NODE_PORT);
     config.getParameter("monitor.mcast.delay_ms", &MULTICAST_DELAY_MILLIS);
+    gethostname(_hostname, sizeof(_hostname));
+    _hostname[sizeof(_hostname) - 1] = '\0';
+    std::string origin_host(_hostname);
+    std::replace_if(
+        origin_host.begin(), origin_host.end(),
+        [](const unsigned char character) { return std::isspace(character); }, '_');
+    close_count_origin =
+        origin_host + ":" + std::to_string(getpid()) + ":" +
+        std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()) + ":" +
+        std::to_string(close_count_origin_sequence++);
     LOG("multicast monitor configured commit=%s:%d home_node=%s:%d delay_ms=%d",
         MULTICAST_COMMIT_ADDR.c_str(), MULTICAST_COMMIT_PORT, MULTICAST_HOME_NODE_ADDR.c_str(),
         MULTICAST_HOME_NODE_PORT, MULTICAST_DELAY_MILLIS);
 
     commit_thread =
         std::thread(&commit_listener, std::ref(_committed_files), std::ref(committed_lock),
-                    MULTICAST_COMMIT_ADDR, MULTICAST_COMMIT_PORT, &this->terminate);
+                    std::ref(close_counts), std::ref(close_count_lock), MULTICAST_COMMIT_ADDR,
+                    MULTICAST_COMMIT_PORT, &this->terminate);
 
     home_node_thread =
         std::thread(&home_node_listener, std::ref(_home_nodes), std::ref(home_node_lock),
                     MULTICAST_HOME_NODE_ADDR, MULTICAST_HOME_NODE_PORT, &this->terminate);
-
-    gethostname(_hostname, sizeof(_hostname));
-    _hostname[sizeof(_hostname) - 1] = '\0';
 }
 
 capiocl::monitor::MulticastMonitor::~MulticastMonitor() {
@@ -332,6 +396,51 @@ bool capiocl::monitor::MulticastMonitor::isCommitted(const std::filesystem::path
         return std::find(_committed_files.begin(), _committed_files.end(), path) !=
                _committed_files.end();
     }
+}
+
+std::optional<bool>
+capiocl::monitor::MulticastMonitor::increaseCloseCount(const std::filesystem::path &path,
+                                                       const long threshold) const {
+    START_LOG(calf_current_tid(), "call()");
+    if (threshold <= 1) {
+        throw std::invalid_argument("Persistent ON_CLOSE threshold must be greater than one");
+    }
+    const auto normalized = std::filesystem::absolute(path).lexically_normal().string();
+    const auto reached    = [&] {
+        std::uint64_t remaining = static_cast<std::uint64_t>(threshold);
+        if (const auto known = close_counts.find(normalized); known != close_counts.end()) {
+            for (const auto &[_, count] : known->second) {
+                if (count >= remaining) {
+                    return true;
+                }
+                remaining -= count;
+            }
+        }
+        return false;
+    };
+
+    std::uint64_t snapshot;
+    bool threshold_reached;
+    {
+        std::lock_guard guard(close_count_lock);
+        auto &own_count = close_counts[normalized][close_count_origin];
+        if (own_count == std::numeric_limits<std::uint64_t>::max()) {
+            throw MonitorException("Multicast close counter overflow for " + normalized);
+        }
+        snapshot          = ++own_count;
+        threshold_reached = reached();
+    }
+    _send_message(MULTICAST_COMMIT_ADDR, MULTICAST_COMMIT_PORT,
+                  close_count_origin + " " + std::to_string(snapshot) + " " + normalized,
+                  COUNT_SET);
+    if (threshold_reached) {
+        return true;
+    }
+
+    _send_message(MULTICAST_COMMIT_ADDR, MULTICAST_COMMIT_PORT, normalized, COUNT_GET);
+    std::this_thread::sleep_for(std::chrono::milliseconds(MULTICAST_DELAY_MILLIS));
+    std::lock_guard guard(close_count_lock);
+    return reached();
 }
 
 void capiocl::monitor::MulticastMonitor::setCommitted(const std::filesystem::path &path) const {

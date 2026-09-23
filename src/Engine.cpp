@@ -2,6 +2,7 @@
 #include <fnmatch.h>
 #include <memory>
 #include <sstream>
+#include <unordered_set>
 
 #include "calf/StdOutLogger.h"
 #include "calf/StlLogger.h"
@@ -31,6 +32,13 @@ template <typename SharedMutex> class shared_lock_guard {
     /// @brief Reference to mutex
     SharedMutex &mutex_;
 };
+
+namespace {
+std::filesystem::path normalize_runtime_path(const std::filesystem::path &path) {
+    return std::filesystem::absolute(path).lexically_normal();
+}
+
+} // namespace
 
 void capiocl::engine::Engine::print() const {
     START_LOG(calf_current_tid(), "call()");
@@ -188,7 +196,10 @@ void capiocl::engine::Engine::_newFile(const std::filesystem::path &path) const 
         std::string matchKey;
         size_t matchSize = 0;
         for (const auto &[filename, data] : _capio_cl_entries) {
-            if (const bool match = fnmatch(filename.c_str(), path.c_str(), FNM_NOESCAPE) == 0;
+            const auto normalized_pattern = normalize_runtime_path(filename).string();
+            if (const bool match =
+                    fnmatch(filename.c_str(), path.c_str(), FNM_NOESCAPE) == 0 ||
+                    fnmatch(normalized_pattern.c_str(), path.c_str(), FNM_NOESCAPE) == 0;
                 match && filename.length() > matchSize) {
                 matchSize = filename.length();
                 matchKey  = filename;
@@ -284,6 +295,9 @@ void capiocl::engine::Engine::add(std::filesystem::path &path, std::vector<std::
 void capiocl::engine::Engine::add(const std::filesystem::path &path,
                                   const CapioCLEntry &entry) const {
     START_LOG(calf_current_tid(), "call()");
+    if (entry.commit_on_close_count < 0) {
+        throw std::invalid_argument("ON_CLOSE threshold cannot be negative");
+    }
     std::lock_guard lg(_shared_mutex);
 
     if (_capio_cl_entries.find(path) == _capio_cl_entries.end()) {
@@ -550,7 +564,78 @@ bool capiocl::engine::Engine::isPermanent(const std::filesystem::path &path) con
 
 bool capiocl::engine::Engine::isCommitted(const std::filesystem::path &path) const {
     START_LOG(calf_current_tid(), "call()");
-    return monitor.isCommitted(path);
+    std::unordered_map<std::string, bool> resolved;
+    std::unordered_set<std::string> visiting;
+
+    const auto evaluate = [&](auto &&self, const std::filesystem::path &candidate) -> bool {
+        if (candidate.empty() || candidate.string().find_first_of("*?[") != std::string::npos) {
+            return false;
+        }
+        const auto normalized = normalize_runtime_path(candidate);
+        const auto key        = normalized.string();
+        if (monitor.isCommitted(normalized)) {
+            resolved[key] = true;
+            return true;
+        }
+
+        if (const auto result = resolved.find(key); result != resolved.end()) {
+            return result->second;
+        }
+        if (visiting.find(key) != visiting.end()) {
+            return false;
+        }
+        visiting.insert(key);
+
+        CapioCLEntry entry;
+        {
+            std::lock_guard lock(_shared_mutex);
+            _newFile(normalized);
+            entry = _capio_cl_entries.at(normalized);
+        }
+
+        bool committed = false;
+        if (entry.commit_rule == commitRules::ON_FILE && !entry.file_dependencies.empty()) {
+            committed = std::all_of(entry.file_dependencies.begin(), entry.file_dependencies.end(),
+                                    [&](const auto &dependency) { return self(self, dependency); });
+            if (committed) {
+                setCommitted(normalized);
+            }
+        }
+        visiting.erase(key);
+        resolved[key] = committed;
+        return committed;
+    };
+
+    return evaluate(evaluate, path);
+}
+
+bool capiocl::engine::Engine::increaseCloseCount(const std::filesystem::path &path) const {
+    START_LOG(calf_current_tid(), "call()");
+    if (path.empty()) {
+        return false;
+    }
+    const auto normalized = normalize_runtime_path(path);
+    if (monitor.isCommitted(normalized)) {
+        return true;
+    }
+
+    CapioCLEntry entry;
+    {
+        std::lock_guard lock(_shared_mutex);
+        _newFile(normalized);
+        entry = _capio_cl_entries.at(normalized);
+    }
+    const auto &rule     = entry.commit_rule;
+    const long threshold = entry.commit_on_close_count;
+
+    if (rule != commitRules::ON_CLOSE) {
+        return isCommitted(normalized);
+    }
+    if (threshold <= 1) {
+        setCommitted(normalized);
+        return monitor.isCommitted(normalized);
+    }
+    return monitor.increaseCloseCount(normalized, threshold) || isCommitted(normalized);
 }
 
 void capiocl::engine::Engine::setCommitted(const std::filesystem::path &path) const {
@@ -661,6 +746,9 @@ bool capiocl::engine::Engine::isDirectory(const std::filesystem::path &path) con
 void capiocl::engine::Engine::setCommitedCloseNumber(const std::filesystem::path &path,
                                                      const long num) {
     START_LOG(calf_current_tid(), "call()");
+    if (num < 0) {
+        throw std::invalid_argument("ON_CLOSE threshold cannot be negative");
+    }
     if (path.empty()) {
         return;
     }

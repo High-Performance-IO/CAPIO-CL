@@ -428,6 +428,15 @@ class Engine final {
     bool isCommitted(const std::filesystem::path &path) const;
 
     /**
+     * @brief Record one qualified logical close for an ON_CLOSE path.
+     * Filesystem-backed counts greater than one require CAPIO_METADATA_DIR to identify a trusted,
+     * unique-per-run metadata directory with coherent atomic exclusive create/unlink. Multicast
+     * counts are volatile and eventual.
+     * @return true when the path is effectively committed after this call.
+     */
+    bool increaseCloseCount(const std::filesystem::path &path) const;
+
+    /**
      * Set file indicated by path as committed
      * @param path
      */

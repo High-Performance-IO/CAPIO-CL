@@ -66,6 +66,14 @@ TEST(MONITOR_SUITE_NAME, testIssueExceptionOnMonitorInstance) {
     }
 }
 
+TEST(MONITOR_SUITE_NAME, defaultCloseCountContract) {
+    const capiocl::monitor::MonitorInterface interface;
+
+    EXPECT_EQ(interface.increaseCloseCount("/test", 2), std::nullopt);
+    EXPECT_THROW(interface.increaseCloseCount("/test", 1), std::invalid_argument);
+    EXPECT_THROW(interface.increaseCloseCount("/test", 0), std::invalid_argument);
+}
+
 TEST(MONITOR_SUITE_NAME, testHomeNodeAcrossDifferentThreads) {
     const auto e1 = new capiocl::engine::Engine();
     const auto e2 = new capiocl::engine::Engine();

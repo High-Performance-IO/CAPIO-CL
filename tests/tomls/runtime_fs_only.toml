@@ -1,0 +1,5 @@
+[monitor.filesystem]
+enabled = true
+
+[monitor.mcast]
+enabled = false
