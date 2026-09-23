@@ -191,7 +191,7 @@ class MulticastMonitor final : public MonitorInterface {
      * @param action The type of message to send (COMMIT or REQUEST).
      */
     static void _send_message(const std::string &ip_addr, int ip_port, const std::string &payload,
-                               MESSAGE_COMMANDS action);
+                              MESSAGE_COMMANDS action);
 
     /**
      * @brief Background thread function to listen for commit messages.
@@ -206,13 +206,12 @@ class MulticastMonitor final : public MonitorInterface {
      * @param ip_port Multicast commit listen port.
      * @param terminate Atomic Boolean flag to terminate thread
      */
-    static void commit_listener(std::vector<std::string> &committed_files, std::mutex &lock,
-                                std::unordered_map<std::string,
-                                                   std::unordered_map<std::string, std::uint64_t>>
-                                    &close_counts,
-                                std::mutex &close_count_lock,
-                                const std::string &ip_addr, int ip_port,
-                                const std::atomic<bool> *terminate);
+    static void
+    commit_listener(std::vector<std::string> &committed_files, std::mutex &lock,
+                    std::unordered_map<std::string, std::unordered_map<std::string, std::uint64_t>>
+                        &close_counts,
+                    std::mutex &close_count_lock, const std::string &ip_addr, int ip_port,
+                    const std::atomic<bool> *terminate);
 
     /**
      * @brief Background thread function to listen for commit messages.

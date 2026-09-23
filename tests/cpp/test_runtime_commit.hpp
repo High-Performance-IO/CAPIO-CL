@@ -460,6 +460,98 @@ TEST(RUNTIME_COMMIT_SUITE_NAME, onCloseRejectsMalformedAndUnsupportedCounters) {
     EXPECT_THROW(no_backend.increaseCloseCount(unsupported), capiocl::monitor::MonitorException);
 }
 
+TEST(RUNTIME_COMMIT_SUITE_NAME, fileSystemCloseMetadataRejectsSymlinks) {
+    RuntimeTestScope scope;
+    const capiocl::monitor::FileSystemMonitor monitor;
+    const auto target = scope.root / "target";
+    std::ofstream(target) << "unchanged\n";
+    const auto expect_target_unchanged = [&] {
+        std::ifstream input(target);
+        std::string value;
+        std::getline(input, value);
+        EXPECT_EQ(value, "unchanged");
+    };
+
+    const auto counter_path = scope.file("counter-symlink");
+    const auto counter      = scope.closeMetadata(counter_path, "count");
+    std::filesystem::create_directories(counter.parent_path());
+    std::filesystem::create_symlink(target, counter);
+    EXPECT_THROW(monitor.increaseCloseCount(counter_path, 2),
+                 capiocl::monitor::MonitorException);
+    EXPECT_FALSE(std::filesystem::exists(scope.closeLock(counter_path)));
+    expect_target_unchanged();
+
+    const auto temporary_path = scope.file("temporary-symlink");
+    const auto temporary      = scope.closeMetadata(temporary_path, "count.tmp");
+    std::filesystem::create_directories(temporary.parent_path());
+    std::filesystem::create_symlink(target, temporary);
+    EXPECT_THROW(monitor.increaseCloseCount(temporary_path, 2),
+                 capiocl::monitor::MonitorException);
+    EXPECT_FALSE(std::filesystem::exists(scope.closeLock(temporary_path)));
+    expect_target_unchanged();
+
+    const auto commit_path  = scope.file("commit-symlink");
+    const auto commit       = commit_path.parent_path() / ".commit-symlink.commit";
+    const auto commit_count = scope.closeMetadata(commit_path, "count");
+    std::filesystem::create_directories(commit_count.parent_path());
+    std::ofstream(commit_count) << "1\n";
+    std::filesystem::create_symlink(target, commit);
+    EXPECT_THROW(monitor.increaseCloseCount(commit_path, 2),
+                 capiocl::monitor::MonitorException);
+    EXPECT_FALSE(std::filesystem::exists(scope.closeLock(commit_path)));
+    expect_target_unchanged();
+}
+
+TEST(RUNTIME_COMMIT_SUITE_NAME, fileSystemCloseCounterRejectsTrailingDataAndOverflow) {
+    RuntimeTestScope scope;
+    const capiocl::monitor::FileSystemMonitor monitor;
+
+    const auto trailing_path = scope.file("trailing");
+    const auto trailing      = scope.closeMetadata(trailing_path, "count");
+    std::filesystem::create_directories(trailing.parent_path());
+    std::ofstream(trailing) << "1 trailing\n";
+    EXPECT_THROW(monitor.increaseCloseCount(trailing_path, 2),
+                 capiocl::monitor::MonitorException);
+    EXPECT_FALSE(std::filesystem::exists(scope.closeLock(trailing_path)));
+    std::ifstream trailing_input(trailing);
+    std::string trailing_value;
+    std::getline(trailing_input, trailing_value);
+    EXPECT_EQ(trailing_value, "1 trailing");
+
+    const auto overflow_path = scope.file("overflow");
+    const auto overflow      = scope.closeMetadata(overflow_path, "count");
+    std::filesystem::create_directories(overflow.parent_path());
+    std::ofstream(overflow) << std::numeric_limits<long>::max() << '\n';
+    EXPECT_THROW(monitor.increaseCloseCount(overflow_path, 2),
+                 capiocl::monitor::MonitorException);
+    EXPECT_FALSE(std::filesystem::exists(scope.closeLock(overflow_path)));
+    std::ifstream input(overflow);
+    long persisted = 0;
+    input >> persisted;
+    EXPECT_EQ(persisted, std::numeric_limits<long>::max());
+}
+
+TEST(RUNTIME_COMMIT_SUITE_NAME, multicastOversizedOutboundCommitIsLocallyRecorded) {
+    RuntimeTestScope scope;
+    capiocl::engine::Engine engine(false);
+    useMulticastMonitor(engine);
+    const std::filesystem::path oversized = "/" + std::string(8192, 'x');
+
+    EXPECT_NO_THROW(engine.setCommitted(oversized));
+    EXPECT_TRUE(engine.isCommitted(oversized));
+}
+
+TEST(RUNTIME_COMMIT_SUITE_NAME, earlyEmptyCloseAndWildcardDependencyRemainUncommitted) {
+    RuntimeTestScope scope;
+    capiocl::engine::Engine engine(false);
+    useFilesystemMonitor(engine);
+
+    EXPECT_FALSE(engine.increaseCloseCount({}));
+    const auto path = scope.file("wildcard-dependency");
+    configureFile(engine, path, {scope.file("*")});
+    EXPECT_FALSE(engine.isCommitted(path));
+}
+
 TEST(RUNTIME_COMMIT_SUITE_NAME, lockAcquisitionErrorsDoNotSpin) {
     if (geteuid() == 0) {
         GTEST_SKIP() << "permission failure cannot be induced as root";

@@ -12,7 +12,6 @@
 #include "capiocl.hpp"
 #include "capiocl/monitor.h"
 
-
 std::atomic<unsigned long> close_count_origin_sequence{0};
 
 static std::tuple<int, sockaddr_in> outgoing_socket_multicast(const std::string &address,
