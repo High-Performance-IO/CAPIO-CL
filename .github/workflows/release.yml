@@ -156,7 +156,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ 'ubuntu-latest', 'ubuntu-24.04-arm', 'macos-15-intel', 'macos-latest' ]
+        os: [ 'ubuntu-latest', 'ubuntu-24.04-arm', 'macos-15' ]
 
     steps:
       - uses: actions/checkout@v7
@@ -172,6 +172,7 @@ jobs:
       - name: Build wheels
         env:
           CIBW_BUILD: "cp310-* cp311-* cp312-* cp313-* cp314-*"
+          CIBW_SKIP: "*-musllinux_*"
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
           CIBW_MANYLINUX_AARCH64_IMAGE: manylinux_2_28
           CIBW_BEFORE_ALL_LINUX: dnf install -y protobuf-devel protobuf-compiler
@@ -227,11 +228,7 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           path: dist_all
-          name: wheels-macos-15-intel
-      - uses: actions/download-artifact@v8
-        with:
-          path: dist_all
-          name: wheels-macos-latest
+          name: wheels-macos-15
       - uses: actions/download-artifact@v8
         with:
           path: dist_all
