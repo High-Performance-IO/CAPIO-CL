@@ -3,8 +3,10 @@
 
 #include <atomic>
 #include <cstddef>
+#include <cstdint>
 #include <filesystem>
 #include <mutex>
+#include <optional>
 #include <set>
 #include <string>
 #include <thread>
@@ -107,6 +109,13 @@ class MonitorInterface {
     virtual void setCommitted(const std::filesystem::path &path) const;
 
     /**
+     * @brief Atomically record a close and commit when @p threshold is reached.
+     * @return the committed state, or std::nullopt when this backend has no persistent counter.
+     */
+    virtual std::optional<bool> increaseCloseCount(const std::filesystem::path &path,
+                                                   long threshold) const;
+
+    /**
      * Set the current hostname as  the home node for a given path
      * @param path
      */
@@ -149,6 +158,12 @@ class MulticastMonitor final : public MonitorInterface {
     /// @brief variable to terminate execution
     std::atomic<bool> terminate = false;
 
+    /// Per-path maximum close-count snapshot observed from each origin.
+    mutable std::unordered_map<std::string, std::unordered_map<std::string, std::uint64_t>>
+        close_counts;
+    mutable std::mutex close_count_lock;
+    std::string close_count_origin;
+
     /// @brief Multicast poll timeout interval
     static constexpr int MULTICAST_THREAD_POLL_INTERVAL = 250;
 
@@ -165,18 +180,18 @@ class MulticastMonitor final : public MonitorInterface {
     /**
      * @brief Supported network command types for commit messages.
      */
-    typedef enum { SET = '!', GET = '?' } MESSAGE_COMMANDS;
+    typedef enum { SET = '!', GET = '?', COUNT_SET = 'C', COUNT_GET = 'Q' } MESSAGE_COMMANDS;
 
     /**
      * @brief Send a commit or request message over multicast.
      *
      * @param ip_addr Destination multicast address.
      * @param ip_port Destination multicast port.
-     * @param path File path associated with the message.
+     * @param payload Message payload.
      * @param action The type of message to send (COMMIT or REQUEST).
      */
-    static void _send_message(const std::string &ip_addr, int ip_port, const std::string &path,
-                              MESSAGE_COMMANDS action);
+    static void _send_message(const std::string &ip_addr, int ip_port, const std::string &payload,
+                               MESSAGE_COMMANDS action);
 
     /**
      * @brief Background thread function to listen for commit messages.
@@ -192,6 +207,10 @@ class MulticastMonitor final : public MonitorInterface {
      * @param terminate Atomic Boolean flag to terminate thread
      */
     static void commit_listener(std::vector<std::string> &committed_files, std::mutex &lock,
+                                std::unordered_map<std::string,
+                                                   std::unordered_map<std::string, std::uint64_t>>
+                                    &close_counts,
+                                std::mutex &close_count_lock,
                                 const std::string &ip_addr, int ip_port,
                                 const std::atomic<bool> *terminate);
 
@@ -227,6 +246,8 @@ class MulticastMonitor final : public MonitorInterface {
 
     bool isCommitted(const std::filesystem::path &path) const override;
     void setCommitted(const std::filesystem::path &path) const override;
+    std::optional<bool> increaseCloseCount(const std::filesystem::path &path,
+                                           long threshold) const override;
     void setHomeNode(const std::filesystem::path &path) const override;
     std::string getHomeNode(const std::filesystem::path &path) const override;
 };
@@ -286,6 +307,8 @@ class FileSystemMonitor final : public MonitorInterface {
 
     bool isCommitted(const std::filesystem::path &path) const override;
     void setCommitted(const std::filesystem::path &path) const override;
+    std::optional<bool> increaseCloseCount(const std::filesystem::path &path,
+                                           long threshold) const override;
     void setHomeNode(const std::filesystem::path &path) const override;
     std::string getHomeNode(const std::filesystem::path &path) const override;
 };
@@ -318,6 +341,9 @@ class Monitor {
      * @param path Path of file to commit
      */
     void setCommitted(std::filesystem::path path) const;
+
+    /// @brief Record a close independently in every counter-capable backend.
+    [[nodiscard]] bool increaseCloseCount(const std::filesystem::path &path, long threshold) const;
 
     /**
      * Add a new backend for monitor. Must be a derived class from MonitorInterface

@@ -10,15 +10,43 @@ capiocl::monitor::MonitorException::MonitorException(const std::string &msg) : m
 
 bool capiocl::monitor::Monitor::isCommitted(const std::filesystem::path &path) const {
     START_LOG(calf_current_tid(), "call()");
-    return std::any_of(interfaces.begin(), interfaces.end(),
-                       [&path](const auto &interface) { return interface->isCommitted(path); });
+    const auto normalized = std::filesystem::absolute(path).lexically_normal();
+    return std::any_of(interfaces.begin(), interfaces.end(), [&normalized](const auto &interface) {
+        return interface->isCommitted(normalized);
+    });
 }
 
 void capiocl::monitor::Monitor::setCommitted(std::filesystem::path path) const {
     START_LOG(calf_current_tid(), "call()");
+    path = std::filesystem::absolute(path).lexically_normal();
     LOG("setting committed path=%s backends=%zu", path.string().c_str(), interfaces.size());
     std::for_each(interfaces.begin(), interfaces.end(),
                   [&path](const auto &interface) { interface->setCommitted(path); });
+}
+
+bool capiocl::monitor::Monitor::increaseCloseCount(const std::filesystem::path &path,
+                                                   const long threshold) const {
+    START_LOG(calf_current_tid(), "call()");
+    if (threshold <= 1) {
+        throw std::invalid_argument("Persistent ON_CLOSE threshold must be greater than one");
+    }
+    const auto normalized = std::filesystem::absolute(path).lexically_normal();
+    bool supported        = false;
+    bool reached          = false;
+    for (const auto &interface : interfaces) {
+        if (const auto committed = interface->increaseCloseCount(normalized, threshold);
+            committed.has_value()) {
+            supported = true;
+            reached |= *committed;
+        }
+    }
+    if (!supported) {
+        throw MonitorException("ON_CLOSE count greater than one requires a counting monitor");
+    }
+    if (reached) {
+        setCommitted(normalized);
+    }
+    return reached;
 }
 
 void capiocl::monitor::Monitor::registerMonitorBackend(const MonitorInterface *interface) {

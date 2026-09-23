@@ -107,6 +107,7 @@ PYBIND11_MODULE(_py_capio_cl, m) {
         .def("setWorkflowName", &capiocl::engine::Engine::setWorkflowName, py::arg("name"))
         .def("setCommitted", &capiocl::engine::Engine::setCommitted, py::arg("path"))
         .def("isCommitted", &capiocl::engine::Engine::isCommitted, py::arg("path"))
+        .def("increaseCloseCount", &capiocl::engine::Engine::increaseCloseCount, py::arg("path"))
         .def("setHomeNode", &capiocl::engine::Engine::setHomeNode, py::arg("path"))
         .def("getPaths", &capiocl::engine::Engine::getPaths)
         .def("startApiServer", &capiocl::engine::Engine::startApiServer)
