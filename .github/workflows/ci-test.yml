@@ -59,7 +59,7 @@ jobs:
         shell: bash
         run: |
           cmake -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-                -DENABLE_COVERAGE=${{ matrix.build_type == 'Debug' && matrix.compiler == 'gcc:12' && 'ON' || 'OFF' }} \
+                -DENABLE_COVERAGE=${{ matrix.build_type == 'Debug' && matrix.compiler == 'gcc:16' && 'ON' || 'OFF' }} \
                 -DBUILD_PYTHON_BINDINGS=OFF                 \
                 -DCAPIO_CL_BUILD_TESTS=ON                   \
                 -G Ninja                                    \
@@ -73,7 +73,7 @@ jobs:
         run: CAPIO_CL_tests --gtest_break_on_failure --gtest_print_time=1
 
       - name: Generate coverage report
-        if: matrix.build_type == 'Debug' && matrix.compiler == 'gcc:12'
+        if: matrix.build_type == 'Debug' && matrix.compiler == 'gcc:16'
         shell: bash
         run: |
           python3 -m venv /tmp/gcovr

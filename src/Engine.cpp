@@ -233,13 +233,6 @@ void capiocl::engine::Engine::_newFile(const std::filesystem::path &path) const 
     }
 }
 
-capiocl::engine::CapioCLEntry
-capiocl::engine::Engine::materializeRuntimeEntry(const std::filesystem::path &path) const {
-    std::lock_guard lock(_shared_mutex);
-    _newFile(path);
-    return _capio_cl_entries.at(path);
-}
-
 void capiocl::engine::Engine::compute_directory_entry_count(
     const std::filesystem::path &path) const {
     START_LOG(calf_current_tid(), "call()");
@@ -593,7 +586,12 @@ bool capiocl::engine::Engine::isCommitted(const std::filesystem::path &path) con
         }
         visiting.insert(key);
 
-        const auto entry = materializeRuntimeEntry(normalized);
+        CapioCLEntry entry;
+        {
+            std::lock_guard lock(_shared_mutex);
+            _newFile(normalized);
+            entry = _capio_cl_entries.at(normalized);
+        }
 
         bool committed = false;
         if (entry.commit_rule == commitRules::ON_FILE && !entry.file_dependencies.empty()) {
@@ -621,7 +619,12 @@ bool capiocl::engine::Engine::increaseCloseCount(const std::filesystem::path &pa
         return true;
     }
 
-    const auto entry     = materializeRuntimeEntry(normalized);
+    CapioCLEntry entry;
+    {
+        std::lock_guard lock(_shared_mutex);
+        _newFile(normalized);
+        entry = _capio_cl_entries.at(normalized);
+    }
     const auto &rule     = entry.commit_rule;
     const long threshold = entry.commit_on_close_count;
 

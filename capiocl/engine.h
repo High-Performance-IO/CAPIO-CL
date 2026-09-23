@@ -130,9 +130,6 @@ class Engine final {
      */
     void _newFile(const std::filesystem::path &path) const;
 
-    /// Materialize and snapshot a normalized concrete runtime entry under one lock.
-    CapioCLEntry materializeRuntimeEntry(const std::filesystem::path &path) const;
-
     /**
      * @brief Updates the number of entries in the parent directory of the given path.
      *
