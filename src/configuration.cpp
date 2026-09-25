@@ -6,6 +6,10 @@
 #include "capiocl/configuration.h"
 #include "toml++/toml.hpp"
 
+capiocl::configuration::CapioClConfiguration::CapioClConfiguration(
+    std::unordered_map<std::string, std::string> config)
+    : config(std::move(config)) {}
+
 void load_config_to_memory(const toml::table &tbl,
                            std::unordered_map<std::string, std::string> &map,
                            const std::string &prefix = "") {
@@ -44,6 +48,7 @@ void capiocl::configuration::CapioClConfiguration::loadDefaults() {
     this->set(defaults::DEFAULT_MONITOR_HOMENODE_PORT);
     this->set(defaults::DEFAULT_MONITOR_MCAST_DELAY);
     this->set(defaults::DEFAULT_MONITOR_FS_ENABLED);
+    this->set(defaults::DEFAULT_MONITOR_FS_METADATA_DIR);
     this->set(defaults::DEFAULT_MONITOR_MCAST_ENABLED);
     this->set(defaults::DEFAULT_API_MULTICAST_PORT);
     this->set(defaults::DEFAULT_API_MULTICAST_IP);

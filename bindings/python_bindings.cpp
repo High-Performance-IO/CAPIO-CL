@@ -6,6 +6,7 @@
 #include <string>
 
 #include "capiocl.hpp"
+#include "capiocl/configuration.h"
 #include "capiocl/engine.h"
 #include "capiocl/monitor.h"
 #include "capiocl/parser.h"
@@ -18,6 +19,8 @@ PYBIND11_MODULE(_py_capio_cl, m) {
         "CAPIO-CL: Cross Application Programmable I/O - Coordination Language python bindings.";
 
     py::register_exception<capiocl::parser::ParserException>(m, "ParserException");
+    py::register_exception<capiocl::configuration::CapioClConfigurationException>(
+        m, "CapioClConfigurationException");
     py::register_exception<capiocl::serializer::SerializerException>(m, "SerializerException");
     py::register_exception<capiocl::monitor::MonitorException>(m, "MonitorException");
 
@@ -39,9 +42,16 @@ PYBIND11_MODULE(_py_capio_cl, m) {
     py::module_ VERSION = m.def_submodule("VERSION", "CAPIO-CL version");
     VERSION.attr("V1")  = py::str(capiocl::CAPIO_CL_VERSION::V1);
 
+    py::class_<capiocl::configuration::CapioClConfiguration>(m, "CapioClConfiguration")
+        .def(py::init<>())
+        .def(py::init<std::unordered_map<std::string, std::string>>(), py::arg("values"))
+        .def("load", &capiocl::configuration::CapioClConfiguration::load, py::arg("path"))
+        .def("loadDefaults", &capiocl::configuration::CapioClConfiguration::loadDefaults);
+
     py::class_<capiocl::engine::Engine>(
         m, "Engine", "The main CAPIO-CL engine for managing data communication and I/O operations.")
         .def(py::init<>())
+        .def(py::init<const capiocl::configuration::CapioClConfiguration &>(), py::arg("config"))
         .def("newFile", &capiocl::engine::Engine::newFile, py::arg("filename"))
         .def("print", &capiocl::engine::Engine::print)
         .def("contains", &capiocl::engine::Engine::contains, py::arg("path"))
@@ -119,8 +129,10 @@ PYBIND11_MODULE(_py_capio_cl, m) {
         .def(py::self == py::self);
 
     py::class_<capiocl::parser::Parser>(m, "Parser", "The CAPIO-CL Parser component.")
-        .def_static("parse", &capiocl::parser::Parser::parse, py::arg("source"),
-                    py::arg("resolve_prefix") = "", py::arg("store_only_in_memory") = false)
+        .def_static("parse",
+                    py::overload_cast<const capiocl::configuration::CapioClConfiguration &>(
+                        &capiocl::parser::Parser::parse),
+                    py::arg("config"))
         .def("__str__",
              [](const capiocl::parser::Parser &e) {
                  return "<Parser repr at " + std::to_string(reinterpret_cast<uintptr_t>(&e)) + ">";

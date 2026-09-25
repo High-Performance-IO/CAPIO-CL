@@ -62,11 +62,10 @@ parameters, refer to **configuration.md**.
 **engine-config.toml:**
 
 ``` 
-    [monitor.mcast]
+    [capiocl.monitor.mcast]
     commit.ip   = "224.224.224.1"
     commit.port = 12345
     delay_ms = 300
     homenode.ip   = "224.224.224.2"
     homenode.port = 12345
 ```
-

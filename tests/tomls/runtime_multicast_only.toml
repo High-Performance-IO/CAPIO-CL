@@ -1,14 +1,14 @@
-[monitor.filesystem]
+[capiocl.monitor.filesystem]
 enabled = false
 
-[monitor.mcast]
+[capiocl.monitor.mcast]
 delay_ms = 50
 enabled = true
 
-[monitor.mcast.commit]
+[capiocl.monitor.mcast.commit]
 ip = "224.224.226.10"
 port = 26101
 
-[monitor.mcast.homenode]
+[capiocl.monitor.mcast.homenode]
 ip = "224.224.226.11"
 port = 26102

@@ -16,12 +16,6 @@ TEST(ENGINE_SUITE_NAME, testSetGetWfName) {
     EXPECT_TRUE(engine.getWorkflowName() == "test");
 }
 
-TEST(ENGINE_SUITE_NAME, testSetGetWfNameFromEnv) {
-    setenv("WORKFLOW_NAME", "my_custom_wf_name", 1);
-    capiocl::engine::Engine engine;
-    EXPECT_TRUE(engine.getWorkflowName() == "my_custom_wf_name");
-}
-
 TEST(ENGINE_SUITE_NAME, testInstantiationFromConfiguration) {
     capiocl::configuration::CapioClConfiguration config;
     capiocl::engine::Engine default_engine(config);

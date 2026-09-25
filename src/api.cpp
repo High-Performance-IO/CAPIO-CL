@@ -127,16 +127,16 @@ capiocl::api::CapioClApiServer::CapioClApiServer(engine::Engine *engine,
     std::string address;
     int port;
 
-    config.getParameter("dynamic_api.ip", &address,
+    config.getParameter("capiocl.dynamic_api.ip", &address,
                         configuration::defaults::DEFAULT_API_MULTICAST_IP.v); // GCOVR_EXCL_LINE
 
-    LOG("API configuration key=dynamic_api.ip value=%s", address.c_str());
+    LOG("API configuration key=capiocl.dynamic_api.ip value=%s", address.c_str());
 
     config.getParameter(
-        "dynamic_api.port", &port,
+        "capiocl.dynamic_api.port", &port,
         std::stoi(configuration::defaults::DEFAULT_API_MULTICAST_PORT.v)); // GCOVR_EXCL_LINE
 
-    LOG("API configuration key=dynamic_api.port value=%d", port);
+    LOG("API configuration key=capiocl.dynamic_api.port value=%d", port);
 
     _webApiThread = std::thread(server, address, port, engine, &_terminate);
 

@@ -15,8 +15,6 @@
 namespace {
 class RuntimeTestScope final {
     static std::atomic<unsigned> sequence;
-    bool had_metadata_root = false;
-    std::string previous_metadata_root;
 
     static std::string hexEncode(const std::string &value) {
         static constexpr char digits[] = "0123456789abcdef";
@@ -32,28 +30,43 @@ class RuntimeTestScope final {
     std::filesystem::path root;
     std::filesystem::path data;
     std::filesystem::path metadata;
+    std::filesystem::path runtime_configuration;
 
     RuntimeTestScope()
         : root(std::filesystem::temp_directory_path() /
                ("capiocl-runtime-" + std::to_string(getpid()) + "-" +
                 std::to_string(sequence++))),
-          data(root / "data"), metadata(root / "metadata") {
-        if (const char *current = std::getenv("CAPIO_METADATA_DIR")) {
-            had_metadata_root      = true;
-            previous_metadata_root = current;
-        }
+          data(root / "data"), metadata(root / "metadata"),
+          runtime_configuration(root / "runtime.toml") {
         std::filesystem::remove_all(root);
         std::filesystem::create_directories(data);
-        setenv("CAPIO_METADATA_DIR", metadata.c_str(), 1);
+        std::ofstream(runtime_configuration)
+            << "[capiocl.monitor.filesystem]\n"
+            << "enabled = true\n"
+            << "metadata_dir = \"" << metadata.string() << "\"\n\n"
+            << "[capiocl.monitor.mcast]\n"
+            << "enabled = false\n";
     }
 
-    ~RuntimeTestScope() {
-        if (had_metadata_root) {
-            setenv("CAPIO_METADATA_DIR", previous_metadata_root.c_str(), 1);
-        } else {
-            unsetenv("CAPIO_METADATA_DIR");
-        }
-        std::filesystem::remove_all(root);
+    ~RuntimeTestScope() { std::filesystem::remove_all(root); }
+
+    [[nodiscard]] capiocl::configuration::CapioClConfiguration configuration() const {
+        return capiocl::configuration::CapioClConfiguration({
+            {"capiocl.monitor.filesystem.metadata_dir", metadata.string()},
+        });
+    }
+
+    [[nodiscard]] capiocl::configuration::CapioClConfiguration mixedConfiguration() const {
+        return capiocl::configuration::CapioClConfiguration({
+            {"capiocl.monitor.filesystem.enabled", "true"},
+            {"capiocl.monitor.filesystem.metadata_dir", metadata.string()},
+            {"capiocl.monitor.mcast.enabled", "true"},
+            {"capiocl.monitor.mcast.delay_ms", "50"},
+            {"capiocl.monitor.mcast.commit.ip", "224.224.226.12"},
+            {"capiocl.monitor.mcast.commit.port", "26103"},
+            {"capiocl.monitor.mcast.homenode.ip", "224.224.226.13"},
+            {"capiocl.monitor.mcast.homenode.port", "26104"},
+        });
     }
 
     [[nodiscard]] std::filesystem::path file(const std::string &name) const {
@@ -86,6 +99,10 @@ std::atomic<unsigned> RuntimeTestScope::sequence{0};
 
 void useFilesystemMonitor(capiocl::engine::Engine &engine) {
     engine.loadConfiguration("/tmp/capio_cl_tomls/runtime_fs_only.toml");
+}
+
+void useFilesystemMonitor(capiocl::engine::Engine &engine, const RuntimeTestScope &scope) {
+    engine.loadConfiguration(scope.runtime_configuration.string());
 }
 
 void useMulticastMonitor(capiocl::engine::Engine &engine) {
@@ -125,7 +142,7 @@ TEST(RUNTIME_COMMIT_SUITE_NAME, onClosePlainAndOneCommitOnFirstClose) {
     for (const long threshold : {0L, 1L}) {
         const auto path = scope.file("plain-" + std::to_string(threshold));
         capiocl::engine::Engine engine(false);
-        useFilesystemMonitor(engine);
+        useFilesystemMonitor(engine, scope);
         configureClose(engine, path, threshold);
 
         EXPECT_TRUE(engine.increaseCloseCount(path));
@@ -136,7 +153,6 @@ TEST(RUNTIME_COMMIT_SUITE_NAME, onClosePlainAndOneCommitOnFirstClose) {
 
 TEST(RUNTIME_COMMIT_SUITE_NAME, countedCloseRequiresConfiguredMetadataRoot) {
     RuntimeTestScope scope;
-    unsetenv("CAPIO_METADATA_DIR");
     const auto counted = scope.file("missing-metadata");
     capiocl::engine::Engine engine(false);
     useFilesystemMonitor(engine);
@@ -144,9 +160,10 @@ TEST(RUNTIME_COMMIT_SUITE_NAME, countedCloseRequiresConfiguredMetadataRoot) {
 
     try {
         engine.increaseCloseCount(counted);
-        FAIL() << "counted ON_CLOSE accepted a missing CAPIO_METADATA_DIR";
+        FAIL() << "counted ON_CLOSE accepted a missing capiocl.monitor.filesystem.metadata_dir";
     } catch (const capiocl::monitor::MonitorException &error) {
-        EXPECT_NE(std::string(error.what()).find("CAPIO_METADATA_DIR"), std::string::npos);
+        EXPECT_NE(std::string(error.what()).find("capiocl.monitor.filesystem.metadata_dir"),
+                  std::string::npos);
     }
     EXPECT_FALSE(engine.isCommitted(counted));
     EXPECT_FALSE(std::filesystem::exists(counted.parent_path() /
@@ -162,7 +179,7 @@ TEST(RUNTIME_COMMIT_SUITE_NAME, onCloseThresholdTwoAndNonClose) {
     RuntimeTestScope scope;
     const auto path = scope.file("threshold-two");
     capiocl::engine::Engine engine(false);
-    useFilesystemMonitor(engine);
+    useFilesystemMonitor(engine, scope);
     configureClose(engine, path, 2);
 
     EXPECT_FALSE(engine.increaseCloseCount(path));
@@ -184,14 +201,14 @@ TEST(RUNTIME_COMMIT_SUITE_NAME, onCloseCountPersistsAcrossEngines) {
     const auto path = scope.file("persistent");
     {
         capiocl::engine::Engine engine(false);
-        useFilesystemMonitor(engine);
+        useFilesystemMonitor(engine, scope);
         configureClose(engine, path, 3);
         EXPECT_FALSE(engine.increaseCloseCount(path));
         EXPECT_FALSE(engine.increaseCloseCount(path));
     }
     {
         capiocl::engine::Engine engine(false);
-        useFilesystemMonitor(engine);
+        useFilesystemMonitor(engine, scope);
         configureClose(engine, path, 3);
         EXPECT_TRUE(engine.increaseCloseCount(path));
     }
@@ -201,7 +218,7 @@ TEST(RUNTIME_COMMIT_SUITE_NAME, onCloseIsThreadSafe) {
     RuntimeTestScope scope;
     const auto path = scope.file("threads");
     capiocl::engine::Engine engine(false);
-    useFilesystemMonitor(engine);
+    useFilesystemMonitor(engine, scope);
     configureClose(engine, path, 16);
     std::vector<std::thread> threads;
     for (int i = 0; i < 16; ++i) {
@@ -315,8 +332,7 @@ TEST(RUNTIME_COMMIT_SUITE_NAME, multicastConcurrentClosesReconcile) {
 TEST(RUNTIME_COMMIT_SUITE_NAME, mixedBackendsDoNotDoubleCount) {
     RuntimeTestScope scope;
     const auto path = scope.file("mixed-backends");
-    capiocl::engine::Engine engine(false);
-    engine.loadConfiguration("/tmp/capio_cl_tomls/runtime_mixed_monitors.toml");
+    capiocl::engine::Engine engine(scope.mixedConfiguration());
     configureClose(engine, path, 2);
 
     EXPECT_FALSE(engine.increaseCloseCount(path));
@@ -340,7 +356,7 @@ TEST(RUNTIME_COMMIT_SUITE_NAME, simultaneousFirstCloseIsProcessSafe) {
             }
             try {
                 capiocl::engine::Engine engine(false);
-                useFilesystemMonitor(engine);
+                useFilesystemMonitor(engine, scope);
                 configureClose(engine, path, 2);
                 engine.increaseCloseCount(path);
                 _exit(0);
@@ -361,7 +377,7 @@ TEST(RUNTIME_COMMIT_SUITE_NAME, simultaneousFirstCloseIsProcessSafe) {
     }
 
     capiocl::engine::Engine engine(false);
-    useFilesystemMonitor(engine);
+    useFilesystemMonitor(engine, scope);
     configureClose(engine, path, 2);
     EXPECT_TRUE(engine.isCommitted(path));
     EXPECT_FALSE(std::filesystem::exists(scope.closeLock(path)));
@@ -400,7 +416,7 @@ TEST(RUNTIME_COMMIT_SUITE_NAME, concurrentExplicitCommitWinsBelowThreshold) {
     close(ready[0]);
 
     capiocl::engine::Engine engine(false);
-    useFilesystemMonitor(engine);
+    useFilesystemMonitor(engine, scope);
     configureClose(engine, path, 10);
     std::atomic<bool> started{false};
     bool result = false;
@@ -429,7 +445,7 @@ TEST(RUNTIME_COMMIT_SUITE_NAME, relativeAndAbsolutePathsShareRuntimeIdentity) {
     const auto absolute = scope.file("alias");
     const auto relative = std::filesystem::relative(absolute, std::filesystem::current_path());
     capiocl::engine::Engine engine(false);
-    useFilesystemMonitor(engine);
+    useFilesystemMonitor(engine, scope);
     configureClose(engine, relative, 2);
 
     EXPECT_FALSE(engine.increaseCloseCount(absolute));
@@ -442,7 +458,7 @@ TEST(RUNTIME_COMMIT_SUITE_NAME, onCloseRejectsMalformedAndUnsupportedCounters) {
     RuntimeTestScope scope;
     const auto malformed = scope.file("malformed");
     capiocl::engine::Engine engine(false);
-    useFilesystemMonitor(engine);
+    useFilesystemMonitor(engine, scope);
     configureClose(engine, malformed, 2);
     const auto counter = scope.closeMetadata(malformed, "count");
     std::filesystem::create_directories(counter.parent_path());
@@ -462,7 +478,7 @@ TEST(RUNTIME_COMMIT_SUITE_NAME, onCloseRejectsMalformedAndUnsupportedCounters) {
 
 TEST(RUNTIME_COMMIT_SUITE_NAME, fileSystemCloseMetadataRejectsSymlinks) {
     RuntimeTestScope scope;
-    const capiocl::monitor::FileSystemMonitor monitor;
+    const capiocl::monitor::FileSystemMonitor monitor(scope.configuration());
     const auto target = scope.root / "target";
     std::ofstream(target) << "unchanged\n";
     const auto expect_target_unchanged = [&] {
@@ -504,7 +520,7 @@ TEST(RUNTIME_COMMIT_SUITE_NAME, fileSystemCloseMetadataRejectsSymlinks) {
 
 TEST(RUNTIME_COMMIT_SUITE_NAME, fileSystemCloseCounterRejectsTrailingDataAndOverflow) {
     RuntimeTestScope scope;
-    const capiocl::monitor::FileSystemMonitor monitor;
+    const capiocl::monitor::FileSystemMonitor monitor(scope.configuration());
 
     const auto trailing_path = scope.file("trailing");
     const auto trailing      = scope.closeMetadata(trailing_path, "count");
@@ -544,7 +560,7 @@ TEST(RUNTIME_COMMIT_SUITE_NAME, multicastOversizedOutboundCommitIsLocallyRecorde
 TEST(RUNTIME_COMMIT_SUITE_NAME, earlyEmptyCloseAndWildcardDependencyRemainUncommitted) {
     RuntimeTestScope scope;
     capiocl::engine::Engine engine(false);
-    useFilesystemMonitor(engine);
+    useFilesystemMonitor(engine, scope);
 
     EXPECT_FALSE(engine.increaseCloseCount({}));
     const auto path = scope.file("wildcard-dependency");
@@ -563,7 +579,7 @@ TEST(RUNTIME_COMMIT_SUITE_NAME, lockAcquisitionErrorsDoNotSpin) {
     ASSERT_EQ(chmod(lock.parent_path().c_str(), 0500), 0);
 
     capiocl::engine::Engine engine(false);
-    useFilesystemMonitor(engine);
+    useFilesystemMonitor(engine, scope);
     configureClose(engine, path, 2);
     EXPECT_THROW(engine.increaseCloseCount(path), capiocl::monitor::MonitorException);
 
@@ -578,7 +594,7 @@ TEST(RUNTIME_COMMIT_SUITE_NAME, onFileChainAndFanIn) {
     const auto c = scope.file("c");
     const auto d = scope.file("d");
     capiocl::engine::Engine engine(false);
-    useFilesystemMonitor(engine);
+    useFilesystemMonitor(engine, scope);
     configureFile(engine, a, {b, c});
     configureFile(engine, b, {d});
 
@@ -596,7 +612,7 @@ TEST(RUNTIME_COMMIT_SUITE_NAME, onFileEmptyAndCyclesRemainUncommitted) {
     const auto a     = scope.file("a");
     const auto b     = scope.file("b");
     capiocl::engine::Engine engine(false);
-    useFilesystemMonitor(engine);
+    useFilesystemMonitor(engine, scope);
     configureFile(engine, empty, {});
     configureFile(engine, self, {self});
     configureFile(engine, a, {b});
@@ -613,7 +629,7 @@ TEST(RUNTIME_COMMIT_SUITE_NAME, onFileCycleResolvesFromRawSeed) {
     const auto a = scope.file("a");
     const auto b = scope.file("b");
     capiocl::engine::Engine engine(false);
-    useFilesystemMonitor(engine);
+    useFilesystemMonitor(engine, scope);
     configureFile(engine, a, {b});
     configureFile(engine, b, {a});
 

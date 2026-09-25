@@ -29,6 +29,8 @@ struct capiocl::configuration::defaults {
     static ConfigurationEntry DEFAULT_MONITOR_HOMENODE_PORT;
     /// @brief Enable File system monitor by default
     static ConfigurationEntry DEFAULT_MONITOR_FS_ENABLED;
+    /// @brief Directory used for persistent filesystem monitor metadata
+    static ConfigurationEntry DEFAULT_MONITOR_FS_METADATA_DIR;
     /// @brief IP multicast address for receiving and sending changes in the CapioCL configuration
     static ConfigurationEntry DEFAULT_API_MULTICAST_IP;
     /// @brief IP multicast port for receiving and sending changes in the CapioCL configuration
@@ -55,7 +57,10 @@ class capiocl::configuration::CapioClConfiguration {
     void set(const ConfigurationEntry &entry);
 
   public:
-    ~CapioClConfiguration() = default;
+    CapioClConfiguration() = default;
+
+    /// @brief Build a configuration from an external generated unordered map of key values
+    explicit CapioClConfiguration(std::unordered_map<std::string, std::string> config);
 
     /**
      * Load a configuration from a TOML file
