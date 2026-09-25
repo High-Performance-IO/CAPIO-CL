@@ -343,11 +343,20 @@ void capiocl::monitor::MulticastMonitor::_send_message(const std::string &ip_add
 capiocl::monitor::MulticastMonitor::MulticastMonitor(
     const configuration::CapioClConfiguration &config) {
     START_LOG(calf_current_tid(), "call()");
-    config.getParameter("monitor.mcast.commit.ip", &MULTICAST_COMMIT_ADDR);
-    config.getParameter("monitor.mcast.commit.port", &MULTICAST_COMMIT_PORT);
-    config.getParameter("monitor.mcast.homenode.ip", &MULTICAST_HOME_NODE_ADDR);
-    config.getParameter("monitor.mcast.homenode.port", &MULTICAST_HOME_NODE_PORT);
-    config.getParameter("monitor.mcast.delay_ms", &MULTICAST_DELAY_MILLIS);
+    config.getParameter("monitor.mcast.commit.ip", &MULTICAST_COMMIT_ADDR,
+                        configuration::defaults::DEFAULT_MONITOR_MCAST_IP.v);
+
+    config.getParameter("monitor.mcast.commit.port", &MULTICAST_COMMIT_PORT,
+                        std::stoi(configuration::defaults::DEFAULT_MONITOR_MCAST_PORT.v));
+
+    config.getParameter("monitor.mcast.homenode.ip", &MULTICAST_HOME_NODE_ADDR,
+                        configuration::defaults::DEFAULT_MONITOR_HOMENODE_IP.v);
+
+    config.getParameter("monitor.mcast.homenode.port", &MULTICAST_HOME_NODE_PORT,
+                        std::stoi(configuration::defaults::DEFAULT_MONITOR_HOMENODE_PORT.v));
+
+    config.getParameter("monitor.mcast.delay_ms", &MULTICAST_DELAY_MILLIS,
+                        std::stoi(configuration::defaults::DEFAULT_MONITOR_MCAST_DELAY.v));
     gethostname(_hostname, sizeof(_hostname));
     _hostname[sizeof(_hostname) - 1] = '\0';
     std::string origin_host(_hostname);

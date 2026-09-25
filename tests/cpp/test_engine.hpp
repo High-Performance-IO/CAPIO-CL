@@ -22,6 +22,16 @@ TEST(ENGINE_SUITE_NAME, testSetGetWfNameFromEnv) {
     EXPECT_TRUE(engine.getWorkflowName() == "my_custom_wf_name");
 }
 
+TEST(ENGINE_SUITE_NAME, testInstantiationFromConfiguration) {
+    capiocl::configuration::CapioClConfiguration config;
+    capiocl::engine::Engine default_engine(config);
+    EXPECT_EQ(default_engine.getWorkflowName(), capiocl::CAPIO_CL_DEFAULT_WF_NAME);
+
+    config.load("/tmp/capio_cl_tomls/sample1.toml");
+    capiocl::engine::Engine configured_engine(config);
+    EXPECT_EQ(configured_engine.getWorkflowName(), "configured_workflow");
+}
+
 TEST(ENGINE_SUITE_NAME, testAddFileDefault) {
     capiocl::engine::Engine engine;
     EXPECT_EQ(engine.size(), 0);
