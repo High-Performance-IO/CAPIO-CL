@@ -182,6 +182,20 @@ capiocl::engine::Engine::Engine(const bool use_default_settings) {
         this->useDefaultConfiguration();
     }
 }
+capiocl::engine::Engine::Engine(const configuration::CapioClConfiguration &config) {
+    START_LOG(calf_current_tid(), "call()");
+
+    this->configuration = config;
+
+    node_name = std::string(1024, '\0');
+    gethostname(node_name.data(), node_name.size());
+    node_name.resize(std::strlen(node_name.c_str()));
+
+    this->configuration.getParameter("workflow_name", &this->workflow_name,
+                                     CAPIO_CL_DEFAULT_WF_NAME);
+    LOG("selected workflow name=%s source=environment node=%s", workflow_name.c_str(),
+        node_name.c_str());
+}
 
 void capiocl::engine::Engine::_newFile(const std::filesystem::path &path) const {
     START_LOG(calf_current_tid(), "call()");
@@ -1117,12 +1131,9 @@ void capiocl::engine::Engine::loadConfiguration(const std::string &path) {
 
     std::string multicast_monitor_enabled, fs_monitor_enabled;
 
-    try {
-        configuration.getParameter("monitor.mcast.enabled", &multicast_monitor_enabled);
-    } catch (...) {
-        multicast_monitor_enabled = "false";
-        LOG("configuration fallback key=monitor.mcast.enabled value=false");
-    }
+    configuration.getParameter("monitor.mcast.enabled", &multicast_monitor_enabled, "false");
+
+    LOG("configuration key=monitor.mcast.enabled value=%s", multicast_monitor_enabled.c_str());
 
     if (multicast_monitor_enabled == "true") {
         monitor.registerMonitorBackend(new monitor::MulticastMonitor(configuration));
@@ -1132,12 +1143,10 @@ void capiocl::engine::Engine::loadConfiguration(const std::string &path) {
         CALF_PRINT_COLOR(CALF_CLI_LEVEL_WARNING, "Skipping registration of  MulticastMonitor");
     }
 
-    try {
-        configuration.getParameter("monitor.filesystem.enabled", &fs_monitor_enabled);
-    } catch (...) {
-        fs_monitor_enabled = "false";
-        LOG("configuration fallback key=monitor.filesystem.enabled value=false");
-    }
+    configuration.getParameter("monitor.filesystem.enabled", &fs_monitor_enabled, "false");
+
+    LOG("configuration fallback key=monitor.filesystem.enabled value=%s",
+        fs_monitor_enabled.c_str());
 
     if (fs_monitor_enabled == "true") {
         monitor.registerMonitorBackend(new monitor::FileSystemMonitor());

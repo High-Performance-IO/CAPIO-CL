@@ -72,15 +72,18 @@ class capiocl::configuration::CapioClConfiguration {
      * Get a string value
      * @param key key of option to get
      * @param value reference in which value will be stored
+     * @param def_value default value if @p key is not found in current configuration
      */
-    void getParameter(const std::string &key, int *value) const;
+    void getParameter(const std::string &key, int *value, int def_value) const;
 
     /**
      * Get a integer value
      * @param key key of option to get
      * @param value reference in which value will be stored
+     * @param def_value default value if @p key is not found in current configuration
      */
-    void getParameter(const std::string &key, std::string *value) const;
+    void getParameter(const std::string &key, std::string *value,
+                      const std::string &def_value) const;
 };
 
 /**

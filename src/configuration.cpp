@@ -80,23 +80,23 @@ void capiocl::configuration::CapioClConfiguration::load(const std::filesystem::p
     LOG("loaded configuration path=%s parameters=%zu", path.string().c_str(), config.size());
 }
 
-void capiocl::configuration::CapioClConfiguration::getParameter(const std::string &key,
-                                                                int *value) const {
+void capiocl::configuration::CapioClConfiguration::getParameter(const std::string &key, int *value,
+                                                                int def_value) const {
     START_LOG(calf_current_tid(), "call()");
     if (config.find(key) != config.end()) {
         *value = std::stoi(config.at(key));
     } else {
-        throw CapioClConfigurationException("Key " + key + " not found!");
+        *value = def_value;
     }
 }
 
-void capiocl::configuration::CapioClConfiguration::getParameter(const std::string &key,
-                                                                std::string *value) const {
+void capiocl::configuration::CapioClConfiguration::getParameter(
+    const std::string &key, std::string *value, const std::string &def_value) const {
     START_LOG(calf_current_tid(), "call()");
     if (config.find(key) != config.end()) {
         *value = config.at(key);
     } else {
-        throw CapioClConfigurationException("Key " + key + " not found!");
+        *value = def_value;
     }
 }
 capiocl::configuration::CapioClConfigurationException::CapioClConfigurationException(

@@ -1,3 +1,5 @@
+workflow_name = "configured_workflow"
+
 [monitor.filesystem]
 enabled = true
 

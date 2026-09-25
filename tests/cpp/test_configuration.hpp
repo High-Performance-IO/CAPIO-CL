@@ -16,20 +16,24 @@ TEST(CONFIGURATION_SUITE_NAME, TestLoadEmptyPath) {
                  capiocl::configuration::CapioClConfigurationException);
 }
 
-TEST(CONFIGURATION_SUITE_NAME, TestExceptions) {
+TEST(CONFIGURATION_SUITE_NAME, TestGetParameter) {
     capiocl::configuration::CapioClConfiguration config;
+    config.load("/tmp/capio_cl_tomls/sample1.toml");
 
-    EXPECT_THROW(config.getParameter("not.a.valid.key", static_cast<int *>(nullptr)),
-                 capiocl::configuration::CapioClConfigurationException);
+    int int_value;
+    config.getParameter("monitor.mcast.delay_ms", &int_value, -1);
+    EXPECT_EQ(int_value, 300);
+    config.getParameter("not.a.valid.key", &int_value, 42);
+    EXPECT_EQ(int_value, 42);
 
-    EXPECT_THROW(config.getParameter("not.a.valid.key", static_cast<std::string *>(nullptr)),
-                 capiocl::configuration::CapioClConfigurationException);
+    std::string string_value;
+    config.getParameter("monitor.mcast.commit.ip", &string_value, "fallback");
+    EXPECT_EQ(string_value, "224.224.224.3");
+    config.getParameter("not.a.valid.key", &string_value, "fallback");
+    EXPECT_EQ(string_value, "fallback");
 
-    try {
-        config.getParameter("not.a.valid.key", static_cast<std::string *>(nullptr));
-    } catch (const capiocl::configuration::CapioClConfigurationException &err) {
-        EXPECT_GT(strlen(err.what()), 0);
-    }
+    EXPECT_THROW(config.getParameter("workflow_name", &int_value, 0),
+                 std::invalid_argument);
 }
 
 TEST(CONFIGURATION_SUITE_NAME, TestFailureParsingTOML) {
@@ -50,11 +54,11 @@ TEST(CONFIGURATION_SUITE_NAME, testNoBackendLoadedWithExplicitNoLoadOption) {
     config.load("/tmp/capio_cl_tomls/sample3.toml");
 
     std::string value;
-    config.getParameter("monitor.mcast.enabled", &value);
+    config.getParameter("monitor.mcast.enabled", &value, "true");
     EXPECT_TRUE("false" == value);
     value = "";
 
-    config.getParameter("monitor.filesystem.enabled", &value);
+    config.getParameter("monitor.filesystem.enabled", &value, "true");
     EXPECT_TRUE("false" == value);
 }
 

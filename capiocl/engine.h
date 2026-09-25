@@ -148,6 +148,9 @@ class Engine final {
     /// @brief Class constructor
     explicit Engine(bool use_default_settings = true);
 
+    /// @brief Class constructor storing CAPIO-CL configuration from external sources.
+    explicit Engine(const configuration::CapioClConfiguration &config);
+
     /// @brief Print the current CAPIO-CL configuration.
     void print() const;
 
