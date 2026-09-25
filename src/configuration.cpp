@@ -6,6 +6,10 @@
 #include "capiocl/configuration.h"
 #include "toml++/toml.hpp"
 
+capiocl::configuration::CapioClConfiguration::CapioClConfiguration(
+    std::unordered_map<std::string, std::string> config)
+    : config(std::move(config)) {}
+
 void load_config_to_memory(const toml::table &tbl,
                            std::unordered_map<std::string, std::string> &map,
                            const std::string &prefix = "") {

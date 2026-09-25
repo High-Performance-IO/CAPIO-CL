@@ -52,9 +52,30 @@ void capiocl::parser::Parser::validate_json(const jsoncons::json &doc, const cha
     }
 }
 
-capiocl::engine::Engine *capiocl::parser::Parser::parse(const std::filesystem::path &source,
-                                                        const std::filesystem::path &resolve_prefix,
-                                                        bool store_only_in_memory) {
+capiocl::engine::Engine *
+capiocl::parser::Parser::parse(const configuration::CapioClConfiguration &config) {
+    std::string source, resolve_prefix, store_only_in_memory, dynamic_api_enabled;
+    config.getParameter("config_path", &source, "");
+    config.getParameter("resolve_path", &resolve_prefix, "");
+    config.getParameter("store_all_in_memory", &store_only_in_memory, "false");
+    config.getParameter("dynamic_api.enabled", &dynamic_api_enabled, "false");
+
+    auto *engine = source.empty()
+                       ? new engine::Engine(config)
+                       : parse(source, resolve_prefix, store_only_in_memory == "true", &config);
+
+    if (source.empty() && store_only_in_memory == "true") {
+        engine->setAllStoreInMemory();
+    }
+    if (dynamic_api_enabled == "true") {
+        engine->startApiServer();
+    }
+    return engine;
+}
+
+capiocl::engine::Engine *capiocl::parser::Parser::parse(
+    const std::filesystem::path &source, const std::filesystem::path &resolve_prefix,
+    bool store_only_in_memory, const configuration::CapioClConfiguration *config) {
     START_LOG(calf_current_tid(), "call()");
     LOG("parse requested source=%s resolve_prefix=%s memory_only=%d", source.string().c_str(),
         resolve_prefix.string().c_str(), static_cast<int>(store_only_in_memory));
@@ -90,9 +111,9 @@ capiocl::engine::Engine *capiocl::parser::Parser::parse(const std::filesystem::p
                      capio_cl_release.c_str());
 
     if (capio_cl_release == CAPIO_CL_VERSION::V1) {
-        return available_parsers::parse_v1(source, resolve_prefix, store_only_in_memory);
+        return available_parsers::parse_v1(source, resolve_prefix, store_only_in_memory, config);
     } else if (capio_cl_release == CAPIO_CL_VERSION::V1_1) {
-        return available_parsers::parse_v1_1(source, resolve_prefix, store_only_in_memory);
+        return available_parsers::parse_v1_1(source, resolve_prefix, store_only_in_memory, config);
     } else {
         LOG("unsupported specification version=%s source=%s", capio_cl_release.c_str(),
             source.string().c_str());

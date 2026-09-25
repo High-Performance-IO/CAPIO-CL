@@ -36,6 +36,26 @@ TEST(CONFIGURATION_SUITE_NAME, TestGetParameter) {
                  std::invalid_argument);
 }
 
+TEST(CONFIGURATION_SUITE_NAME, TestConstructFromMap) {
+    capiocl::configuration::CapioClConfiguration config(
+        std::unordered_map<std::string, std::string>{{"workflow_name", "test-workflow"}});
+    std::string workflow_name;
+    config.getParameter("workflow_name", &workflow_name, "fallback");
+    EXPECT_EQ(workflow_name, "test-workflow");
+    EXPECT_EQ(capiocl::engine::Engine(config).getWorkflowName(), "test-workflow");
+}
+
+TEST(CONFIGURATION_SUITE_NAME, TestParseFromConfiguration) {
+    capiocl::configuration::CapioClConfiguration config(
+        std::unordered_map<std::string, std::string>{
+            {"workflow_name", "configured-workflow"},
+            {"config_path", "/tmp/capio_cl_jsons/V1.1/test24.json"},
+            {"monitor.mcast.enabled", "false"},
+            {"monitor.filesystem.enabled", "false"}});
+    std::unique_ptr<capiocl::engine::Engine> engine(capiocl::parser::Parser::parse(config));
+    EXPECT_EQ(engine->getWorkflowName(), "configured-workflow");
+}
+
 TEST(CONFIGURATION_SUITE_NAME, TestFailureParsingTOML) {
     capiocl::configuration::CapioClConfiguration config;
     EXPECT_THROW(config.load("/tmp/capio_cl_tomls/sample0.toml"),

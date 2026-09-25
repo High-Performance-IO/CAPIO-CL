@@ -119,7 +119,13 @@ PYBIND11_MODULE(_py_capio_cl, m) {
         .def(py::self == py::self);
 
     py::class_<capiocl::parser::Parser>(m, "Parser", "The CAPIO-CL Parser component.")
-        .def_static("parse", &capiocl::parser::Parser::parse, py::arg("source"),
+        .def_static("parse",
+                    [](const std::filesystem::path &source,
+                       const std::filesystem::path &resolve_prefix, bool store_only_in_memory) {
+                        return capiocl::parser::Parser::parse(source, resolve_prefix,
+                                                             store_only_in_memory);
+                    },
+                    py::arg("source"),
                     py::arg("resolve_prefix") = "", py::arg("store_only_in_memory") = false)
         .def("__str__",
              [](const capiocl::parser::Parser &e) {

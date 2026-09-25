@@ -7,13 +7,14 @@
 #include "capiocl/engine.h"
 #include "capiocl/parser.h"
 
-capiocl::engine::Engine *
-capiocl::parser::Parser::available_parsers::parse_v1_1(const std::filesystem::path &source,
-                                                       const std::filesystem::path &resolve_prefix,
-                                                       bool store_only_in_memory) {
+capiocl::engine::Engine *capiocl::parser::Parser::available_parsers::parse_v1_1(
+    const std::filesystem::path &source, const std::filesystem::path &resolve_prefix,
+    bool store_only_in_memory, const configuration::CapioClConfiguration *config) {
+
     START_LOG(calf_current_tid(), "call()");
+
     std::string workflow_name = CAPIO_CL_DEFAULT_WF_NAME;
-    auto engine               = new engine::Engine(false);
+    auto engine = config == nullptr ? new engine::Engine(false) : new engine::Engine(*config);
 
     // ---- Load JSON ----
     std::ifstream file(source);
@@ -22,20 +23,26 @@ capiocl::parser::Parser::available_parsers::parse_v1_1(const std::filesystem::pa
     validate_json(doc, schema_v1_1);
 
     // ---- workflow name ----
-    workflow_name = doc["name"].as<std::string>();
-    engine->setWorkflowName(workflow_name);
+    if (config == nullptr) {
+        workflow_name = doc["name"].as<std::string>();
+        engine->setWorkflowName(workflow_name);
+    } else {
+        workflow_name = engine->getWorkflowName();
+    }
     UPDATE_CALF_WORKFLOW_NAME(workflow_name);
     CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "Parsing configuration for workflow: %s",
                      workflow_name.c_str());
 
     // ---- CAPIO-CL TOML CONFIGURATION ----
-    if (doc.contains("configuration")) {
-        auto toml_config_path = doc["configuration"].as<std::string>();
-        CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "Using TOML configuration file: %s",
-                         toml_config_path.c_str());
-        engine->loadConfiguration(toml_config_path);
-    } else {
-        engine->useDefaultConfiguration();
+    if (config == nullptr) {
+        if (doc.contains("configuration")) {
+            auto toml_config_path = doc["configuration"].as<std::string>();
+            CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "Using TOML configuration file: %s",
+                             toml_config_path.c_str());
+            engine->loadConfiguration(toml_config_path);
+        } else {
+            engine->useDefaultConfiguration();
+        }
     }
 
     // ---- IO_Graph ----

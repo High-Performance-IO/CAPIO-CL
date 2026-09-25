@@ -195,6 +195,7 @@ capiocl::engine::Engine::Engine(const configuration::CapioClConfiguration &confi
                                      CAPIO_CL_DEFAULT_WF_NAME);
     LOG("selected workflow name=%s source=environment node=%s", workflow_name.c_str(),
         node_name.c_str());
+    configureMonitorBackends();
 }
 
 void capiocl::engine::Engine::_newFile(const std::filesystem::path &path) const {
@@ -1129,6 +1130,12 @@ void capiocl::engine::Engine::loadConfiguration(const std::string &path) {
     configuration.load(path);
     LOG("loaded engine configuration path=%s", path.c_str());
 
+    configureMonitorBackends();
+}
+
+void capiocl::engine::Engine::configureMonitorBackends() {
+    START_LOG(calf_current_tid(), "call()");
+
     std::string multicast_monitor_enabled, fs_monitor_enabled;
 
     configuration.getParameter("monitor.mcast.enabled", &multicast_monitor_enabled, "false");
@@ -1156,6 +1163,7 @@ void capiocl::engine::Engine::loadConfiguration(const std::string &path) {
         CALF_PRINT_COLOR(CALF_CLI_LEVEL_WARNING, "Skipping registration of  FileSystemMonitor");
     }
 }
+
 void capiocl::engine::Engine::useDefaultConfiguration() {
     START_LOG(calf_current_tid(), "call()");
     configuration.loadDefaults();

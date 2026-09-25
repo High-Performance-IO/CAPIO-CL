@@ -55,7 +55,10 @@ class capiocl::configuration::CapioClConfiguration {
     void set(const ConfigurationEntry &entry);
 
   public:
-    ~CapioClConfiguration() = default;
+    CapioClConfiguration() = default;
+
+    /// @brief Build a configuration from an external generated unordered map of key values
+    explicit CapioClConfiguration(std::unordered_map<std::string, std::string> config);
 
     /**
      * Load a configuration from a TOML file

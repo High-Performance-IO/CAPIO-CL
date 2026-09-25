@@ -92,6 +92,9 @@ class Engine final {
     ///@brief Configuration imported from CAPIO-CL config TOML file
     configuration::CapioClConfiguration configuration;
 
+    /// @brief Configure the monitor backend from the currently loaded configuration
+    void configureMonitorBackends();
+
     /// @brief Monitor instance to check runtime information of CAPIO-CL files
     monitor::Monitor monitor;
 
