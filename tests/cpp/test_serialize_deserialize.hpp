@@ -47,12 +47,12 @@ TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testSerializeParseCAPIOCLV1) {
         capiocl::serializer::Serializer::dump(engine, path, false, _cl_version);
 
         std::filesystem::path resolve = "";
-        auto new_engine               = capiocl::parser::Parser::parse(path, resolve);
+        auto new_engine               = parseConfiguration(path, resolve);
 
         EXPECT_TRUE(new_engine->getWorkflowName() == workflow_name);
         EXPECT_TRUE(engine == *new_engine);
 
-        auto new_engine1 = capiocl::parser::Parser::parse(path, resolve, true);
+        auto new_engine1 = parseConfiguration(path, resolve, true);
         EXPECT_EQ(new_engine1->getFileToStoreInMemory().size(), engine.size());
 
         std::filesystem::remove(path);
@@ -78,7 +78,7 @@ TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testSerializeParseCAPIOCLV1NcloseNfiles) 
         capiocl::serializer::Serializer::dump(engine, path, false, _cl_version);
 
         std::filesystem::path resolve = "";
-        auto new_engine               = capiocl::parser::Parser::parse(path, resolve);
+        auto new_engine               = parseConfiguration(path, resolve);
 
         EXPECT_TRUE(new_engine->getWorkflowName() == workflow_name);
         EXPECT_TRUE(engine == *new_engine);
@@ -113,7 +113,7 @@ TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testSerializeParseCAPIOCLV1FileDeps) {
         capiocl::serializer::Serializer::dump(engine, path, false, _cl_version);
 
         std::filesystem::path resolve = "";
-        auto new_engine               = capiocl::parser::Parser::parse(path, resolve);
+        auto new_engine               = parseConfiguration(path, resolve);
 
         EXPECT_TRUE(new_engine->getWorkflowName() == workflow_name);
         EXPECT_TRUE(engine == *new_engine);
@@ -141,7 +141,7 @@ TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testSerializeCommitOnCloseCountNoCommitRu
         capiocl::serializer::Serializer::dump(engine, path, false, _cl_version);
 
         std::filesystem::path resolve = "";
-        auto new_engine               = capiocl::parser::Parser::parse(path, resolve);
+        auto new_engine               = parseConfiguration(path, resolve);
 
         EXPECT_TRUE(new_engine->getWorkflowName() == workflow_name);
         EXPECT_FALSE(engine == *new_engine);
@@ -177,7 +177,7 @@ TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testCompressedSerializationUsesLongestPre
         }
 
         capiocl::serializer::Serializer::dump(engine, config_path, true, _cl_version);
-        auto compressed = capiocl::parser::Parser::parse(config_path, "");
+        auto compressed = parseConfiguration(config_path);
         const auto paths = compressed->getPaths();
 
         EXPECT_EQ(paths.size(), 2);
@@ -238,7 +238,7 @@ TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testParserResolveAbsolute) {
     for (const auto &_cl_version : CAPIO_CL_AVAIL_VERSIONS) {
         const std::filesystem::path json_path("/tmp/capio_cl_jsons/V" + _cl_version +
                                               "/test0.json");
-        auto engine = capiocl::parser::Parser::parse(json_path, "/tmp");
+        auto engine = parseConfiguration(json_path, "/tmp");
         EXPECT_TRUE(engine->getWorkflowName() == "test");
         EXPECT_TRUE(engine->contains("/tmp/file"));
         EXPECT_TRUE(engine->contains("/tmp/file1"));
@@ -252,7 +252,7 @@ TEST(SERIALIZE_DESERIALIZE_SUITE_NAME, testNoStorageSection) {
     for (const auto &_cl_version : CAPIO_CL_AVAIL_VERSIONS) {
         const std::filesystem::path json_path("/tmp/capio_cl_jsons/V" + _cl_version +
                                               "/test24.json");
-        auto engine = capiocl::parser::Parser::parse(json_path, "/tmp");
+        auto engine = parseConfiguration(json_path, "/tmp");
         EXPECT_TRUE(engine->getWorkflowName() == "test");
         EXPECT_TRUE(engine->contains("/tmp/file"));
         EXPECT_TRUE(engine->contains("/tmp/file1"));

@@ -11,7 +11,6 @@ capiocl::engine::Engine *capiocl::parser::Parser::available_parsers::parse_v1(
     const std::filesystem::path &source, const std::filesystem::path &resolve_prefix,
     bool store_only_in_memory, const configuration::CapioClConfiguration *config) {
     START_LOG(calf_current_tid(), "call()");
-    std::string workflow_name = CAPIO_CL_DEFAULT_WF_NAME;
     auto engine = config == nullptr ? new engine::Engine(true) : new engine::Engine(*config);
 
     // ---- Load JSON ----
@@ -21,12 +20,11 @@ capiocl::engine::Engine *capiocl::parser::Parser::available_parsers::parse_v1(
     validate_json(doc, schema_v1);
 
     // ---- workflow name ----
-    if (config == nullptr) {
-        workflow_name = doc["name"].as<std::string>();
-        engine->setWorkflowName(workflow_name);
-    } else {
-        workflow_name = engine->getWorkflowName();
+    std::string workflow_name = doc["name"].as<std::string>();
+    if (config != nullptr) {
+        config->getParameter("capiocl.workflow_name", &workflow_name, workflow_name);
     }
+    engine->setWorkflowName(workflow_name);
     UPDATE_CALF_WORKFLOW_NAME(workflow_name);
     CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "Parsing configuration for workflow: %s",
                      workflow_name.c_str());

@@ -1,5 +1,5 @@
-[monitor.filesystem]
+[capiocl.monitor.filesystem]
 enabled = true
 
-[monitor.mcast]
+[capiocl.monitor.mcast]
 enabled = false

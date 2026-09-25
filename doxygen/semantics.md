@@ -26,8 +26,9 @@ commit behaviors:
   invokes a close operation on a given file, signaling that all I/O operations on that file are completed. It is also
   allowed to consider a file committed after `n` close operations are performed. Counts of zero or one commit on the
   first close; larger counts require a counter-capable filesystem or multicast monitor. Filesystem counters require
-  `CAPIO_METADATA_DIR` to name a trusted, non-attacker-writable directory unique to the workflow run. CAPIO-CL owns its
-  `capiocl` subtree. Multi-process and multi-node producers must share this metadata directory through a distributed
+  `capiocl.monitor.filesystem.metadata_dir` in the TOML runtime configuration to name a trusted, non-attacker-writable
+  directory unique to the workflow run. CAPIO-CL owns its `capiocl` subtree. Multi-process and multi-node producers must
+  share this metadata directory through a distributed
   filesystem providing coherent atomic exclusive file creation and unlink.
   Transient locks use a private subtree separate from counters. Counter replacement is atomic, but CAPIO-CL does not
   claim power-loss durability for the latest close on distributed storage.

@@ -5,12 +5,9 @@
 #include "capiocl/serializer.h"
 
 TEST(EXCEPTION_SUITE_NAME, testWhatMEthods) {
-    try {
-        capiocl::parser::Parser::parse("");
-    } catch (const capiocl::parser::ParserException &e) {
-        EXPECT_TRUE(demangled_name(e) == "capiocl::parser::ParserException");
-        EXPECT_GT(strlen(e.what()), 0);
-    }
+    const capiocl::parser::ParserException parser_error("test");
+    EXPECT_TRUE(demangled_name(parser_error) == "capiocl::parser::ParserException");
+    EXPECT_GT(strlen(parser_error.what()), 0);
 
     try {
         const auto engine = capiocl::engine::Engine();
@@ -24,7 +21,7 @@ TEST(EXCEPTION_SUITE_NAME, testWhatMEthods) {
 TEST(EXCEPTION_SUITE_NAME, testFailedDump) {
     for (const auto &version : CAPIO_CL_AVAIL_VERSIONS) {
         const std::filesystem::path source = "/tmp/capio_cl_jsons/V" + version + "/test24.json";
-        auto engine                        = capiocl::parser::Parser::parse(source, "/tmp");
+        auto engine                        = parseConfiguration(source, "/tmp");
 
         EXPECT_THROW(capiocl::serializer::Serializer::dump(*engine, "/"),
                      capiocl::serializer::SerializerException);
@@ -34,7 +31,7 @@ TEST(EXCEPTION_SUITE_NAME, testFailedDump) {
 TEST(EXCEPTION_SUITE_NAME, testFailedserializeVersion) {
     for (const auto &version : CAPIO_CL_AVAIL_VERSIONS) {
         const std::filesystem::path source = "/tmp/capio_cl_jsons/V" + version + "/test24.json";
-        auto engine                        = capiocl::parser::Parser::parse(source, "/tmp");
+        auto engine                        = parseConfiguration(source, "/tmp");
 
         EXPECT_THROW(
             capiocl::serializer::Serializer::dump(*engine, "test.json", false, "1234.5678"),
@@ -48,7 +45,6 @@ TEST(EXCEPTION_SUITE_NAME, testParserException) {
     std::cout << "Loading jsons from " << JSON_DIR << std::endl;
 
     std::vector<std::filesystem::path> test_filenames = {
-        "",
         "ANonExistingFile",
         "test1.json",
         "test2.json",
@@ -80,7 +76,7 @@ TEST(EXCEPTION_SUITE_NAME, testParserException) {
             const auto test_file_path = test.empty() ? test : JSON_DIR / ("V" + version) / test;
             std::cout << "Testing on file " << test_file_path << std::endl;
 
-            EXPECT_THROW(capiocl::parser::Parser::parse(test_file_path),
+            EXPECT_THROW(parseConfiguration(test_file_path),
                          capiocl::parser::ParserException);
         }
     }

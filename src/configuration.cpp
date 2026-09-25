@@ -48,6 +48,7 @@ void capiocl::configuration::CapioClConfiguration::loadDefaults() {
     this->set(defaults::DEFAULT_MONITOR_HOMENODE_PORT);
     this->set(defaults::DEFAULT_MONITOR_MCAST_DELAY);
     this->set(defaults::DEFAULT_MONITOR_FS_ENABLED);
+    this->set(defaults::DEFAULT_MONITOR_FS_METADATA_DIR);
     this->set(defaults::DEFAULT_MONITOR_MCAST_ENABLED);
     this->set(defaults::DEFAULT_API_MULTICAST_PORT);
     this->set(defaults::DEFAULT_API_MULTICAST_IP);

@@ -14,19 +14,19 @@ If no configuration file is provided, CAPIO-CL falls back to its built-in defaul
 
 ## TOML Configuration Structure
 
-The configuration file uses a structured namespace under the top-level table `monitor.mcast`.
+All CAPIO-CL options use the top-level `capiocl` table, so unrelated application settings can coexist in the same file.
 
 Available configuration parameters:
 
 | Key                           | Type    | Default         | Description                                                                                                                        |
 |-------------------------------|---------|-----------------|------------------------------------------------------------------------------------------------------------------------------------|
-| `monitor.filesystem.enabled`  | boolean | `false`         | Enable FileSystem commit monitor                                                                                                   |
-| `monitor.mcast.enabled`       | boolean | `false`         | Enable Multicast commit monitor                                                                                                    |
-| `monitor.mcast.commit.ip`     | string  | `224.224.224.1` | Multicast IP address used for commit messages                                                                                      |
-| `monitor.mcast.commit.port`   | integer | `12345`         | UDP port for commit messages                                                                                                       |
-| `monitor.mcast.delay_ms`      | integer | `300`           | Artificial delay (in milliseconds) inserted before sending multicast messages. Useful for debugging or simulating slower networks. |
-| `monitor.mcast.homenode.ip`   | string  | `224.224.224.2` | IP address of the home node for monitoring operations                                                                              |
-| `monitor.mcast.homenode.port` | integer | `12345`         | Port associated with the home node monitoring endpoint                                                                             |
+| `capiocl.monitor.filesystem.enabled`  | boolean | `false`         | Enable FileSystem commit monitor                                                                                                   |
+| `capiocl.monitor.mcast.enabled`       | boolean | `false`         | Enable Multicast commit monitor                                                                                                    |
+| `capiocl.monitor.mcast.commit.ip`     | string  | `224.224.224.1` | Multicast IP address used for commit messages                                                                                      |
+| `capiocl.monitor.mcast.commit.port`   | integer | `12345`         | UDP port for commit messages                                                                                                       |
+| `capiocl.monitor.mcast.delay_ms`      | integer | `300`           | Artificial delay (in milliseconds) inserted before sending multicast messages. Useful for debugging or simulating slower networks. |
+| `capiocl.monitor.mcast.homenode.ip`   | string  | `224.224.224.2` | IP address of the home node for monitoring operations                                                                              |
+| `capiocl.monitor.mcast.homenode.port` | integer | `12345`         | Port associated with the home node monitoring endpoint                                                                             |
 
 ---
 
@@ -36,9 +36,10 @@ Below is a complete example of a `config.toml` file:
 
     # Example CAPIO-CL TOML configuration
 
-    monitor.filesystem.enabled = true    
+    [capiocl.monitor.filesystem]
+    enabled = true
 
-    [monitor.mcast]
+    [capiocl.monitor.mcast]
     enabled = true
 
     # Multicast settings for commit messages
@@ -56,12 +57,12 @@ Below is a complete example of a `config.toml` file:
 
 ## How CAPIO-CL Uses These Settings
 
-### `commit.ip` and `commit.port`
+### `capiocl.monitor.mcast.commit.ip` and `capiocl.monitor.mcast.commit.port`
 
 These fields define where CAPIO-CL sends **commit broadcast messages**.  
 Commit messages are used for consistency coordination across distributed nodes.
 
-### `delay_ms`
+### `capiocl.monitor.mcast.delay_ms`
 
 A small configurable delay may help with:
 
@@ -71,7 +72,7 @@ A small configurable delay may help with:
 
 A value of `0` means no delay.
 
-### `homenode.ip` and `homenode.port`
+### `capiocl.monitor.mcast.homenode.ip` and `capiocl.monitor.mcast.homenode.port`
 
 These define the **central monitoring endpoint** (the “home node”).  
 CAPIO-CL uses this endpoint to coordinate monitoring metadata and cluster-wide communication.

@@ -1,16 +1,20 @@
+workflow_name = "external_workflow"
+
+[capiocl]
 workflow_name = "configured_workflow"
 
-[monitor.filesystem]
+[capiocl.monitor.filesystem]
 enabled = true
+metadata_dir = "/tmp/capiocl-metadata"
 
-[monitor.mcast]
+[capiocl.monitor.mcast]
 delay_ms = 300
 enabled = true
 
-[monitor.mcast.commit]
+[capiocl.monitor.mcast.commit]
 ip = "224.224.224.3"
 port = 11223
 
-[monitor.mcast.homenode]
+[capiocl.monitor.mcast.homenode]
 ip = "224.224.224.4"
 port = 22334

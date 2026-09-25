@@ -90,21 +90,6 @@ class Parser final {
      */
     static void validate_json(const jsoncons::json &doc, const char *str_schema);
 
-    /**
-     * @brief Perform the parsing of the capio_server configuration file
-     *
-     * @param source Input CAPIO-CL Json configuration File
-     * @param resolve_prefix If paths are found to be relative, they are appended to this path
-     * @param store_only_in_memory Set to true to set all files to be stored in memory
-     * @param config An externally provided configuration to be used within the CAPIO-CL engine
-     * instance that will be started up
-     * @return Engine instance with the information provided by  the config file
-     * @throw ParserException
-     */
-    static engine::Engine *parse(const std::filesystem::path &source,
-                                 const std::filesystem::path &resolve_prefix       = "",
-                                 bool store_only_in_memory                         = false,
-                                 const configuration::CapioClConfiguration *config = nullptr);
 };
 } // namespace capiocl::parser
 

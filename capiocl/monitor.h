@@ -261,6 +261,7 @@ class MulticastMonitor final : public MonitorInterface {
 class FileSystemMonitor final : public MonitorInterface {
 
     typedef enum { COMMIT, HOME_NODE } CAPIO_CL_COMMIT_TOKEN_TYPES;
+    std::filesystem::path metadata_root;
 
     /**
      * @brief Compute the token filename used to represent the commit state of the given file.
@@ -298,6 +299,8 @@ class FileSystemMonitor final : public MonitorInterface {
      * @brief Construct a filesystem-based commit monitor.
      */
     FileSystemMonitor();
+
+    explicit FileSystemMonitor(const configuration::CapioClConfiguration &config);
 
     /**
      * @brief Destructor for FileSystemMonitor.

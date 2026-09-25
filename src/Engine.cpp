@@ -168,15 +168,9 @@ capiocl::engine::Engine::Engine(const bool use_default_settings) {
     gethostname(node_name.data(), node_name.size());
     node_name.resize(std::strlen(node_name.c_str()));
 
-    if (const char *_wf_name = std::getenv("WORKFLOW_NAME"); _wf_name != nullptr) {
-        this->workflow_name = _wf_name;
-        LOG("selected workflow name=%s source=environment node=%s", workflow_name.c_str(),
-            node_name.c_str());
-    } else {
-        this->workflow_name = CAPIO_CL_DEFAULT_WF_NAME;
-        LOG("selected workflow name=%s source=default node=%s", workflow_name.c_str(),
-            node_name.c_str());
-    }
+    this->workflow_name = CAPIO_CL_DEFAULT_WF_NAME;
+    LOG("selected workflow name=%s source=default node=%s", workflow_name.c_str(),
+        node_name.c_str());
 
     if (use_default_settings) {
         this->useDefaultConfiguration();
@@ -191,7 +185,7 @@ capiocl::engine::Engine::Engine(const configuration::CapioClConfiguration &confi
     gethostname(node_name.data(), node_name.size());
     node_name.resize(std::strlen(node_name.c_str()));
 
-    this->configuration.getParameter("workflow_name", &this->workflow_name,
+    this->configuration.getParameter("capiocl.workflow_name", &this->workflow_name,
                                      CAPIO_CL_DEFAULT_WF_NAME);
     LOG("selected workflow name=%s source=environment node=%s", workflow_name.c_str(),
         node_name.c_str());
@@ -1138,9 +1132,11 @@ void capiocl::engine::Engine::configureMonitorBackends() {
 
     std::string multicast_monitor_enabled, fs_monitor_enabled;
 
-    configuration.getParameter("monitor.mcast.enabled", &multicast_monitor_enabled, "false");
+    configuration.getParameter("capiocl.monitor.mcast.enabled", &multicast_monitor_enabled,
+                               "false");
 
-    LOG("configuration key=monitor.mcast.enabled value=%s", multicast_monitor_enabled.c_str());
+    LOG("configuration key=capiocl.monitor.mcast.enabled value=%s",
+        multicast_monitor_enabled.c_str());
 
     if (multicast_monitor_enabled == "true") {
         monitor.registerMonitorBackend(new monitor::MulticastMonitor(configuration));
@@ -1150,13 +1146,14 @@ void capiocl::engine::Engine::configureMonitorBackends() {
         CALF_PRINT_COLOR(CALF_CLI_LEVEL_WARNING, "Skipping registration of  MulticastMonitor");
     }
 
-    configuration.getParameter("monitor.filesystem.enabled", &fs_monitor_enabled, "false");
+    configuration.getParameter("capiocl.monitor.filesystem.enabled", &fs_monitor_enabled,
+                               "false");
 
-    LOG("configuration fallback key=monitor.filesystem.enabled value=%s",
+    LOG("configuration fallback key=capiocl.monitor.filesystem.enabled value=%s",
         fs_monitor_enabled.c_str());
 
     if (fs_monitor_enabled == "true") {
-        monitor.registerMonitorBackend(new monitor::FileSystemMonitor());
+        monitor.registerMonitorBackend(new monitor::FileSystemMonitor(configuration));
         LOG("registered monitor backend=filesystem");
     } else {
         LOG("skipped monitor backend=filesystem reason=disabled");
@@ -1170,7 +1167,7 @@ void capiocl::engine::Engine::useDefaultConfiguration() {
 
     // TODO: add a vector with registered instances of backends to avoid multiple instantiations
     monitor.registerMonitorBackend(new monitor::MulticastMonitor(configuration));
-    monitor.registerMonitorBackend(new monitor::FileSystemMonitor());
+    monitor.registerMonitorBackend(new monitor::FileSystemMonitor(configuration));
     LOG("loaded default configuration monitor_backends=multicast,filesystem");
 }
 

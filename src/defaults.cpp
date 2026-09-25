@@ -1,28 +1,31 @@
 #include "capiocl/configuration.h"
 
 ConfigurationEntry capiocl::configuration::defaults::DEFAULT_MONITOR_MCAST_IP{
-    "monitor.mcast.commit.ip", "224.224.224.1"};
+    "capiocl.monitor.mcast.commit.ip", "224.224.224.1"};
 
 ConfigurationEntry capiocl::configuration::defaults::DEFAULT_MONITOR_MCAST_PORT{
-    "monitor.mcast.commit.port", "12345"};
+    "capiocl.monitor.mcast.commit.port", "12345"};
 
 ConfigurationEntry capiocl::configuration::defaults::DEFAULT_MONITOR_MCAST_DELAY{
-    "monitor.mcast.delay_ms", "300"};
+    "capiocl.monitor.mcast.delay_ms", "300"};
 
 ConfigurationEntry capiocl::configuration::defaults::DEFAULT_MONITOR_HOMENODE_IP{
-    "monitor.mcast.homenode.ip", "224.224.224.2"};
+    "capiocl.monitor.mcast.homenode.ip", "224.224.224.2"};
 
 ConfigurationEntry capiocl::configuration::defaults::DEFAULT_MONITOR_HOMENODE_PORT{
-    "monitor.mcast.homenode.port", "12345"};
+    "capiocl.monitor.mcast.homenode.port", "12345"};
 
 ConfigurationEntry capiocl::configuration::defaults::DEFAULT_MONITOR_MCAST_ENABLED{
-    "monitor.mcast.enabled", "true"};
+    "capiocl.monitor.mcast.enabled", "true"};
 
 ConfigurationEntry capiocl::configuration::defaults::DEFAULT_MONITOR_FS_ENABLED{
-    "monitor.filesystem.enabled", "true"};
+    "capiocl.monitor.filesystem.enabled", "true"};
 
-ConfigurationEntry capiocl::configuration::defaults::DEFAULT_API_MULTICAST_IP{"dynamic_api.ip",
+ConfigurationEntry capiocl::configuration::defaults::DEFAULT_MONITOR_FS_METADATA_DIR{
+    "capiocl.monitor.filesystem.metadata_dir", ""};
+
+ConfigurationEntry capiocl::configuration::defaults::DEFAULT_API_MULTICAST_IP{"capiocl.dynamic_api.ip",
                                                                               "224.224.224.3"};
 
-ConfigurationEntry capiocl::configuration::defaults::DEFAULT_API_MULTICAST_PORT{"dynamic_api.port",
+ConfigurationEntry capiocl::configuration::defaults::DEFAULT_API_MULTICAST_PORT{"capiocl.dynamic_api.port",
                                                                                 "11223"};

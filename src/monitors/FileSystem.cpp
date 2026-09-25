@@ -23,14 +23,14 @@ struct CloseMetadataPaths final {
     std::filesystem::path lock;
 };
 
-CloseMetadataPaths close_metadata_paths(const std::filesystem::path &path) {
-    const char *configured = std::getenv("CAPIO_METADATA_DIR");
-    if (configured == nullptr || configured[0] == '\0') {
+CloseMetadataPaths close_metadata_paths(const std::filesystem::path &path,
+                                        const std::filesystem::path &metadata_root) {
+    if (metadata_root.empty()) {
         throw capiocl::monitor::MonitorException(
-            "Counted ON_CLOSE requires CAPIO_METADATA_DIR to name a trusted, unique workflow "
-            "metadata directory");
+            "Counted ON_CLOSE requires capiocl.monitor.filesystem.metadata_dir to name a trusted, "
+            "unique workflow metadata directory");
     }
-    const auto root       = std::filesystem::absolute(configured).lexically_normal() / "capiocl";
+    const auto root = std::filesystem::absolute(metadata_root).lexically_normal() / "capiocl";
     const auto normalized = std::filesystem::absolute(path).lexically_normal().generic_string();
     static constexpr char digits[] = "0123456789abcdef";
     std::string encoded;
@@ -214,8 +214,16 @@ void capiocl::monitor::FileSystemMonitor::generate_commit_token(const std::files
     LOG("created commit token=%s", token_name.string().c_str());
 }
 
-capiocl::monitor::FileSystemMonitor::FileSystemMonitor() {
+capiocl::monitor::FileSystemMonitor::FileSystemMonitor()
+    : FileSystemMonitor(configuration::CapioClConfiguration{}) {}
+
+capiocl::monitor::FileSystemMonitor::FileSystemMonitor(
+    const configuration::CapioClConfiguration &config) {
     START_LOG(calf_current_tid(), "call()");
+    std::string configured_metadata_root;
+    config.getParameter("capiocl.monitor.filesystem.metadata_dir", &configured_metadata_root,
+                        configuration::defaults::DEFAULT_MONITOR_FS_METADATA_DIR.v);
+    metadata_root = configured_metadata_root;
     gethostname(_hostname, sizeof(_hostname));
     _hostname[sizeof(_hostname) - 1] = '\0';
     LOG("filesystem monitor initialized hostname=%s", _hostname);
@@ -238,7 +246,7 @@ capiocl::monitor::FileSystemMonitor::increaseCloseCount(const std::filesystem::p
     if (threshold <= 1) {
         throw std::invalid_argument("Persistent ON_CLOSE threshold must be greater than one");
     }
-    const auto metadata = close_metadata_paths(path);
+    const auto metadata = close_metadata_paths(path, metadata_root);
     FileLock lock(metadata.lock);
     long value = read_counter(metadata.counter);
 

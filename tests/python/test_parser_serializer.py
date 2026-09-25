@@ -4,6 +4,18 @@ from pathlib import Path, PosixPath
 import py_capio_cl
 
 
+def parse(config_path, resolve_path="", store_all_in_memory=False):
+    return py_capio_cl.Parser.parse(
+        py_capio_cl.CapioClConfiguration(
+            {
+                "capiocl.config_path": str(config_path),
+                "capiocl.resolve_path": str(resolve_path),
+                "capiocl.store_all_in_memory": "true" if store_all_in_memory else "false",
+            }
+        )
+    )
+
+
 def test_serialize_parse_py_capio_cl_v1(tmp_path):
     path = tmp_path / "config.json"
     workflow_name = "demo"
@@ -55,12 +67,12 @@ def test_serialize_parse_py_capio_cl_v1(tmp_path):
     py_capio_cl.serialize(engine, path)
 
     # Parse back
-    new_engine = py_capio_cl.Parser.parse(path)
+    new_engine = parse(path)
 
     assert new_engine.getWorkflowName() == workflow_name
 
     # Parse with memory flag
-    new_engine1 = py_capio_cl.Parser.parse(path, store_only_in_memory=True)
+    new_engine1 = parse(path, store_all_in_memory=True)
     assert len(new_engine1.getFileToStoreInMemory()) == engine.size()
 
     # cleanup
@@ -70,16 +82,33 @@ def test_serialize_parse_py_capio_cl_v1(tmp_path):
 def test_parser_resolve_absolute():
     json_path = "/tmp/capio_cl_jsons/V1.0/test0.json"
 
-    engine = py_capio_cl.Parser.parse(str(json_path), "/tmp")
+    engine = parse(json_path, "/tmp")
     assert engine.getWorkflowName() == "test"
     for f in ["/tmp/file", "/tmp/file1", "/tmp/file2", "/tmp/file3"]:
         assert engine.contains(f)
 
 
+def test_parser_configuration_binding():
+    config = py_capio_cl.CapioClConfiguration(
+        {
+            "capiocl.workflow_name": "configured-workflow",
+            "capiocl.config_path": "/tmp/capio_cl_jsons/V1.0/test0.json",
+            "capiocl.resolve_path": "/tmp",
+        }
+    )
+    engine = py_capio_cl.Parser.parse(config)
+    assert engine.getWorkflowName() == "configured-workflow"
+    assert engine.contains("/tmp/file")
+
+    runtime_engine = py_capio_cl.Parser.parse(
+        py_capio_cl.CapioClConfiguration({"capiocl.workflow_name": "runtime-only"})
+    )
+    assert runtime_engine.getWorkflowName() == "runtime-only"
+
+
 def test_parser_exception():
     json_dir = Path("/tmp/capio_cl_jsons")
     test_filenames = [
-        "",
         "ANonExistingFile",
         *(str(json_dir / f"V1_test{i}.json") for i in range(1, 24)),
     ]
@@ -87,7 +116,7 @@ def test_parser_exception():
     for test_file in test_filenames:
         caught = False
         try:
-            wf_name, engine = py_capio_cl.Parser.parse(test_file)
+            wf_name, engine = parse(test_file)
         except Exception as e:
             caught = True
             typename = type(e).__name__

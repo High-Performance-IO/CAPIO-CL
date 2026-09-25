@@ -54,38 +54,32 @@ void capiocl::parser::Parser::validate_json(const jsoncons::json &doc, const cha
 
 capiocl::engine::Engine *
 capiocl::parser::Parser::parse(const configuration::CapioClConfiguration &config) {
-    std::string source, resolve_prefix, store_only_in_memory, dynamic_api_enabled;
-    config.getParameter("config_path", &source, "");
-    config.getParameter("resolve_path", &resolve_prefix, "");
-    config.getParameter("store_all_in_memory", &store_only_in_memory, "false");
-    config.getParameter("dynamic_api.enabled", &dynamic_api_enabled, "false");
 
-    auto *engine = source.empty()
-                       ? new engine::Engine(config)
-                       : parse(source, resolve_prefix, store_only_in_memory == "true", &config);
-
-    if (source.empty() && store_only_in_memory == "true") {
-        engine->setAllStoreInMemory();
-    }
-    if (dynamic_api_enabled == "true") {
-        engine->startApiServer();
-    }
-    return engine;
-}
-
-capiocl::engine::Engine *capiocl::parser::Parser::parse(
-    const std::filesystem::path &source, const std::filesystem::path &resolve_prefix,
-    bool store_only_in_memory, const configuration::CapioClConfiguration *config) {
     START_LOG(calf_current_tid(), "call()");
-    LOG("parse requested source=%s resolve_prefix=%s memory_only=%d", source.string().c_str(),
-        resolve_prefix.string().c_str(), static_cast<int>(store_only_in_memory));
+
+    std::string source, resolve_prefix, store_only_in_memory, dynamic_api_enabled;
+    config.getParameter("capiocl.config_path", &source, "");
+    config.getParameter("capiocl.resolve_path", &resolve_prefix, "");
+    config.getParameter("capiocl.store_all_in_memory", &store_only_in_memory, "false");
+    config.getParameter("capiocl.dynamic_api.enabled", &dynamic_api_enabled, "false");
+
+    LOG("parse requested source=%s resolve_prefix=%s memory_only=%s", source.c_str(),
+        resolve_prefix.c_str(), store_only_in_memory.c_str());
+
     if (source.empty()) {
-        throw ParserException("Empty source file name!");
+        auto *engine = new engine::Engine(config);
+        if (store_only_in_memory == "true") {
+            engine->setAllStoreInMemory();
+        }
+        if (dynamic_api_enabled == "true") {
+            engine->startApiServer();
+        }
+        return engine;
     }
 
     std::ifstream file(source);
     if (!file.is_open()) {
-        LOG("failed to open parse source=%s", source.string().c_str());
+        LOG("failed to open parse source=%s", source.c_str());
         throw ParserException("Failed to open file!");
     }
     std::string capio_cl_release;
@@ -94,7 +88,7 @@ capiocl::engine::Engine *capiocl::parser::Parser::parse(
         try {
             doc = jsoncons::json::parse(file);
         } catch (const jsoncons::json_exception &e) {
-            LOG("failed to decode JSON source=%s error=%s", source.string().c_str(), e.what());
+            LOG("failed to decode JSON source=%s error=%s", source.c_str(), e.what());
             throw;
         }
         if (!doc.contains("version")) {
@@ -110,13 +104,21 @@ capiocl::engine::Engine *capiocl::parser::Parser::parse(
     CALF_PRINT_COLOR(CALF_CLI_LEVEL_INFO, "Parsing CAPIO-CL config file for version:  %s",
                      capio_cl_release.c_str());
 
+    engine::Engine *engine;
     if (capio_cl_release == CAPIO_CL_VERSION::V1) {
-        return available_parsers::parse_v1(source, resolve_prefix, store_only_in_memory, config);
+        engine = available_parsers::parse_v1(source, resolve_prefix,
+                                             store_only_in_memory == "true", &config);
     } else if (capio_cl_release == CAPIO_CL_VERSION::V1_1) {
-        return available_parsers::parse_v1_1(source, resolve_prefix, store_only_in_memory, config);
+        engine = available_parsers::parse_v1_1(source, resolve_prefix,
+                                               store_only_in_memory == "true", &config);
     } else {
         LOG("unsupported specification version=%s source=%s", capio_cl_release.c_str(),
-            source.string().c_str());
+            source.c_str());
         throw ParserException("Invalid CAPIO-CL specification version!");
     }
+
+    if (dynamic_api_enabled == "true") {
+        engine->startApiServer();
+    }
+    return engine;
 }

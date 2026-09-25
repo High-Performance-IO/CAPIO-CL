@@ -158,6 +158,108 @@ This assumes that all build dependencies not fetched by cmake are available.
 
 ---
 
+## Runtime TOML Configuration
+
+Runtime behavior is configured with a TOML file loaded into `CapioClConfiguration`. This is separate from the JSON
+coordination-language document: the TOML file selects the JSON document, monitor backends, metadata storage, and dynamic
+API settings.
+
+### Complete example
+
+```toml
+# Workflow and optional JSON coordination-language document
+[capiocl]
+workflow_name = "my-workflow"
+config_path = "workflow.json"
+resolve_path = "/data/run-42"
+store_all_in_memory = false
+
+[capiocl.dynamic_api]
+enabled = false
+ip = "224.224.224.3"
+port = 11223
+
+[capiocl.monitor.filesystem]
+enabled = true
+metadata_dir = "/shared/trusted/run-42"
+
+[capiocl.monitor.mcast]
+enabled = false
+delay_ms = 300
+
+[capiocl.monitor.mcast.commit]
+ip = "224.224.224.1"
+port = 12345
+
+[capiocl.monitor.mcast.homenode]
+ip = "224.224.224.2"
+port = 12345
+```
+
+### Options
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| `capiocl.workflow_name` | string | JSON `name`, or `CAPIO` without JSON | Overrides the workflow name. |
+| `capiocl.config_path` | string/path | empty | JSON CAPIO-CL document to parse. An empty value creates a runtime-only engine. |
+| `capiocl.resolve_path` | string/path | empty | Prefix applied to relative paths in the JSON document. |
+| `capiocl.store_all_in_memory` | boolean | `false` | Marks every parsed data path for in-memory storage. |
+| `capiocl.dynamic_api.enabled` | boolean | `false` | Starts the dynamic configuration API. |
+| `capiocl.dynamic_api.ip` | string | `224.224.224.3` | Multicast address used by the dynamic API. |
+| `capiocl.dynamic_api.port` | integer | `11223` | UDP port used by the dynamic API. |
+| `capiocl.monitor.filesystem.enabled` | boolean | see below | Enables filesystem commit and home-node tokens. |
+| `capiocl.monitor.filesystem.metadata_dir` | string/path | empty | Trusted metadata root for persistent counted `ON_CLOSE` state. |
+| `capiocl.monitor.mcast.enabled` | boolean | see below | Enables multicast commit and home-node propagation. |
+| `capiocl.monitor.mcast.delay_ms` | integer | `300` | Delay before multicast status operations, in milliseconds. |
+| `capiocl.monitor.mcast.commit.ip` | string | `224.224.224.1` | Multicast group for commit state. |
+| `capiocl.monitor.mcast.commit.port` | integer | `12345` | UDP port for commit state. |
+| `capiocl.monitor.mcast.homenode.ip` | string | `224.224.224.2` | Multicast group for home-node state. |
+| `capiocl.monitor.mcast.homenode.port` | integer | `12345` | UDP port for home-node state. |
+
+Every CAPIO-CL option is under the top-level `capiocl` table. Other top-level tables may coexist in the same TOML file
+and are ignored by CAPIO-CL. When parsing a user-provided configuration, omitted
+`capiocl.monitor.filesystem.enabled` and `capiocl.monitor.mcast.enabled` values are `false`. `Engine()` and
+`CapioClConfiguration.loadDefaults()` use the built-in configuration, which enables both monitors. Set both values
+explicitly in deployed TOML files to avoid ambiguity.
+
+TOML booleans must be unquoted `true` or `false`, and ports/delays must be integers. Relative `capiocl.config_path`,
+`capiocl.resolve_path`, and `capiocl.monitor.filesystem.metadata_dir` values are interpreted from the process working
+directory. Unknown keys are retained but ignored by CAPIO-CL.
+
+### Filesystem metadata
+
+`capiocl.monitor.filesystem.metadata_dir` is required only when an `ON_CLOSE` rule commits after more than one close. It
+must name a trusted, non-attacker-writable directory unique to the workflow run. CAPIO-CL creates and owns a `capiocl`
+subdirectory beneath it. Multi-process and multi-node producers must share that directory through storage providing
+coherent atomic exclusive file creation, rename, and unlink. Ordinary commit and home-node token operations do not
+require this option.
+
+### Loading configuration
+
+```cpp
+#include "capiocl/configuration.h"
+#include "capiocl/parser.h"
+
+using capiocl::configuration::CapioClConfiguration;
+
+CapioClConfiguration config;
+config.load("runtime.toml");
+std::unique_ptr<capiocl::engine::Engine> engine(capiocl::parser::Parser::parse(config));
+```
+
+```python
+import py_capio_cl
+
+config = py_capio_cl.CapioClConfiguration()
+config.load("runtime.toml")
+engine = py_capio_cl.Parser.parse(config)
+```
+
+Configuration can also be constructed from a string map/dictionary. Values in that form must use their flattened keys
+and string representations, for example `{"capiocl.monitor.filesystem.enabled": "true"}`.
+
+---
+
 ## API Snapshot
 
 A simplified example of CAPIO-CL usage in C++:
@@ -210,4 +312,3 @@ Serializer.dump(engine, "my_workflow", "my_workflow.json")
 | Name                            | Role     | Contact                                                                                                          |
 |---------------------------------|----------|------------------------------------------------------------------------------------------------------------------|
 | **Alberto Riccardo Martinelli** | Designer | [email](mailto:albertoriccardo.martinelli@unito.it) \| [Homepage](https://alpha.di.unito.it/alberto-martinelli/) |
-
