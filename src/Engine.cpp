@@ -1146,8 +1146,7 @@ void capiocl::engine::Engine::configureMonitorBackends() {
         CALF_PRINT_COLOR(CALF_CLI_LEVEL_WARNING, "Skipping registration of  MulticastMonitor");
     }
 
-    configuration.getParameter("capiocl.monitor.filesystem.enabled", &fs_monitor_enabled,
-                               "false");
+    configuration.getParameter("capiocl.monitor.filesystem.enabled", &fs_monitor_enabled, "false");
 
     LOG("configuration fallback key=capiocl.monitor.filesystem.enabled value=%s",
         fs_monitor_enabled.c_str());

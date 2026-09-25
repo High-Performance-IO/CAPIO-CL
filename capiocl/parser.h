@@ -89,7 +89,6 @@ class Parser final {
      * @param str_schema Raw JSON schema to use
      */
     static void validate_json(const jsoncons::json &doc, const char *str_schema);
-
 };
 } // namespace capiocl::parser
 

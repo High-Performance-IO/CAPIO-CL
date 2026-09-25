@@ -129,11 +129,10 @@ PYBIND11_MODULE(_py_capio_cl, m) {
         .def(py::self == py::self);
 
     py::class_<capiocl::parser::Parser>(m, "Parser", "The CAPIO-CL Parser component.")
-        .def_static(
-            "parse",
-            py::overload_cast<const capiocl::configuration::CapioClConfiguration &>(
-                &capiocl::parser::Parser::parse),
-            py::arg("config"))
+        .def_static("parse",
+                    py::overload_cast<const capiocl::configuration::CapioClConfiguration &>(
+                        &capiocl::parser::Parser::parse),
+                    py::arg("config"))
         .def("__str__",
              [](const capiocl::parser::Parser &e) {
                  return "<Parser repr at " + std::to_string(reinterpret_cast<uintptr_t>(&e)) + ">";

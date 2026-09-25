@@ -300,6 +300,10 @@ class FileSystemMonitor final : public MonitorInterface {
      */
     FileSystemMonitor();
 
+    /**
+     * @brief Construct a filesystem-based monitor using runtime configuration.
+     * @param config Configuration containing the filesystem metadata directory.
+     */
     explicit FileSystemMonitor(const configuration::CapioClConfiguration &config);
 
     /**

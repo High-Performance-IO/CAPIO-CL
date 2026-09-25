@@ -106,8 +106,8 @@ capiocl::parser::Parser::parse(const configuration::CapioClConfiguration &config
 
     engine::Engine *engine;
     if (capio_cl_release == CAPIO_CL_VERSION::V1) {
-        engine = available_parsers::parse_v1(source, resolve_prefix,
-                                             store_only_in_memory == "true", &config);
+        engine = available_parsers::parse_v1(source, resolve_prefix, store_only_in_memory == "true",
+                                             &config);
     } else if (capio_cl_release == CAPIO_CL_VERSION::V1_1) {
         engine = available_parsers::parse_v1_1(source, resolve_prefix,
                                                store_only_in_memory == "true", &config);

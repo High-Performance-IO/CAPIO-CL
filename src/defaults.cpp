@@ -24,8 +24,8 @@ ConfigurationEntry capiocl::configuration::defaults::DEFAULT_MONITOR_FS_ENABLED{
 ConfigurationEntry capiocl::configuration::defaults::DEFAULT_MONITOR_FS_METADATA_DIR{
     "capiocl.monitor.filesystem.metadata_dir", ""};
 
-ConfigurationEntry capiocl::configuration::defaults::DEFAULT_API_MULTICAST_IP{"capiocl.dynamic_api.ip",
-                                                                              "224.224.224.3"};
+ConfigurationEntry capiocl::configuration::defaults::DEFAULT_API_MULTICAST_IP{
+    "capiocl.dynamic_api.ip", "224.224.224.3"};
 
-ConfigurationEntry capiocl::configuration::defaults::DEFAULT_API_MULTICAST_PORT{"capiocl.dynamic_api.port",
-                                                                                "11223"};
+ConfigurationEntry capiocl::configuration::defaults::DEFAULT_API_MULTICAST_PORT{
+    "capiocl.dynamic_api.port", "11223"};

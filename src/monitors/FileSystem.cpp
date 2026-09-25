@@ -30,7 +30,7 @@ CloseMetadataPaths close_metadata_paths(const std::filesystem::path &path,
             "Counted ON_CLOSE requires capiocl.monitor.filesystem.metadata_dir to name a trusted, "
             "unique workflow metadata directory");
     }
-    const auto root = std::filesystem::absolute(metadata_root).lexically_normal() / "capiocl";
+    const auto root       = std::filesystem::absolute(metadata_root).lexically_normal() / "capiocl";
     const auto normalized = std::filesystem::absolute(path).lexically_normal().generic_string();
     static constexpr char digits[] = "0123456789abcdef";
     std::string encoded;

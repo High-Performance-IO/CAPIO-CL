@@ -20,9 +20,9 @@ template <typename T> std::string demangled_name(const T &obj) {
 #include "capiocl/parser.h"
 #include "capiocl/serializer.h"
 
-capiocl::engine::Engine *parseConfiguration(
-    const std::filesystem::path &source, const std::filesystem::path &resolve_prefix = "",
-    bool store_only_in_memory = false) {
+capiocl::engine::Engine *parseConfiguration(const std::filesystem::path &source,
+                                            const std::filesystem::path &resolve_prefix = "",
+                                            bool store_only_in_memory                   = false) {
     return capiocl::parser::Parser::parse(capiocl::configuration::CapioClConfiguration({
         {"capiocl.config_path", source.string()},
         {"capiocl.resolve_path", resolve_prefix.string()},
