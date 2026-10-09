@@ -63,7 +63,16 @@ FetchContent_Declare(
         GIT_TAG v0.3.1
 )
 
-set(CALF_PROTOBUF ON CACHE BOOL "" FORCE)
+# Protobuf/absl back the CALF logger, which is only active in Debug builds
+# (see calf_enable_log below). In Release they are neither used nor needed, so
+# default CALF_PROTOBUF OFF to avoid fetching and compiling protobuf+absl.
+# The option remains user-overridable via -DCALF_PROTOBUF=ON|OFF.
+set(_CALF_PROTOBUF_DEFAULT ON)
+if (CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(_CALF_PROTOBUF_DEFAULT OFF)
+endif ()
+option(CALF_PROTOBUF "Build the Google Protobuf C++ logging component. Fallback to JSON logging when turned OFF" ${_CALF_PROTOBUF_DEFAULT})
+unset(_CALF_PROTOBUF_DEFAULT)
 
 # JSONCONS build flags
 set(JSONCONS_BUILD_TESTS OFF CACHE BOOL "" FORCE)
@@ -163,7 +172,12 @@ endif ()
 calf_enable_log(libcapio_cl $<IF:$<CONFIG:Debug>,ON,OFF>)
 calf_set_component(libcapio_cl "capiocl")
 calf_set_default_log_dir(libcapio_cl "./capiocl_logs")
-target_link_libraries(libcapio_cl PRIVATE calf::protobuf)
+# calf_enable_log already links calf::protobuf when logging is active in Debug.
+# Only add it explicitly when the protobuf component exists (protobuf/absl compiled);
+# otherwise Release builds link nothing extra.
+if (CALF_PROTOBUF AND TARGET calf::protobuf)
+    target_link_libraries(libcapio_cl PRIVATE calf::protobuf)
+endif ()
 target_include_directories(libcapio_cl PRIVATE ${CALF_SOURCE_DIR})
 
 #####################################
