@@ -47,11 +47,29 @@ jobs:
         working-directory: doxygen
         run: make pdf
       - name: "Upload pdf documentation"
-        if: success()
         uses: actions/upload-artifact@v7
         with:
           path: "doxygen/documentation*.pdf"
           name: "documentation.pdf"
+      - name: "Upload html documentation"
+        uses: actions/upload-artifact@v7
+        with:
+          path: "doxygen/generated/html/"
+          name: "documentation-html"
+          retention-days: 1
+
+  # Not listed in any other job's `needs`: a failure here does not block the release.
+  deploy-documentation:
+    name: "Deploy documentation page"
+    needs:
+      - generate-documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Download html documentation"
+        uses: actions/download-artifact@v8
+        with:
+          name: "documentation-html"
+          path: "doxygen/generated/html"
       - name: "Deploy documentation page"
         uses: appleboy/scp-action@v1.0.0
         with:
@@ -121,7 +139,7 @@ jobs:
   github:
     name: "Create GitHub Release"
     if: ${{ needs.check-tag-existance.outputs.exists == 'false' && github.event.workflow_run.conclusion == 'success' }}
-    needs: [ riscv-wheels, generate-documentation ]
+    needs: [ check-tag-existance, riscv-wheels, generate-documentation ]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -151,7 +169,7 @@ jobs:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     if: ${{ needs.check-tag-existance.outputs.exists == 'false'}}
-    needs: [ github ]
+    needs: [ check-tag-existance, github ]
 
     strategy:
       fail-fast: false
@@ -192,7 +210,7 @@ jobs:
     name: Build sdist
     runs-on: ubuntu-latest
     if: ${{ needs.check-tag-existance.outputs.exists == 'false'}}
-    needs: [ github ]
+    needs: [ check-tag-existance, github ]
     steps:
       - uses: actions/checkout@v7
 

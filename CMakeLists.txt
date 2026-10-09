@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.15)
 project(CAPIO-CL
         LANGUAGES CXX
         DESCRIPTION "Cross-Application Programmable IO - Coordination Language"
-        VERSION 2.0.1
+        VERSION 2.0.2
 )
 
 set(CMAKE_CXX_STANDARD 17)
