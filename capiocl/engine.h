@@ -111,6 +111,45 @@ class Engine final {
     mutable std::unordered_map<std::string, CapioCLEntry> _capio_cl_entries;
 
     /**
+     * @brief Keys of #_capio_cl_entries that hold a glob character, mapped to their normalized
+     * form.
+     *
+     * Every lookup by path checks the path's own entry, then only these patterns: a key without a
+     * glob character can only match itself. #_capio_cl_entries also holds one entry for every
+     * concrete path seen so far, so scanning all of it made each lookup cost as much as the number
+     * of paths.
+     */
+    mutable std::unordered_map<std::string, std::string> _capio_cl_patterns;
+
+    /**
+     * @brief Normalized form of each key of #_capio_cl_entries without a glob character whose
+     * normalized form differs from the key itself (a relative path, for instance), mapped to those
+     * keys. #_newFile matches the normalized form of a key too.
+     */
+    mutable std::unordered_map<std::string, std::vector<std::string>> _capio_cl_aliases;
+
+    /// @brief Whether @p key holds a glob character, and so may match other paths
+    static bool _isPattern(const std::string &key);
+
+    /// @brief Record a key just inserted in #_capio_cl_entries in the pattern and alias indexes
+    void _indexKey(const std::string &key) const;
+
+    /// @brief Remove a key just erased from #_capio_cl_entries from the pattern and alias indexes
+    void _unindexKey(const std::string &key) const;
+
+    /**
+     * @brief Whether @p app is listed in @p role of the entry of @p path or of any pattern matching
+     * @p path. The caller must hold #_shared_mutex.
+     *
+     * @param path File path name
+     * @param app Application name
+     * @param role CapioCLEntry::producers or CapioCLEntry::consumers
+     * @param known Set to whether @p path has an entry of its own
+     */
+    bool _hasRole(const std::string &path, const std::string &app,
+                  std::vector<std::string> CapioCLEntry::*role, bool &known) const;
+
+    /**
      * @brief Utility method to truncate a string to its last @p n characters. This is only used
      * within the print method
      *

@@ -642,6 +642,78 @@ TEST(ENGINE_SUITE_NAME, TestInheritanceFromParentPaths) {
     EXPECT_TRUE(engine.getFireRule("/test/a/b/c/d") == capiocl::fireRules::NO_UPDATE);
 }
 
+TEST(ENGINE_SUITE_NAME, TestPatternChangedAfterPathSeen) {
+    capiocl::engine::Engine engine;
+    std::string producer = "producer";
+    std::string consumer = "consumer";
+
+    engine.newFile("/data/*");
+    engine.newFile("/data/a.txt");
+    EXPECT_FALSE(engine.isProducer("/data/a.txt", producer));
+    EXPECT_FALSE(engine.isConsumer("/data/a.txt", consumer));
+
+    // The path has its own entry now; a later change to the pattern must still reach it
+    engine.addProducer("/data/*", producer);
+    engine.addConsumer("/data/*", consumer);
+    EXPECT_TRUE(engine.isProducer("/data/a.txt", producer));
+    EXPECT_TRUE(engine.isConsumer("/data/a.txt", consumer));
+    EXPECT_FALSE(engine.isProducer("/data/a.txt", consumer));
+    EXPECT_FALSE(engine.isProducer("/other/a.txt", producer));
+}
+
+TEST(ENGINE_SUITE_NAME, TestRemovedPatternNoLongerMatches) {
+    capiocl::engine::Engine engine;
+    std::string producer = "producer";
+
+    engine.addProducer("/data/*", producer);
+    EXPECT_TRUE(engine.contains("/data/a.txt"));
+    EXPECT_TRUE(engine.isProducer("/data/a.txt", producer));
+
+    engine.remove("/data/*");
+    EXPECT_FALSE(engine.contains("/data/b.txt"));
+    EXPECT_FALSE(engine.isProducer("/data/b.txt", producer));
+    // The entry /data/a.txt inherited from the pattern is its own
+    EXPECT_TRUE(engine.isProducer("/data/a.txt", producer));
+}
+
+TEST(ENGINE_SUITE_NAME, TestRelativeKeyMatchesItsAbsolutePath) {
+    capiocl::engine::Engine engine;
+
+    engine.newFile("relative.dat");
+    engine.setCommitRule("relative.dat", capiocl::commitRules::ON_CLOSE);
+
+    const auto absolute = (std::filesystem::current_path() / "relative.dat").string();
+    engine.newFile(absolute);
+    EXPECT_EQ(engine.getCommitRule(absolute), capiocl::commitRules::ON_CLOSE);
+
+    // Once the relative key is removed, its absolute path no longer inherits from it
+    engine.newFile("removed.dat");
+    engine.setCommitRule("removed.dat", capiocl::commitRules::ON_CLOSE);
+    engine.remove("removed.dat");
+    const auto removed = (std::filesystem::current_path() / "removed.dat").string();
+    EXPECT_EQ(engine.getCommitRule(removed), capiocl::commitRules::ON_TERMINATION);
+}
+
+TEST(ENGINE_SUITE_NAME, TestLookupCostDoesNotGrowWithPaths) {
+    capiocl::engine::Engine engine;
+    std::string producer = "producer";
+    engine.addProducer("/data/out-*", producer);
+
+    constexpr int paths = 20000;
+    for (int i = 0; i < paths; i++) {
+        engine.newFile("/data/in-" + std::to_string(i));
+    }
+
+    // A reader that is not a producer used to run fnmatch against every entry on each call
+    const auto start = std::chrono::steady_clock::now();
+    for (int i = 0; i < paths; i++) {
+        EXPECT_FALSE(engine.isProducer("/data/in-" + std::to_string(i), "reader"));
+    }
+    const auto elapsed = std::chrono::steady_clock::now() - start;
+    EXPECT_LT(std::chrono::duration_cast<std::chrono::seconds>(elapsed).count(), 5);
+    EXPECT_TRUE(engine.isProducer("/data/out-1", producer));
+}
+
 TEST(ENGINE_SUITE_NAME, TestEngineAddCapioClRule) {
     capiocl::engine::Engine engine;
 

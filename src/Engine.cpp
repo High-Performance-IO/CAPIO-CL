@@ -202,16 +202,26 @@ void capiocl::engine::Engine::_newFile(const std::filesystem::path &path) const 
         std::string commit = commitRules::ON_TERMINATION;
         std::string fire   = fireRules::UPDATE;
 
+        // The path has no entry, so a key without a glob character matches it only through its
+        // normalized form: those are in _capio_cl_aliases. Every other match is a pattern.
         std::string matchKey;
-        size_t matchSize = 0;
-        for (const auto &[filename, data] : _capio_cl_entries) {
-            const auto normalized_pattern = normalize_runtime_path(filename).string();
-            if (const bool match =
-                    fnmatch(filename.c_str(), path.c_str(), FNM_NOESCAPE) == 0 ||
-                    fnmatch(normalized_pattern.c_str(), path.c_str(), FNM_NOESCAPE) == 0;
-                match && filename.length() > matchSize) {
-                matchSize = filename.length();
-                matchKey  = filename;
+        size_t matchSize    = 0;
+        const auto consider = [&](const std::string &key) {
+            if (key.length() > matchSize) {
+                matchSize = key.length();
+                matchKey  = key;
+            }
+        };
+        for (const auto &[pattern, normalized_pattern] : _capio_cl_patterns) {
+            if (fnmatch(pattern.c_str(), path.c_str(), FNM_NOESCAPE) == 0 ||
+                fnmatch(normalized_pattern.c_str(), path.c_str(), FNM_NOESCAPE) == 0) {
+                consider(pattern);
+            }
+        }
+        if (const auto alias = _capio_cl_aliases.find(path.string());
+            alias != _capio_cl_aliases.end()) {
+            for (const auto &key : alias->second) {
+                consider(key);
             }
         }
 
@@ -238,8 +248,63 @@ void capiocl::engine::Engine::_newFile(const std::filesystem::path &path) const 
             entry.commit_rule.c_str(), entry.fire_rule.c_str(),
             static_cast<int>(entry.store_in_memory));
         _capio_cl_entries.emplace(path, std::move(entry));
+        _indexKey(path.string());
         this->compute_directory_entry_count(path);
     }
+}
+
+bool capiocl::engine::Engine::_isPattern(const std::string &key) {
+    return key.find_first_of("*?[") != std::string::npos;
+}
+
+void capiocl::engine::Engine::_indexKey(const std::string &key) const {
+    const auto normalized = normalize_runtime_path(key).string();
+    if (_isPattern(key)) {
+        _capio_cl_patterns[key] = normalized;
+    } else if (normalized != key) {
+        _capio_cl_aliases[normalized].push_back(key);
+    }
+}
+
+void capiocl::engine::Engine::_unindexKey(const std::string &key) const {
+    if (_isPattern(key)) {
+        _capio_cl_patterns.erase(key);
+        return;
+    }
+    const auto normalized = normalize_runtime_path(key).string();
+    if (const auto alias = _capio_cl_aliases.find(normalized); alias != _capio_cl_aliases.end()) {
+        auto &keys = alias->second;
+        keys.erase(std::remove(keys.begin(), keys.end(), key), keys.end());
+        if (keys.empty()) {
+            _capio_cl_aliases.erase(alias);
+        }
+    }
+}
+
+bool capiocl::engine::Engine::_hasRole(const std::string &path, const std::string &app,
+                                       std::vector<std::string> CapioCLEntry::*role,
+                                       bool &known) const {
+    START_LOG(calf_current_tid(), "call()");
+    const auto lists = [&](const CapioCLEntry &entry) {
+        const auto &apps = entry.*role;
+        return std::find(apps.begin(), apps.end(), app) != apps.end();
+    };
+
+    const auto itm = _capio_cl_entries.find(path);
+    known          = itm != _capio_cl_entries.end();
+    if (known && lists(itm->second)) {
+        LOG("matched path=%s on its own entry application=%s", path.c_str(), app.c_str());
+        return true;
+    }
+    for (const auto &[pattern, normalized] : _capio_cl_patterns) {
+        if (pattern != path && fnmatch(pattern.c_str(), path.c_str(), FNM_NOESCAPE) == 0 &&
+            lists(_capio_cl_entries.at(pattern))) {
+            LOG("matched path=%s pattern=%s application=%s", path.c_str(), pattern.c_str(),
+                app.c_str());
+            return true;
+        }
+    }
+    return false;
 }
 
 void capiocl::engine::Engine::compute_directory_entry_count(
@@ -264,9 +329,13 @@ void capiocl::engine::Engine::compute_directory_entry_count(
 bool capiocl::engine::Engine::contains(const std::filesystem::path &file) const {
     START_LOG(calf_current_tid(), "call()");
     shared_lock_guard slg(_shared_mutex);
-    return std::any_of(_capio_cl_entries.begin(), _capio_cl_entries.end(), [&](auto const &entry) {
-        return fnmatch(entry.first.c_str(), file.c_str(), FNM_NOESCAPE) == 0;
-    });
+    if (_capio_cl_entries.find(file) != _capio_cl_entries.end()) {
+        return true;
+    }
+    return std::any_of(_capio_cl_patterns.begin(), _capio_cl_patterns.end(),
+                       [&](auto const &pattern) {
+                           return fnmatch(pattern.first.c_str(), file.c_str(), FNM_NOESCAPE) == 0;
+                       });
 }
 
 size_t capiocl::engine::Engine::size() const {
@@ -311,6 +380,7 @@ void capiocl::engine::Engine::add(const std::filesystem::path &path,
 
     if (_capio_cl_entries.find(path) == _capio_cl_entries.end()) {
         _capio_cl_entries[path] = entry;
+        _indexKey(path.string());
         LOG("inserted entry path=%s", path.string().c_str());
     } else {
         _capio_cl_entries[path] += entry;
@@ -335,7 +405,10 @@ long capiocl::engine::Engine::getDirectoryFileCount(const std::filesystem::path 
             return itm->second.directory_children_count;
         }
     }
-    this->_newFile(path);
+    {
+        std::lock_guard lg(_shared_mutex);
+        this->_newFile(path);
+    }
     return getDirectoryFileCount(path);
 }
 
@@ -811,6 +884,7 @@ void capiocl::engine::Engine::remove(const std::filesystem::path &path) const {
         return;
     }
     _capio_cl_entries.erase(path);
+    _unindexKey(path.string());
     LOG("removed entry path=%s", path.string().c_str());
 }
 
@@ -834,16 +908,12 @@ bool capiocl::engine::Engine::isConsumer(const std::filesystem::path &path,
 
     {
         shared_lock_guard slg(_shared_mutex);
-
-        for (const auto &[pattern, entry] : _capio_cl_entries) {
-            if (fnmatch(pattern.c_str(), path.c_str(), FNM_NOESCAPE) == 0) {
-                const auto &consumers = entry.consumers;
-                if (std::find(consumers.begin(), consumers.end(), app_name) != consumers.end()) {
-                    LOG("consumer matched path=%s pattern=%s application=%s", path.string().c_str(),
-                        pattern.c_str(), app_name.c_str());
-                    return true;
-                }
-            }
+        bool known = false;
+        if (_hasRole(path.string(), app_name, &CapioCLEntry::consumers, known)) {
+            return true;
+        }
+        if (known) {
+            return false;
         }
     }
     {
@@ -884,16 +954,12 @@ bool capiocl::engine::Engine::isProducer(const std::filesystem::path &path,
     }
     {
         shared_lock_guard slg(_shared_mutex);
-
-        for (const auto &[pattern, entry] : _capio_cl_entries) {
-            if (fnmatch(pattern.c_str(), path.c_str(), FNM_NOESCAPE) == 0) {
-                const auto &producers = entry.producers;
-                if (std::find(producers.begin(), producers.end(), app_name) != producers.end()) {
-                    LOG("producer matched path=%s pattern=%s application=%s", path.string().c_str(),
-                        pattern.c_str(), app_name.c_str());
-                    return true;
-                }
-            }
+        bool known = false;
+        if (_hasRole(path.string(), app_name, &CapioCLEntry::producers, known)) {
+            return true;
+        }
+        if (known) {
+            return false;
         }
     }
 
