@@ -111,43 +111,53 @@ class Engine final {
     mutable std::unordered_map<std::string, CapioCLEntry> _capio_cl_entries;
 
     /**
-     * @brief Keys of #_capio_cl_entries that hold a glob character, mapped to their normalized
+     * @brief Keys of #_capio_cl_entries that contain a glob character, mapped to their normalized
      * form.
      *
-     * Every lookup by path checks the path's own entry, then only these patterns: a key without a
-     * glob character can only match itself. #_capio_cl_entries also holds one entry for every
-     * concrete path seen so far, so scanning all of it made each lookup cost as much as the number
-     * of paths.
+     * #_capio_cl_entries holds an entry for every path seen so far. A key without a glob character
+     * only matches itself, so lookups check the entry of the path itself and then only these keys.
      */
-    mutable std::unordered_map<std::string, std::string> _capio_cl_patterns;
+    mutable std::unordered_map<std::string, std::string> _glob_patterns;
 
     /**
-     * @brief Normalized form of each key of #_capio_cl_entries without a glob character whose
-     * normalized form differs from the key itself (a relative path, for instance), mapped to those
-     * keys. #_newFile matches the normalized form of a key too.
+     * @brief Normalized forms of the keys of #_capio_cl_entries without a glob character, for the
+     * keys whose normalized form differs from the key, such as relative paths. Each maps to those
+     * keys. #_newFile uses it to find the entry a new path inherits from.
      */
-    mutable std::unordered_map<std::string, std::vector<std::string>> _capio_cl_aliases;
-
-    /// @brief Whether @p key holds a glob character, and so may match other paths
-    static bool _isPattern(const std::string &key);
-
-    /// @brief Record a key just inserted in #_capio_cl_entries in the pattern and alias indexes
-    void _indexKey(const std::string &key) const;
-
-    /// @brief Remove a key just erased from #_capio_cl_entries from the pattern and alias indexes
-    void _unindexKey(const std::string &key) const;
+    mutable std::unordered_map<std::string, std::vector<std::string>> _normalized_aliases;
 
     /**
-     * @brief Whether @p app is listed in @p role of the entry of @p path or of any pattern matching
-     * @p path. The caller must hold #_shared_mutex.
-     *
-     * @param path File path name
-     * @param app Application name
-     * @param role CapioCLEntry::producers or CapioCLEntry::consumers
-     * @param known Set to whether @p path has an entry of its own
+     * @brief Check whether a path contains a glob character, and so may match other paths.
+     * @param path Path or pattern to check
+     * @return true if @p path contains '*', '?' or '['
      */
-    bool _hasRole(const std::string &path, const std::string &app,
-                  std::vector<std::string> CapioCLEntry::*role, bool &known) const;
+    static bool _isGlobPattern(const std::string &path);
+
+    /**
+     * @brief Add a key of #_capio_cl_entries to #_glob_patterns and #_normalized_aliases. Call it
+     * after inserting the key.
+     * @param path Key just inserted in #_capio_cl_entries
+     */
+    void _addToGlobIndex(const std::string &path) const;
+
+    /**
+     * @brief Remove a key of #_capio_cl_entries from #_glob_patterns and #_normalized_aliases. Call
+     * it after erasing the key.
+     * @param path Key just erased from #_capio_cl_entries
+     */
+    void _removeFromGlobIndex(const std::string &path) const;
+
+    /**
+     * @brief Check whether an application is listed for a path, in the path's own entry or in the
+     * entry of any pattern matching the path. The caller must hold #_shared_mutex.
+     * @param path File path
+     * @param app_name Application name
+     * @param list Which list of the entries to search: &CapioCLEntry::producers or
+     * &CapioCLEntry::consumers
+     * @return true if @p app_name is in @p list of one of those entries
+     */
+    bool _isAppListed(const std::string &path, const std::string &app_name,
+                      std::vector<std::string> CapioCLEntry::*list) const;
 
     /**
      * @brief Utility method to truncate a string to its last @p n characters. This is only used
