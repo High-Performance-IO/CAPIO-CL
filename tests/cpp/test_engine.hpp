@@ -668,11 +668,13 @@ TEST(ENGINE_SUITE_NAME, TestRemovedPatternNoLongerMatches) {
     engine.addProducer("/data/*", producer);
     EXPECT_TRUE(engine.contains("/data/a.txt"));
     EXPECT_TRUE(engine.isProducer("/data/a.txt", producer));
+    // A positive answer does not create an entry; this does, copied from the pattern
+    engine.newFile("/data/a.txt");
 
     engine.remove("/data/*");
     EXPECT_FALSE(engine.contains("/data/b.txt"));
     EXPECT_FALSE(engine.isProducer("/data/b.txt", producer));
-    // The entry /data/a.txt inherited from the pattern is its own
+    // The entry of /data/a.txt keeps what it copied from the removed pattern
     EXPECT_TRUE(engine.isProducer("/data/a.txt", producer));
 }
 
