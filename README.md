@@ -1,4 +1,4 @@
-![CAPIO-CL Logo](https://raw.githubusercontent.com/High-Performance-IO/CAPIO-CL/main/media/capiocl.png)
+![CAPIO-CL Logo](https://raw.githubusercontent.com/High-Performance-IO/CAPIO-CL/main/media/capio-cl-logo.svg)
 
 # CAPIO-CL — Cross-Application Programmable I/O Coordination Language
 
