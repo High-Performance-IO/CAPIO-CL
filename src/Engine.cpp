@@ -1215,6 +1215,7 @@ void capiocl::engine::Engine::configureMonitorBackends() {
 
     if (fs_monitor_enabled == "true") {
         monitor.registerMonitorBackend(new monitor::FileSystemMonitor(configuration));
+        filesystem_monitor_registered = true;
         LOG("registered monitor backend=filesystem");
     } else {
         LOG("skipped monitor backend=filesystem reason=disabled");
@@ -1229,7 +1230,25 @@ void capiocl::engine::Engine::useDefaultConfiguration() {
     // TODO: add a vector with registered instances of backends to avoid multiple instantiations
     monitor.registerMonitorBackend(new monitor::MulticastMonitor(configuration));
     monitor.registerMonitorBackend(new monitor::FileSystemMonitor(configuration));
+    filesystem_monitor_registered = true;
     LOG("loaded default configuration monitor_backends=multicast,filesystem");
+}
+
+bool capiocl::engine::Engine::startFileSystemMonitor(const std::filesystem::path &root,
+                                                     const std::filesystem::path &metadata_dir) {
+    START_LOG(calf_current_tid(), "call(root=%s, metadata_dir=%s)", root.c_str(),
+              metadata_dir.c_str());
+    const std::unique_lock lock(_shared_mutex);
+    if (filesystem_monitor_registered) {
+        return false;
+    }
+    configuration.set(configuration::defaults::DEFAULT_MONITOR_FS_ROOT.k, root.string());
+    configuration.set(configuration::defaults::DEFAULT_MONITOR_FS_METADATA_DIR.k,
+                      metadata_dir.string());
+    monitor.registerMonitorBackend(new monitor::FileSystemMonitor(configuration));
+    filesystem_monitor_registered = true;
+    LOG("registered monitor backend=filesystem at runtime");
+    return true;
 }
 
 void capiocl::engine::Engine::startApiServer() {

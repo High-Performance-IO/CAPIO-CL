@@ -8,6 +8,7 @@
 #include <mutex>
 #include <optional>
 #include <set>
+#include <shared_mutex>
 #include <string>
 #include <thread>
 #include <unordered_map>
@@ -257,11 +258,17 @@ class MulticastMonitor final : public MonitorInterface {
  * FileSystemMonitor uses token files on disk to record when a file is committed.
  * A committed file `<path>` is associated with a token file whose name is computed
  * from the path. Existence of the token file implies commit state.
+ *
+ * With capiocl.monitor.filesystem.root set, paths are virtual: `/` is that directory, and the
+ * token of `/d/f` is `<root>/d/.f.commit`. Close counters stay keyed by the virtual path, so
+ * monitors that see the same directory under different mount points share them.
  */
 class FileSystemMonitor final : public MonitorInterface {
 
     typedef enum { COMMIT, HOME_NODE } CAPIO_CL_COMMIT_TOKEN_TYPES;
     std::filesystem::path metadata_root;
+    /// @brief The real directory of the virtual `/` (capiocl.monitor.filesystem.root), or empty
+    std::filesystem::path root;
 
     /**
      * @brief Compute the token filename used to represent the commit state of the given file.
@@ -270,9 +277,9 @@ class FileSystemMonitor final : public MonitorInterface {
      * @param type Type of token to generate
      * @return A filesystem path representing the commit token.
      */
-    static std::filesystem::path
+    [[nodiscard]] std::filesystem::path
     compute_capiocl_token_name(const std::filesystem::path &path,
-                               CAPIO_CL_COMMIT_TOKEN_TYPES type = COMMIT);
+                               CAPIO_CL_COMMIT_TOKEN_TYPES type = COMMIT) const;
 
     /**
      * @brief Create the commit token for a file.
@@ -281,7 +288,7 @@ class FileSystemMonitor final : public MonitorInterface {
      *
      * @param path Path of the committed file.
      */
-    static void generate_commit_token(const std::filesystem::path &path);
+    void generate_commit_token(const std::filesystem::path &path) const;
 
     /**
      * @brief Generate a token containing the home node for given path
@@ -291,8 +298,8 @@ class FileSystemMonitor final : public MonitorInterface {
      * @param path
      * @param home_node
      */
-    static void generate_home_node_token(const std::filesystem::path &path,
-                                         const std::string &home_node);
+    void generate_home_node_token(const std::filesystem::path &path,
+                                  const std::string &home_node) const;
 
   public:
     /**
@@ -302,7 +309,8 @@ class FileSystemMonitor final : public MonitorInterface {
 
     /**
      * @brief Construct a filesystem-based monitor using runtime configuration.
-     * @param config Configuration containing the filesystem metadata directory.
+     * @param config Configuration containing the filesystem metadata directory, and the root
+     * directory of the virtual paths, if any.
      */
     explicit FileSystemMonitor(const configuration::CapioClConfiguration &config);
 
@@ -328,6 +336,8 @@ class Monitor {
     friend class MonitorInterface;
 
     std::vector<const MonitorInterface *> interfaces;
+    /// @brief Backends can be registered while other threads use them
+    mutable std::shared_mutex interfaces_mutex;
 
   public:
     /**

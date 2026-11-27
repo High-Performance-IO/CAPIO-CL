@@ -30,7 +30,9 @@ jobs:
     needs:
       - check-tag-existance
     if: ${{ needs.check-tag-existance.outputs.exists == 'false' }}
-    runs-on: ubuntu-latest
+    # Not ubuntu-latest: its TeX Live 2025 (Ubuntu 26.04) breaks the tabu package that Doxygen
+    # uses for tables, so the PDF manual fails to build
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - name: "Install packages"

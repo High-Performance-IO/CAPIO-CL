@@ -98,6 +98,9 @@ class Engine final {
     /// @brief Monitor instance to check runtime information of CAPIO-CL files
     monitor::Monitor monitor;
 
+    /// @brief Whether a FileSystemMonitor is registered in monitor
+    bool filesystem_monitor_registered = false;
+
     /// @brief Node name variable used to handle home node policies
     std::string node_name;
 
@@ -526,6 +529,18 @@ class Engine final {
      * Runtime parameters to the server are specified within the CapioCLConfiguration
      */
     void startApiServer();
+
+    /**
+     * Start the filesystem monitor now, if none is registered yet: for a program that learns where
+     * the tokens go only after the engine is created.
+     *
+     * @param root real directory of the virtual `/` (capiocl.monitor.filesystem.root)
+     * @param metadata_dir directory of the close counters
+     * (capiocl.monitor.filesystem.metadata_dir)
+     * @return whether it was started: false if a filesystem monitor was already registered
+     */
+    bool startFileSystemMonitor(const std::filesystem::path &root,
+                                const std::filesystem::path &metadata_dir);
 };
 
 } // namespace capiocl::engine

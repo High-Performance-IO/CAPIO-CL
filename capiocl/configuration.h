@@ -31,6 +31,8 @@ struct capiocl::configuration::defaults {
     static ConfigurationEntry DEFAULT_MONITOR_FS_ENABLED;
     /// @brief Directory used for persistent filesystem monitor metadata
     static ConfigurationEntry DEFAULT_MONITOR_FS_METADATA_DIR;
+    /// @brief Directory under which the filesystem monitor places the tokens of absolute paths
+    static ConfigurationEntry DEFAULT_MONITOR_FS_ROOT;
     /// @brief IP multicast address for receiving and sending changes in the CapioCL configuration
     static ConfigurationEntry DEFAULT_API_MULTICAST_IP;
     /// @brief IP multicast port for receiving and sending changes in the CapioCL configuration

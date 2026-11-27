@@ -161,9 +161,8 @@ class FileLock final {
     FileLock &operator=(FileLock &&)      = delete;
 };
 
-std::filesystem::path
-capiocl::monitor::FileSystemMonitor::compute_capiocl_token_name(const std::filesystem::path &path,
-                                                                CAPIO_CL_COMMIT_TOKEN_TYPES type) {
+std::filesystem::path capiocl::monitor::FileSystemMonitor::compute_capiocl_token_name(
+    const std::filesystem::path &path, CAPIO_CL_COMMIT_TOKEN_TYPES type) const {
     START_LOG(calf_current_tid(), "call()");
     std::string token_type;
 
@@ -173,13 +172,15 @@ capiocl::monitor::FileSystemMonitor::compute_capiocl_token_name(const std::files
         token_type = ".home_node";
     }
 
-    const auto abs          = std::filesystem::absolute(path).lexically_normal();
+    // A virtual path is placed under the root: /d/f is <root>/d/f
+    const auto abs          = root.empty() ? std::filesystem::absolute(path).lexically_normal()
+                                           : (root / path.lexically_normal().relative_path());
     const auto new_filename = "." + abs.filename().string() + token_type;
     return abs.parent_path() / new_filename;
 }
 
 void capiocl::monitor::FileSystemMonitor::generate_home_node_token(
-    const std::filesystem::path &path, const std::string &home_node) {
+    const std::filesystem::path &path, const std::string &home_node) const {
     START_LOG(calf_current_tid(), "call()");
     if (const auto token_name = compute_capiocl_token_name(path, HOME_NODE);
         !std::filesystem::exists(token_name)) {
@@ -197,7 +198,8 @@ void capiocl::monitor::FileSystemMonitor::generate_home_node_token(
     }
 }
 
-void capiocl::monitor::FileSystemMonitor::generate_commit_token(const std::filesystem::path &path) {
+void capiocl::monitor::FileSystemMonitor::generate_commit_token(
+    const std::filesystem::path &path) const {
     START_LOG(calf_current_tid(), "call()");
     const auto token_name = compute_capiocl_token_name(path, COMMIT);
     std::filesystem::create_directories(token_name.parent_path());
@@ -224,6 +226,10 @@ capiocl::monitor::FileSystemMonitor::FileSystemMonitor(
     config.getParameter("capiocl.monitor.filesystem.metadata_dir", &configured_metadata_root,
                         configuration::defaults::DEFAULT_MONITOR_FS_METADATA_DIR.v);
     metadata_root = configured_metadata_root;
+    std::string configured_root;
+    config.getParameter(configuration::defaults::DEFAULT_MONITOR_FS_ROOT.k, &configured_root,
+                        configuration::defaults::DEFAULT_MONITOR_FS_ROOT.v);
+    root = configured_root;
     gethostname(_hostname, sizeof(_hostname));
     _hostname[sizeof(_hostname) - 1] = '\0';
     LOG("filesystem monitor initialized hostname=%s", _hostname);

@@ -638,4 +638,55 @@ TEST(RUNTIME_COMMIT_SUITE_NAME, onFileCycleResolvesFromRawSeed) {
     EXPECT_TRUE(engine.isCommitted(a));
 }
 
+TEST(RUNTIME_COMMIT_SUITE_NAME, fileSystemRootPlacesVirtualPathsUnderIt) {
+    RuntimeTestScope scope;
+    const capiocl::monitor::FileSystemMonitor monitor(capiocl::configuration::CapioClConfiguration({
+        {"capiocl.monitor.filesystem.metadata_dir", scope.metadata.string()},
+        {"capiocl.monitor.filesystem.root", scope.data.string()},
+    }));
+
+    monitor.setCommitted("/d/f");
+    EXPECT_TRUE(std::filesystem::exists(scope.data / "d" / ".f.commit"));
+    EXPECT_TRUE(monitor.isCommitted("/d/f"));
+    EXPECT_FALSE(monitor.isCommitted("/d/g"));
+
+    monitor.setHomeNode("/d/g");
+    EXPECT_TRUE(std::filesystem::exists(scope.data / "d" / ".g.home_node"));
+}
+
+TEST(RUNTIME_COMMIT_SUITE_NAME, fileSystemCloseCountersAreSharedAcrossRoots) {
+    RuntimeTestScope scope;
+    // The same directory under two mount points: two roots, one metadata directory
+    const auto first  = scope.root / "first";
+    const auto second = scope.root / "second";
+    std::filesystem::create_directories(first);
+    std::filesystem::create_directories(second);
+    const auto monitor_on = [&](const std::filesystem::path &root) {
+        return capiocl::monitor::FileSystemMonitor(capiocl::configuration::CapioClConfiguration({
+            {"capiocl.monitor.filesystem.metadata_dir", scope.metadata.string()},
+            {"capiocl.monitor.filesystem.root", root.string()},
+        }));
+    };
+    const auto on_first  = monitor_on(first);
+    const auto on_second = monitor_on(second);
+
+    EXPECT_EQ(on_first.increaseCloseCount("/f", 2), false);
+    EXPECT_EQ(on_second.increaseCloseCount("/f", 2), true);
+    EXPECT_TRUE(std::filesystem::exists(second / ".f.commit"));
+}
+
+TEST(RUNTIME_COMMIT_SUITE_NAME, engineStartsFileSystemMonitorLater) {
+    RuntimeTestScope scope;
+    capiocl::engine::Engine engine(capiocl::configuration::CapioClConfiguration({
+        {"capiocl.monitor.filesystem.enabled", "false"},
+        {"capiocl.monitor.mcast.enabled", "false"},
+    }));
+    std::ofstream(scope.data / ".f.commit");
+    EXPECT_FALSE(engine.isCommitted("/f"));
+
+    EXPECT_TRUE(engine.startFileSystemMonitor(scope.data, scope.metadata));
+    EXPECT_TRUE(engine.isCommitted("/f"));
+    EXPECT_FALSE(engine.startFileSystemMonitor(scope.root, scope.metadata));
+}
+
 #endif // CAPIO_CL_RUNTIME_COMMIT_HPP
