@@ -209,6 +209,7 @@ port = 12345
 | `capiocl.dynamic_api.port` | integer | `11223` | UDP port used by the dynamic API. |
 | `capiocl.monitor.filesystem.enabled` | boolean | see below | Enables filesystem commit and home-node tokens. |
 | `capiocl.monitor.filesystem.metadata_dir` | string/path | empty | Trusted metadata root for persistent counted `ON_CLOSE` state. |
+| `capiocl.monitor.filesystem.root` | string/path | empty | Real directory of the virtual `/`: where tokens of absolute paths are placed. |
 | `capiocl.monitor.mcast.enabled` | boolean | see below | Enables multicast commit and home-node propagation. |
 | `capiocl.monitor.mcast.delay_ms` | integer | `300` | Delay before multicast status operations, in milliseconds. |
 | `capiocl.monitor.mcast.commit.ip` | string | `224.224.224.1` | Multicast group for commit state. |
@@ -233,6 +234,14 @@ must name a trusted, non-attacker-writable directory unique to the workflow run.
 subdirectory beneath it. Multi-process and multi-node producers must share that directory through storage providing
 coherent atomic exclusive file creation, rename, and unlink. Ordinary commit and home-node token operations do not
 require this option.
+
+### Virtual paths
+
+With `capiocl.monitor.filesystem.root` set, the paths given to the filesystem monitor are virtual: `/` is that
+directory, so the token of `/d/f` is `<root>/d/.f.commit`. Close counters remain keyed by the virtual path, so programs
+that see one shared directory under different mount points (one root each) share commit tokens and counters. The
+multicast monitor ignores the option and always works on the virtual paths. A program that learns the root only after
+creating its engine can start the filesystem monitor then, with `Engine::startFileSystemMonitor(root, metadata_dir)`.
 
 ### Loading configuration
 
